@@ -79,3 +79,89 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
+interface CreatePromptRequest {
+  name: string
+  description?: string
+  content: string
+  variables?: string[]
+  workspaceId?: string
+  folderId?: string
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body: CreatePromptRequest = await request.json()
+    const { name, description, content, variables = [], workspaceId = 'workspace_default', folderId } = body
+
+    // Validation
+    if (!name || !content) {
+      return NextResponse.json(
+        { error: 'Name and content are required' },
+        { status: 400 }
+      )
+    }
+
+    // Ensure workspace exists
+    let workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    })
+
+    if (!workspace) {
+      workspace = await prisma.workspace.create({
+        data: {
+          id: workspaceId,
+          name: workspaceId,
+          slug: workspaceId.toLowerCase().replace(/_/g, '-'),
+          ownerId: 'default-owner',
+        },
+      })
+    }
+
+    // Check for duplicate name in workspace
+    const existing = await prisma.prompt.findFirst({
+      where: { workspaceId, name },
+    })
+
+    if (existing) {
+      return NextResponse.json(
+        { error: `Prompt with name "${name}" already exists in this workspace` },
+        { status: 409 }
+      )
+    }
+
+    // Create prompt
+    const prompt = await prisma.prompt.create({
+      data: {
+        name,
+        description,
+        workspaceId,
+        folderId,
+      },
+    })
+
+    // Create first version
+    const version = await prisma.promptVersion.create({
+      data: {
+        promptId: prompt.id,
+        versionNumber: 1,
+        template_body: content,
+        model_config: { temperature: 0.7, maxTokens: 500 },
+        changeLog: 'Initial version',
+        createdBy: 'default-user',
+        isActive: true,
+      },
+    })
+
+    return NextResponse.json({ prompt, version }, { status: 201 })
+  } catch (error) {
+    console.error('API Error:', error)
+    return NextResponse.json(
+      {
+        error: 'Failed to create prompt',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    )
+  }
+}

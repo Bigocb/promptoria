@@ -49,9 +49,32 @@ export default function PromptsPage() {
       alert('Please enter a prompt name and content')
       return
     }
-    console.log('Saving prompt:', { name: promptName, content: promptContent, variables })
-    // TODO: Implement prompt saving to database
-    alert('Prompt saved! (feature coming soon)')
+
+    try {
+      const res = await fetch('/api/prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: promptName,
+          content: promptContent,
+          variables: variables ? variables.split(', ').filter(v => v.trim()) : [],
+        }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        alert(`Error: ${error.error}`)
+        return
+      }
+
+      alert('Prompt saved successfully!')
+      setPromptName('')
+      setPromptContent('')
+      setVariables('')
+    } catch (error) {
+      alert(`Failed to save prompt: ${error}`)
+      console.error('Save error:', error)
+    }
   }
 
   return (
