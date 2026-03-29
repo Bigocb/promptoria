@@ -23,7 +23,7 @@ export default function PromptsPage() {
     try {
       const res = await fetch('/api/snippets')
       const data = await res.json()
-      setSnippets(data)
+      setSnippets(data.snippets || [])
     } catch (error) {
       console.error('Failed to fetch snippets:', error)
     } finally {
