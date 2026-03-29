@@ -1,0 +1,158 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Workspace - top-level container for all prompts and snippets
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  ownerId   String   // Reference to auth system (e.g., Clerk, Auth0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  folders      Folder[]
+  snippets     Snippet[]
+  prompts      Prompt[]
+  testRuns     TestRun[]
+
+  @@index([ownerId])
+  @@unique([ownerId, slug])
+}
+
+// Folder - optional organizational structure within a workspace
+model Folder {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  workspaceId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  prompts   Prompt[]
+  snippets  Snippet[]
+
+  @@index([workspaceId])
+}
+
+// Snippet - reusable text blocks
+model Snippet {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  content     String   // The actual text content
+  workspaceId String
+  folderId    String?
+  version     Int      @default(1) // Manual versioning for snippets
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  workspace           Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  folder              Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  promptCompositions  PromptComposition[]
+
+  @@index([workspaceId])
+  @@index([folderId])
+  @@unique([workspaceId, name])
+}
+
+// Prompt - the main prompt entity (can have multiple versions)
+model Prompt {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  workspaceId String
+  folderId    String?
+  model       String   @default("gpt-4") // Default model
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  workspace Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  folder    Folder?           @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  versions  PromptVersion[]
+  testRuns  TestRun[]
+
+  @@index([workspaceId])
+  @@index([folderId])
+  @@unique([workspaceId, name])
+}
+
+// PromptVersion - immutable snapshots of prompt state
+model PromptVersion {
+  id              String   @id @default(cuid())
+  versionNumber   Int
+  promptId        String
+  template_body   String   // The base template text
+  model_config    Json     // LLM configuration: temperature, max_tokens, top_p, etc.
+  changeLog       String?  // Human-readable description of changes
+  createdAt       DateTime @default(now())
+  createdBy       String   // User who created this version
+  isActive        Boolean  @default(false) // Mark the current active version
+
+  // Relations
+  prompt          Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  snippets        PromptComposition[]
+  testRuns        TestRun[]
+
+  @@index([promptId])
+  @@unique([promptId, versionNumber])
+}
+
+// PromptComposition - join table between PromptVersion and Snippet with ordering
+model PromptComposition {
+  id              String   @id @default(cuid())
+  promptVersionId String
+  snippetId       String
+  rank            Int      // Order in which snippets appear (0-indexed)
+  createdAt       DateTime @default(now())
+
+  // Relations
+  promptVersion PromptVersion @relation(fields: [promptVersionId], references: [id], onDelete: Cascade)
+  snippet       Snippet       @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+
+  @@index([promptVersionId])
+  @@index([snippetId])
+  @@unique([promptVersionId, snippetId])
+}
+
+// TestRun - execution log for testing prompts
+model TestRun {
+  id              String   @id @default(cuid())
+  promptVersionId String
+  promptId        String
+  workspaceId     String
+  variables       Json     // Input variables substituted into the prompt
+  compiledPrompt  String   // The final compiled prompt text
+  output          String?  // LLM response
+  model           String   // Which model was used
+  inputTokens     Int?
+  outputTokens    Int?
+  totalTokens     Int?
+  costUsd         Float?   // Calculated cost based on token usage
+  latencyMs       Int?     // Time taken for API call
+  status          String   @default("pending") // pending, success, error
+  errorMessage    String?  // If status is error
+  createdAt       DateTime @default(now())
+
+  // Relations
+  promptVersion PromptVersion @relation(fields: [promptVersionId], references: [id], onDelete: Cascade)
+  prompt        Prompt        @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([promptVersionId])
+  @@index([promptId])
+  @@index([workspaceId])
+}

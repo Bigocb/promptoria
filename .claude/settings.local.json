@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(curl -s http://localhost:3000/prompts)",
+      "Bash(export DATABASE_URL=postgresql://postgres:password@localhost:5432/postgres)",
+      "Bash(npm run:*)",
+      "Bash(curl -s http://localhost:3100)",
+      "Bash(curl -s http://localhost:3101/)",
+      "Bash(curl -v http://localhost:3101/)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(psql -U postgres -h localhost -d postgres -c \"SELECT version\\(\\);\")",
+      "Bash(curl -s http://localhost:3105/)",
+      "Bash(xargs kill:*)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3100/)",
+      "Bash(timeout 5 curl -i http://localhost:3100/)",
+      "Bash(netstat -ano)",
+      "Bash(kill -9 25136)",
+      "Bash(taskkill /PID 25136 /F)"
+    ]
+  }
+}

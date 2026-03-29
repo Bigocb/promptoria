@@ -1,0 +1,382 @@
+================================================================================
+PromptArchitect - Library System Overview
+================================================================================
+
+ARCHITECTURE
+============
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           PromptArchitect                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │   Snippet    │  │   Prompt     │  │   Version    │  │   Test       │   │
+│  │   Library    │  │  Workspace   │  │   History    │  │   Runner     │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘   │
+│         │                 │                  │                  │           │
+│         └─────────────────┴──────────────────┴──────────────────┘           │
+│                           │                                                  │
+│                           ▼                                                  │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │            📚 LIBRARY SYSTEM (NEW)                                  │   │
+│  ├─────────────────────────────────────────────────────────────────────┤   │
+│  │                                                                     │   │
+│  │  ┌───────────────────────────────────────────────────────────┐    │   │
+│  │  │ Content Types:                                            │    │   │
+│  │  │  • 🎯 Prompts (tested, production-ready)                │    │   │
+│  │  │  • 💡 Skills (techniques, patterns)                      │    │   │
+│  │  │  • 📝 Instructions (step-by-step guides)                │    │   │
+│  │  │  • 📋 Templates (reusable structures)                   │    │   │
+│  │  │  • 🧩 Snippets (small text blocks)                      │    │   │
+│  │  └───────────────────────────────────────────────────────────┘    │   │
+│  │                                                                     │   │
+│  │  ┌───────────────────────────────────────────────────────────┐    │   │
+│  │  │ Features:                                                 │    │   │
+│  │  │  ✓ Full-text search                                      │    │   │
+│  │  │  ✓ Advanced filtering                                    │    │   │
+│  │  │  ✓ Star ratings & comments                              │    │   │
+│  │  │  ✓ Usage tracking                                       │    │   │
+│  │  │  ✓ Performance metrics                                  │    │   │
+│  │  │  ✓ Version history                                      │    │   │
+│  │  │  ✓ Forking/duplication                                 │    │   │
+│  │  │  ✓ Import/export                                       │    │   │
+│  │  │  ✓ Collections                                          │    │   │
+│  │  │  ✓ Analytics & recommendations                          │    │   │
+│  │  └───────────────────────────────────────────────────────────┘    │   │
+│  │                                                                     │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                           │                                                  │
+│         ┌─────────────────┴──────────────────┐                             │
+│         ▼                                    ▼                             │
+│    ┌────────────────┐             ┌──────────────────┐                   │
+│    │   Databases    │             │   API Routes     │                   │
+│    ├────────────────┤             ├──────────────────┤                   │
+│    │ • LibraryItem  │             │ GET /library     │                   │
+│    │ • LibraryComment │            │ POST /library    │                   │
+│    │ • LibraryFork  │             │ PUT /library/:id │                   │
+│    │ • LibraryCollection│          │ DELETE /library/:id│                 │
+│    └────────────────┘             └──────────────────┘                   │
+│                                                                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+CONTENT TYPES
+=============
+
+🎯 PROMPTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:      Complete, tested, production-ready prompts
+Example:      "E-commerce Product Description Generator"
+Use:          Execute directly, no modification needed
+Status:       ✓ Tested ✓ Proven ✓ Ready
+
+💡 SKILLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:      Specialized techniques and patterns
+Example:      "Brand Voice Consistency"
+Use:          Apply across multiple prompts
+Status:       ✓ Best practice ✓ Reusable ✓ Technique
+
+📝 INSTRUCTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:      Step-by-step guides and processes
+Example:      "SEO-Optimized Content Guidelines"
+Use:          Follow procedure, apply to work
+Status:       ✓ Process ✓ Workflow ✓ Procedure
+
+📋 TEMPLATES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:      Reusable template structures
+Example:      "Email Marketing Template"
+Use:          Fill in variables, customize
+Status:       ✓ Flexible ✓ Customizable ✓ Structure
+
+🧩 SNIPPETS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Purpose:      Small reusable text blocks
+Example:      "Professional Greeting"
+Use:          Include in other items
+Status:       ✓ Minimal ✓ Composable ✓ Component
+
+
+DISCOVERY & ORGANIZATION
+========================
+
+SEARCH
+  Full-text search across:
+  • Name
+  • Description
+  • Tags
+  • Content (optional)
+
+FILTERS
+  • Type: prompt, skill, instruction, template, snippet
+  • Category: marketing, technical, content, seo, email, etc.
+  • Difficulty: beginner, intermediate, advanced
+  • Tags: Any custom tags
+  • Public/Archived: Status
+
+SORTING
+  • Most Used (highest use_count)
+  • Highest Rated (best ratings)
+  • Recently Used (last_used timestamp)
+  • Newest Created (created_at)
+
+
+QUALITY METRICS
+===============
+
+⭐ RATINGS
+  • 1-5 star system
+  • Calculated from comments
+  • Shows community consensus
+  • Helps discover best items
+
+📊 USAGE STATS
+  • use_count: How many times used
+  • last_used: When was it last accessed
+  • success_rate: % of successful executions
+  • avg_latency: Average execution time (ms)
+  • avg_cost: Average cost per execution ($)
+
+💬 COMMENTS
+  • Team feedback
+  • Improvement suggestions
+  • Use cases and examples
+  • Issue reports
+
+
+API ENDPOINTS
+=============
+
+GET /api/library
+  Parameters:
+    action=list|get|stats|recommended
+    type=prompt|skill|instruction|template|snippet
+    category=marketing|technical|seo|etc.
+    tags=tag1,tag2,tag3
+    search=query
+    difficulty=beginner|intermediate|advanced
+    workspace_id=id
+  
+POST /api/library
+  Actions:
+    create    - Create new item
+    fork      - Duplicate an item
+    comment   - Add comment/rating
+    usage     - Record metrics
+    import    - Import from JSON
+    export    - Export to JSON
+
+PUT /api/library/:id
+  Update: name, description, content, tags, etc.
+
+DELETE /api/library/:id
+  Archive: soft delete (preserves history)
+
+
+DATABASE SCHEMA
+===============
+
+LibraryItem (Main table)
+  id, workspace_id, type
+  name, description, category, subcategory
+  content, instructions, example_output
+  tags[], difficulty
+  use_count, last_used, avg_latency, avg_cost, success_rate
+  rating, is_public, is_archived, is_template
+  version_number, changelog
+  parent_id, related_ids[]
+  created_by, created_at, updated_at
+
+LibraryComment
+  id, library_item_id, author, comment, rating, created_at
+
+LibraryFork
+  id, source_id, fork_id, forked_by, created_at
+
+LibraryCollection (Optional)
+  id, workspace_id, name, description, item_ids[], created_by
+
+
+WORKFLOW
+========
+
+CREATE → TEST → SAVE → DISCOVER → REUSE → IMPROVE
+
+Step 1: CREATE
+  ✓ User creates prompt using snippets
+  ✓ Composes template with variables
+
+Step 2: TEST
+  ✓ Test in Test Runner
+  ✓ See output, tokens, cost, latency
+  ✓ Record performance metrics
+
+Step 3: SAVE TO LIBRARY (NEW!)
+  ✓ Save tested prompt to library
+  ✓ Set name, description, category
+  ✓ Add tags, difficulty, instructions
+  ✓ Include example output
+
+Step 4: DISCOVER (NEW!)
+  ✓ Team members find it
+  ✓ Search in Library Browser
+  ✓ See rating, usage, performance
+  ✓ Read comments and reviews
+
+Step 5: REUSE (NEW!)
+  ✓ Fork for customization
+  ✓ Or use as snippet in new prompts
+  ✓ Performance auto-tracked
+
+Step 6: IMPROVE (NEW!)
+  ✓ Rate and comment
+  ✓ Suggest improvements
+  ✓ Version updated
+  ✓ History preserved
+
+
+USER INTERFACE
+==============
+
+/library - Library Browser
+
+LEFT PANEL (Search & Filters)
+  ┌────────────────────────────┐
+  │ Search                     │
+  │ ┌────────────────────────┐ │
+  │ │ Search by name/tags    │ │
+  │ └────────────────────────┘ │
+  │                            │
+  │ Filters:                   │
+  │ • Category selector        │
+  │ • Type selector            │
+  │ • Difficulty selector      │
+  │ • Sort selector            │
+  └────────────────────────────┘
+
+CENTER PANEL (Item List)
+  ┌────────────────────────────┐
+  │ Item Title          ⭐ 4.8 │
+  │ Description text          │
+  │ [tag] [tag] [tag]         │
+  │ 247 uses • 2h ago • Medium│
+  └────────────────────────────┘
+  ┌────────────────────────────┐
+  │ Another Item        ⭐ 4.9 │
+  │ Description text          │
+  │ [tag] [tag]               │
+  │ 189 uses • 1d ago • Hard  │
+  └────────────────────────────┘
+
+RIGHT PANEL (Detail View)
+  ┌──────────────────────────┐
+  │ Item Title               │
+  │                          │
+  │ Category: Marketing      │
+  │ Created by: john@ex...   │
+  │ Rating: ⭐⭐⭐⭐⭐ 4.8   │
+  │                          │
+  │ Content Preview:         │
+  │ [content preview...]     │
+  │                          │
+  │ [Copy] [Use] [Fork]      │
+  └──────────────────────────┘
+
+
+STATISTICS
+==========
+
+Library Stats Dashboard (action=stats):
+
+Total Items:        156
+  • Prompts:        45
+  • Skills:         28
+  • Instructions:   32
+  • Templates:      31
+  • Snippets:       20
+
+By Difficulty:
+  • Beginner:       45
+  • Intermediate:   78
+  • Advanced:       33
+
+Performance:
+  • Total uses:     4,521
+  • Avg success:    97%
+  • Avg cost:       $0.0142
+  • Avg latency:    2,341ms
+
+Top 5 Most Used:
+  1. Product Description    (247 uses)
+  2. Email Template         (189 uses)
+  3. Code Reviewer          (156 uses)
+  ...
+
+Top 5 Highest Rated:
+  1. Brand Voice            (4.9⭐)
+  2. Code Reviewer          (4.9⭐)
+  3. SEO Guidelines         (4.8⭐)
+  ...
+
+
+FILES CREATED
+=============
+
+Backend Logic (3 files)
+  lib/library-manager.ts          480 lines   Core functions
+  app/api/library/route.ts        340 lines   REST API
+  LIBRARY_SCHEMA.md               150 lines   Database schema
+
+Frontend (2 files)
+  app/library/page.tsx            480 lines   UI interface
+
+Documentation (5 files)
+  LIBRARY_DOCUMENTATION.md        700+ lines  Complete docs
+  LIBRARY_SUMMARY.md              300+ lines  Quick overview
+  This file                       200+ lines  Visual guide
+
+
+SETUP
+=====
+
+1. Add Prisma Models
+   Copy 4 models from LIBRARY_SCHEMA.md to prisma/schema.prisma
+
+2. Run Migration
+   npm run db:push
+
+3. Access Interface
+   http://localhost:3000/library
+
+4. Use APIs
+   /api/library - All endpoints
+
+
+SUMMARY
+=======
+
+Before (Snippets Only):
+  ❌ No storage for completed prompts
+  ❌ No discovery mechanism
+  ❌ No ratings or feedback
+  ❌ No usage tracking
+  ❌ No versioning
+
+After (Library System):
+  ✅ 5 content types
+  ✅ Full-text search + advanced filtering
+  ✅ Star ratings & team comments
+  ✅ Usage tracking & performance metrics
+  ✅ Version history with changelogs
+  ✅ Forking for customization
+  ✅ Import/export for sharing
+  ✅ Analytics & recommendations
+  ✅ Integration with test runner
+  ✅ Team collaboration features
+
+Result: A comprehensive, searchable knowledge base for your
+        entire organization's LLM expertise!
+
+================================================================================
