@@ -17,7 +17,10 @@
       "Bash(timeout 5 curl -i http://localhost:3100/)",
       "Bash(netstat -ano)",
       "Bash(kill -9 25136)",
-      "Bash(taskkill /PID 25136 /F)"
+      "Bash(taskkill /PID 25136 /F)",
+      "Bash(curl -s http://localhost:3100/_next/static/chunks/main-app.js)",
+      "Bash(pkill -9 node)",
+      "Bash(rm -rf node_modules .next package-lock.json)"
     ]
   }
 }

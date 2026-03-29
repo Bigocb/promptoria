@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "PromptArchitect",
+  title: "Promptoria",
   description: "Modular, versioned prompt management system",
 }
 
