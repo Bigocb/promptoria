@@ -38,13 +38,17 @@ export function Sidebar() {
       {/* Logo */}
       <div
         style={{
-          padding: '0 1.5rem 1.5rem',
+          padding: '1rem 1.5rem 1.5rem',
           borderBottom: '1px solid var(--color-border)',
           marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
         }}
       >
-        <Link href="/">
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>✨ Promptoria</h1>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
+          <img src="/logo.svg" alt="Promptoria" style={{ width: '40px', height: '40px' }} />
+          <h1 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'var(--color-foreground)', margin: 0 }}>Promptoria</h1>
         </Link>
       </div>
 
