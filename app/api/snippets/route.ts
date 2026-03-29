@@ -90,6 +90,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Ensure workspace exists
+    let workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    })
+
+    if (!workspace) {
+      workspace = await prisma.workspace.create({
+        data: {
+          id: workspaceId,
+          name: workspaceId,
+          slug: workspaceId.toLowerCase().replace(/_/g, '-'),
+          ownerId: 'default-owner',
+        },
+      })
+    }
+
     // Check for duplicate name in workspace
     const existing = await prisma.snippet.findFirst({
       where: { workspaceId, name },
