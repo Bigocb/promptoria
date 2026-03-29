@@ -1,4 +1,4 @@
-# PromptArchitect 🏗️
+# Promptoria 🏗️
 
 A **modular, versioned prompt management system** for building, testing, and deploying LLM prompts at scale.
 
