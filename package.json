@@ -4,7 +4,7 @@
   "description": "Modular, versioned prompt management system",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3100",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
