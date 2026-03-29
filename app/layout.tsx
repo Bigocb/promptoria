@@ -1,4 +1,6 @@
 import './globals.css'
+import { ThemeProvider } from './providers'
+import { Sidebar } from '@/components/Sidebar'
 
 export const metadata = {
   title: "Promptoria",
@@ -12,14 +14,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <style>{`
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          html, body { width: 100%; height: 100%; }
-        `}</style>
-      </head>
-      <body>
-        {children}
+      <head />
+      <body style={{ display: 'flex', margin: 0, padding: 0 }}>
+        <ThemeProvider>
+          <Sidebar />
+          <main style={{ marginLeft: '240px', flex: 1 }}>
+            {children}
+          </main>
+        </ThemeProvider>
       </body>
     </html>
   )

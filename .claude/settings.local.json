@@ -20,7 +20,16 @@
       "Bash(taskkill /PID 25136 /F)",
       "Bash(curl -s http://localhost:3100/_next/static/chunks/main-app.js)",
       "Bash(pkill -9 node)",
-      "Bash(rm -rf node_modules .next package-lock.json)"
+      "Bash(rm -rf node_modules .next package-lock.json)",
+      "Bash(findstr :3100)",
+      "Bash(wmic process:*)",
+      "Bash(curl -I http://localhost:3100)",
+      "Bash(tasklist)",
+      "Bash(curl -s -I http://localhost:3100/_next/static/chunks/main-app.js)",
+      "Bash(curl -s -I http://localhost:3100/_next/static/chunks/app-pages-internals.js)",
+      "Bash(curl -s -I http://localhost:3100/_next/static/chunks/app/error.js)",
+      "Bash(curl -s http://localhost:3100/prompts)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:password@localhost:5432/postgres\" npm run db:push)"
     ]
   }
 }

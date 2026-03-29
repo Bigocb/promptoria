@@ -4,65 +4,78 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --muted: 221.2 63.3% 97.8%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 222.2 73.4% 50.6%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Gruvbox Dark Default */
+    --color-background: #282828;
+    --color-backgroundAlt: #1d2021;
+    --color-foreground: #ebdbb2;
+    --color-foregroundAlt: #d5c4a1;
+    --color-border: #504945;
+    --color-accent: #fe8019;
+    --color-accentAlt: #d65d0e;
+    --color-success: #b8bb26;
+    --color-error: #fb4934;
+    --color-warning: #fabd2f;
 
     --radius: 0.5rem;
-    --primary: 222.2 73.4% 50.6%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 217.2 91.2% 59.8%;
-    --secondary-foreground: 222.2 47.6% 11.2%;
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.3% 65.1%;
-
-    --accent: 217.2 91.2% 59.8%;
-    --accent-foreground: 222.2 47.6% 11.2%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+  html, body {
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+@layer components {
+  .btn {
+    @apply px-3 py-2 rounded text-sm font-medium cursor-pointer transition-colors;
   }
-  body {
-    @apply bg-background text-foreground;
+
+  .btn-primary {
+    @apply text-white;
+    background-color: var(--color-accent);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-accentAlt);
+  }
+
+  .btn-secondary {
+    @apply text-white;
+    background-color: var(--color-border);
+  }
+
+  .btn-secondary:hover {
+    opacity: 0.8;
+  }
+
+  .input {
+    @apply px-3 py-2 rounded text-sm;
+    background-color: var(--color-backgroundAlt);
+    color: var(--color-foreground);
+    border: 1px solid var(--color-border);
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+
+  .card {
+    @apply rounded-lg p-4;
+    background-color: var(--color-backgroundAlt);
+    border: 1px solid var(--color-border);
   }
 }

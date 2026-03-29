@@ -1,243 +1,251 @@
 'use client'
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Plus, Edit2, Trash2, Copy, ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
-type Snippet = {
+interface Snippet {
   id: string
   name: string
-  description: string
+  description?: string | null
   content: string
-  version: number
   createdAt: string
+  updatedAt: string
 }
 
 export default function SnippetsPage() {
   const [snippets, setSnippets] = useState<Snippet[]>([])
-  const [isCreating, setIsCreating] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    content: '',
-  })
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<Snippet | null>(null)
+  const [formData, setFormData] = useState({ name: '', description: '', content: '' })
 
-  const handleCreateOrUpdate = () => {
-    if (!formData.name || !formData.content) {
-      alert('Name and content are required')
-      return
+  useEffect(() => {
+    fetchSnippets()
+  }, [])
+
+  async function fetchSnippets() {
+    try {
+      const res = await fetch('/api/snippets')
+      const data = await res.json()
+      setSnippets(Array.isArray(data) ? data : data.snippets || [])
+    } catch (error) {
+      console.error('Failed to fetch snippets:', error)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    if (editingId) {
-      setSnippets(
-        snippets.map((s) =>
-          s.id === editingId
-            ? {
-                ...s,
-                ...formData,
-                version: s.version + 1,
-              }
-            : s
-        )
-      )
-      setEditingId(null)
-    } else {
-      const newSnippet: Snippet = {
-        id: Math.random().toString(36).substr(2, 9),
-        ...formData,
-        version: 1,
-        createdAt: new Date().toISOString(),
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    try {
+      if (editing) {
+        const res = await fetch(`/api/snippets/${editing.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        })
+        if (res.ok) {
+          setEditing(null)
+          setFormData({ name: '', description: '', content: '' })
+          setShowForm(false)
+          fetchSnippets()
+        }
+      } else {
+        const res = await fetch('/api/snippets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        })
+        if (res.ok) {
+          setFormData({ name: '', description: '', content: '' })
+          setShowForm(false)
+          fetchSnippets()
+        }
       }
-      setSnippets([...snippets, newSnippet])
+    } catch (error) {
+      console.error('Failed to save snippet:', error)
     }
+  }
 
-    setFormData({ name: '', description: '', content: '' })
-    setIsCreating(false)
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this snippet?')) return
+    try {
+      const res = await fetch(`/api/snippets/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        fetchSnippets()
+      }
+    } catch (error) {
+      console.error('Failed to delete snippet:', error)
+    }
   }
 
   const handleEdit = (snippet: Snippet) => {
+    setEditing(snippet)
     setFormData({
       name: snippet.name,
-      description: snippet.description,
+      description: snippet.description || '',
       content: snippet.content,
     })
-    setEditingId(snippet.id)
-    setIsCreating(true)
+    setShowForm(true)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure?')) {
-      setSnippets(snippets.filter((s) => s.id !== id))
-    }
-  }
-
-  const handleCopy = (content: string) => {
-    navigator.clipboard.writeText(content)
-    alert('Copied to clipboard!')
+  const handleCancel = () => {
+    setEditing(null)
+    setFormData({ name: '', description: '', content: '' })
+    setShowForm(false)
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      {/* Header */}
-      <header className="border-b border-slate-700 bg-slate-800/50 backdrop-blur">
-        <div className="container mx-auto px-4 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Snippet Library</h1>
-              <p className="text-slate-400">Manage reusable text blocks</p>
-            </div>
-          </div>
-          <Button onClick={() => setIsCreating(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            New Snippet
-          </Button>
-        </div>
+    <div style={{ padding: '2rem' }}>
+      <header style={{ marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>📚 Snippet Library</h1>
+        <p style={{ color: 'var(--color-foregroundAlt)' }}>Create and manage reusable text blocks</p>
       </header>
 
-      {/* Content */}
-      <main className="container mx-auto px-4 py-8">
-        {isCreating && (
-          <Card className="mb-8 bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white">
-                {editingId ? 'Edit Snippet' : 'Create New Snippet'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="name" className="text-white">
-                  Name
-                </Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="e.g., Brand Voice"
-                  className="mt-2 bg-slate-700 border-slate-600 text-white"
-                />
-              </div>
+      {!showForm && (
+        <button
+          onClick={() => setShowForm(true)}
+          className="btn btn-primary"
+          style={{ marginBottom: '2rem' }}
+        >
+          ➕ New Snippet
+        </button>
+      )}
 
-              <div>
-                <Label htmlFor="description" className="text-white">
-                  Description (optional)
-                </Label>
-                <Input
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  placeholder="What is this snippet for?"
-                  className="mt-2 bg-slate-700 border-slate-600 text-white"
-                />
-              </div>
+      {showForm && (
+        <form
+          onSubmit={handleSubmit}
+          className="card"
+          style={{ marginBottom: '2rem', maxWidth: '600px' }}
+        >
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
+            {editing ? 'Edit Snippet' : 'Create Snippet'}
+          </h2>
 
-              <div>
-                <Label htmlFor="content" className="text-white">
-                  Content
-                </Label>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) =>
-                    setFormData({ ...formData, content: e.target.value })
-                  }
-                  placeholder="Enter the snippet content..."
-                  className="mt-2 bg-slate-700 border-slate-600 text-white min-h-32"
-                />
-              </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
+              Name *
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="input"
+              style={{ width: '100%' }}
+              required
+            />
+          </div>
 
-              <div className="flex gap-2">
-                <Button onClick={handleCreateOrUpdate}>
-                  {editingId ? 'Update' : 'Create'}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsCreating(false)
-                    setEditingId(null)
-                    setFormData({ name: '', description: '', content: '' })
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
+              Description
+            </label>
+            <input
+              type="text"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="input"
+              style={{ width: '100%' }}
+              placeholder="Optional description"
+            />
+          </div>
 
-        {/* Snippets Grid */}
-        <div className="grid gap-4">
-          {snippets.length === 0 ? (
-            <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="pt-6 text-center">
-                <p className="text-slate-400">No snippets yet. Create one to get started!</p>
-              </CardContent>
-            </Card>
-          ) : (
-            snippets.map((snippet) => (
-              <Card key={snippet.id} className="bg-slate-800 border-slate-700">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-white">{snippet.name}</CardTitle>
-                      {snippet.description && (
-                        <p className="text-sm text-slate-400 mt-1">
-                          {snippet.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleEdit(snippet)}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleCopy(snippet.content)}
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleDelete(snippet.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <pre className="bg-slate-900 p-4 rounded text-slate-200 text-sm overflow-auto max-h-48">
-                    {snippet.content}
-                  </pre>
-                  <p className="text-xs text-slate-500 mt-2">
-                    v{snippet.version} • {new Date(snippet.createdAt).toLocaleDateString()}
-                  </p>
-                </CardContent>
-              </Card>
-            ))
-          )}
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
+              Content *
+            </label>
+            <textarea
+              value={formData.content}
+              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              className="input"
+              style={{ width: '100%', minHeight: '200px', fontFamily: 'monospace' }}
+              required
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button type="submit" className="btn btn-primary">
+              {editing ? 'Update' : 'Create'}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="btn btn-secondary"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {loading ? (
+        <p>Loading snippets...</p>
+      ) : snippets.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
+          <p style={{ color: 'var(--color-foregroundAlt)' }}>No snippets yet. Create one to get started!</p>
         </div>
-      </main>
+      ) : (
+        <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+          {snippets.map((snippet) => (
+            <div
+              key={snippet.id}
+              className="card"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem', wordBreak: 'break-word' }}>
+                {snippet.name}
+              </h3>
+              {snippet.description && (
+                <p style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)', marginBottom: '0.75rem' }}>
+                  {snippet.description}
+                </p>
+              )}
+              <pre
+                style={{
+                  flex: 1,
+                  backgroundColor: 'var(--color-background)',
+                  padding: '0.75rem',
+                  borderRadius: '0.25rem',
+                  fontSize: '0.75rem',
+                  overflow: 'auto',
+                  maxHeight: '200px',
+                  marginBottom: '1rem',
+                  fontFamily: 'monospace',
+                  color: 'var(--color-foregroundAlt)',
+                }}
+              >
+                {snippet.content.substring(0, 300)}
+                {snippet.content.length > 300 ? '...' : ''}
+              </pre>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  onClick={() => handleEdit(snippet)}
+                  className="btn btn-secondary"
+                  style={{ flex: 1, fontSize: '0.875rem' }}
+                >
+                  ✏️ Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(snippet.id)}
+                  className="btn"
+                  style={{
+                    flex: 1,
+                    fontSize: '0.875rem',
+                    backgroundColor: 'var(--color-error)',
+                    color: 'white',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+                >
+                  🗑️ Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
