@@ -20,10 +20,12 @@ model Workspace {
   updatedAt DateTime @updatedAt
 
   // Relations
-  folders      Folder[]
-  snippets     Snippet[]
-  prompts      Prompt[]
-  testRuns     TestRun[]
+  folders               Folder[]
+  snippets             Snippet[]
+  prompts              Prompt[]
+  testRuns             TestRun[]
+  agentInteractionTypes AgentInteractionType[]
+  promptCategories     PromptCategory[]
 
   @@index([ownerId])
   @@unique([ownerId, slug])
@@ -68,6 +70,44 @@ model Snippet {
   @@unique([workspaceId, name])
 }
 
+// AgentInteractionType - top-level prompt category (e.g., Research, Writing, Code)
+model AgentInteractionType {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "Research", "Content Creation", "Code Generation"
+  description String?
+  emoji       String?  // e.g., "🔍", "✍️", "💻"
+  workspaceId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  categories  PromptCategory[]
+
+  @@index([workspaceId])
+  @@unique([workspaceId, name])
+}
+
+// PromptCategory - subcategories within interaction types (e.g., Blog Posts, Social Media)
+model PromptCategory {
+  id                    String   @id @default(cuid())
+  name                  String   // e.g., "Blog Posts", "Social Media"
+  description           String?
+  workspaceId           String
+  agentInteractionTypeId String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  workspace              Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  agentInteractionType   AgentInteractionType  @relation(fields: [agentInteractionTypeId], references: [id], onDelete: Cascade)
+  prompts                Prompt[]
+
+  @@index([workspaceId])
+  @@index([agentInteractionTypeId])
+  @@unique([workspaceId, name])
+}
+
 // Prompt - the main prompt entity (can have multiple versions)
 model Prompt {
   id          String   @id @default(cuid())
@@ -75,6 +115,7 @@ model Prompt {
   description String?
   workspaceId String
   folderId    String?
+  categoryId  String?  // Link to PromptCategory for taxonomy
   model       String   @default("gpt-4") // Default model
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -82,11 +123,13 @@ model Prompt {
   // Relations
   workspace Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   folder    Folder?           @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  category  PromptCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   versions  PromptVersion[]
   testRuns  TestRun[]
 
   @@index([workspaceId])
   @@index([folderId])
+  @@index([categoryId])
   @@unique([workspaceId, name])
 }
 
