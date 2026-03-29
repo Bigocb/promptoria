@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -39,34 +39,37 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  code, pre, .monospace {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Fraunces', serif;
   }
 }
 
 @layer components {
-  /* Groovy Buttons */
+  /* Groovy Buttons - Squircle Geometry */
   .btn {
     padding: 0.75rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    border-radius: 1.5rem;
-    border: none;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    transform: translateY(0);
-    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+    border-radius: 1rem;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    box-shadow: 4px 4px 0px 0px #1d2021;
     font-family: 'Fraunces', serif;
   }
 
   .btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 7px 0 rgba(0, 0, 0, 0.3);
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0px 0px #1d2021;
   }
 
   .btn:active {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+    transform: translate(0, 0);
+    box-shadow: 2px 2px 0px 0px #1d2021;
   }
 
   .btn-primary {
@@ -88,38 +91,38 @@
     background-color: #5f5955;
   }
 
-  /* Groovy Inputs */
+  /* Groovy Inputs - Squircle Geometry */
   .input {
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
-    border-radius: 0.75rem;
+    border-radius: 1rem;
     background-color: var(--color-backgroundAlt);
     color: var(--color-foreground);
-    border: 2px solid var(--color-border);
+    border: 2px solid #3c3836;
     transition: all 0.2s ease;
-    font-family: inherit;
+    font-family: 'JetBrains Mono', monospace;
   }
 
   .input:focus {
     outline: none;
     border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px rgba(254, 128, 25, 0.1);
+    box-shadow: 0 0 0 3px rgba(254, 128, 25, 0.1), 2px 2px 0px 0px #1d2021;
   }
 
-  /* Groovy Cards */
+  /* Groovy Cards - Refined with Offset Shadows */
   .card {
     padding: 1.5rem;
     border-radius: 1rem;
     background-color: var(--color-backgroundAlt);
-    border: 3px solid var(--color-border);
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
+    border: 3px solid #3c3836;
+    transition: all 0.2s ease;
+    box-shadow: 4px 4px 0px 0px #1d2021;
   }
 
   .card:hover {
     border-color: var(--color-accent);
-    transform: translateY(-4px);
-    box-shadow: 6px 8px 0 rgba(254, 128, 25, 0.15);
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0px 0px #1d2021;
   }
 
   textarea {
