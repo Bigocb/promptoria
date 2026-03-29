@@ -3,11 +3,6 @@
 export default function Home() {
   return (
     <div style={{ minHeight: '100vh', padding: '2rem' }}>
-      <header style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '1.5rem', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>🚀 Promptoria</h1>
-        <p style={{ color: 'var(--color-foregroundAlt)' }}>Archive Scribe — Modular, versioned prompt management</p>
-      </header>
-
       <main>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
           <div className="card" style={{ cursor: 'pointer', transition: 'border-color 0.2s' }} onClick={() => (window.location.href = '/snippets')} onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--color-accent)'} onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--color-border)'}>
