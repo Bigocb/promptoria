@@ -2,12 +2,26 @@
 
 import { useState } from 'react'
 
+interface TestResult {
+  id: string
+  timestamp: string
+  model: string
+  prompt: string
+  output: string
+}
+
 export default function TestRunnerPage() {
   const [variables, setVariables] = useState({
-    product_name: 'Premium Wireless Headphones',
-    product_category: 'Audio Equipment',
+    topic: 'sustainable fashion',
+    style: 'professional',
   })
+  const [model, setModel] = useState('claude-3-sonnet')
+  const [temperature, setTemperature] = useState('0.7')
+  const [maxTokens, setMaxTokens] = useState('500')
   const [isLoading, setIsLoading] = useState(false)
+  const [output, setOutput] = useState('')
+  const [results, setResults] = useState<TestResult[]>([])
+  const [selectedResult, setSelectedResult] = useState<TestResult | null>(null)
 
   const handleVariableChange = (key: string, value: string) => {
     setVariables((prev) => ({ ...prev, [key]: value }))
@@ -15,8 +29,26 @@ export default function TestRunnerPage() {
 
   const handleExecute = async () => {
     setIsLoading(true)
+    setOutput('')
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Simulate API call - in production, this would call actual LLM APIs
+      await new Promise(resolve => setTimeout(resolve, 1500))
+
+      const mockResponse = `Sample output from ${model} with temperature ${temperature}:\n\n` +
+        `This is a simulated response testing your prompt with the variables you provided.\n` +
+        `Variables used:\n${Object.entries(variables).map(([k, v]) => `- ${k}: ${v}`).join('\n')}\n\n` +
+        `In production, this would call the actual ${model} API.`
+
+      setOutput(mockResponse)
+
+      const result: TestResult = {
+        id: Date.now().toString(),
+        timestamp: new Date().toLocaleString(),
+        model,
+        prompt: JSON.stringify(variables),
+        output: mockResponse
+      }
+      setResults([result, ...results])
     } finally {
       setIsLoading(false)
     }
@@ -29,33 +61,20 @@ export default function TestRunnerPage() {
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
           Execute prompts against LLM APIs and see real-time responses
         </p>
-
-        <div className="card" style={{ backgroundColor: 'var(--color-background)', padding: '1rem' }}>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--color-accent)', marginBottom: '0.75rem' }}>
-            🧪 How to test your prompts
-          </h3>
-          <ul style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)', marginLeft: '1.5rem', listStyle: 'disc' }}>
-            <li style={{ marginBottom: '0.5rem' }}><strong>Select a prompt</strong> from your library</li>
-            <li style={{ marginBottom: '0.5rem' }}><strong>Fill in variables</strong> like {"{topic}"} or {"{tone}"}</li>
-            <li style={{ marginBottom: '0.5rem' }}><strong>Choose an API</strong> (OpenAI, Claude, etc.)</li>
-            <li style={{ marginBottom: '0.5rem' }}><strong>Set parameters</strong> (temperature, max tokens)</li>
-            <li style={{ marginBottom: '0.5rem' }}><strong>Execute</strong> and see the response instantly</li>
-            <li>Results are logged for comparison and iteration</li>
-          </ul>
-        </div>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-        {/* Variables Panel */}
+      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '2rem' }}>
+        {/* Control Panel */}
         <div>
-          <div className="card" style={{ marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-foreground)' }}>
-              Variables
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Variables */}
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
+              📝 Variables
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {Object.entries(variables).map(([key, value]) => (
                 <div key={key}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-accent)' }}>
+                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-accent)', textTransform: 'uppercase' }}>
                     {key}
                   </label>
                   <input
@@ -70,50 +89,126 @@ export default function TestRunnerPage() {
             </div>
           </div>
 
+          {/* Model Selection */}
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
+              🤖 Model
+            </h3>
+            <select
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              className="input"
+              style={{ width: '100%' }}
+            >
+              <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+              <option value="claude-3-opus">Claude 3 Opus</option>
+              <option value="gpt-4">GPT-4</option>
+              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            </select>
+          </div>
+
+          {/* Parameters */}
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
+              ⚙️ Parameters
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-accent)', textTransform: 'uppercase' }}>
+                  Temperature: {temperature}
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  value={temperature}
+                  onChange={(e) => setTemperature(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-accent)', textTransform: 'uppercase' }}>
+                  Max Tokens
+                </label>
+                <input
+                  type="number"
+                  value={maxTokens}
+                  onChange={(e) => setMaxTokens(e.target.value)}
+                  className="input"
+                  style={{ width: '100%' }}
+                  min="1"
+                  max="4000"
+                />
+              </div>
+            </div>
+          </div>
+
           <button
             onClick={handleExecute}
             disabled={isLoading}
             className="btn btn-primary"
-            style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '1rem' }}
+            style={{ width: '100%' }}
           >
-            {isLoading ? '⏳ Executing...' : '▶️ Execute Prompt'}
+            {isLoading ? '⏳ Executing...' : '▶️ Execute'}
           </button>
         </div>
 
         {/* Output Panel */}
         <div>
-          <div className="card">
-            <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-foreground)' }}>
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-foreground)' }}>
               Output
             </h2>
             <div style={{
               backgroundColor: 'var(--color-background)',
               padding: '1rem',
-              borderRadius: '0.25rem',
-              minHeight: '200px',
+              borderRadius: '0.5rem',
+              minHeight: '300px',
               fontSize: '0.875rem',
               color: 'var(--color-foregroundAlt)',
               fontFamily: 'monospace',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
+              border: '1px solid var(--color-border)',
+              overflowY: 'auto',
+              maxHeight: '500px'
             }}>
-              Run a prompt to see the LLM response here...
+              {output || 'Run a prompt to see the LLM response here...'}
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="card" style={{ marginTop: '2rem', backgroundColor: 'var(--color-background)' }}>
-        <h3 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--color-accent)', marginBottom: '0.75rem' }}>
-          ⚙️ Coming Soon
-        </h3>
-        <ul style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)', marginLeft: '1.5rem', listStyle: 'disc' }}>
-          <li>Multiple LLM API integrations (OpenAI, Claude, Cohere)</li>
-          <li>Token counting and cost estimation</li>
-          <li>Parameter tuning (temperature, max_tokens, top_p)</li>
-          <li>Batch testing with multiple inputs</li>
-          <li>Comparison mode to A/B test prompts</li>
-        </ul>
+          {/* History */}
+          {results.length > 0 && (
+            <div className="card">
+              <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
+                📋 Test History ({results.length})
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
+                {results.map((result) => (
+                  <button
+                    key={result.id}
+                    onClick={() => setSelectedResult(result)}
+                    style={{
+                      padding: '0.75rem',
+                      backgroundColor: selectedResult?.id === result.id ? 'var(--color-accent)' : 'var(--color-background)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      textAlign: 'left',
+                      transition: 'all 0.2s ease',
+                      color: selectedResult?.id === result.id ? '#1d2021' : 'var(--color-foreground)'
+                    }}
+                  >
+                    <div style={{ fontWeight: '600' }}>{result.model}</div>
+                    <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>{result.timestamp}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
