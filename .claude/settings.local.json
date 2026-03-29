@@ -29,7 +29,8 @@
       "Bash(curl -s -I http://localhost:3100/_next/static/chunks/app-pages-internals.js)",
       "Bash(curl -s -I http://localhost:3100/_next/static/chunks/app/error.js)",
       "Bash(curl -s http://localhost:3100/prompts)",
-      "Bash(DATABASE_URL=\"postgresql://postgres:password@localhost:5432/postgres\" npm run db:push)"
+      "Bash(DATABASE_URL=\"postgresql://postgres:password@localhost:5432/postgres\" npm run db:push)",
+      "Bash(curl -s http://localhost:3100/snippets)"
     ]
   }
 }
