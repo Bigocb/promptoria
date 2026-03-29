@@ -15,12 +15,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
+
     // Load theme from localStorage
     const saved = localStorage.getItem('promptoria-theme') as ThemeName | null
     if (saved && saved in themes) {
       setCurrentTheme(saved)
     }
-    setMounted(true)
   }, [])
 
   const handleSetTheme = (theme: ThemeName) => {
@@ -30,19 +31,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Apply theme to document
   useEffect(() => {
-    if (!mounted) return
-
     const theme = themes[currentTheme]
     const root = document.documentElement
 
     Object.entries(theme.colors).forEach(([key, value]) => {
       root.style.setProperty(`--color-${key}`, value)
     })
-  }, [currentTheme, mounted])
-
-  if (!mounted) {
-    return <>{children}</>
-  }
+  }, [currentTheme])
 
   return (
     <ThemeContext.Provider value={{ currentTheme, setTheme: handleSetTheme }}>
@@ -53,8 +48,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext)
-  if (context === undefined) {
-    throw new Error('useTheme must be used within ThemeProvider')
+
+  if (!context) {
+    // Return default theme during SSR/hydration
+    return {
+      currentTheme: defaultTheme,
+      setTheme: () => {},
+    }
   }
+
   return context
 }
