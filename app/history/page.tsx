@@ -1,10 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
 
 type Version = {
   id: string
@@ -111,143 +107,155 @@ Target audience: {{target_audience}}`,
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      {/* Header */}
-      <header className="border-b border-slate-700 bg-slate-800/50 backdrop-blur">
-        <div className="container mx-auto px-4 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Version History</h1>
-              <p className="text-slate-400">Compare and track prompt versions</p>
-            </div>
-          </div>
+    <div style={{ padding: '2rem' }}>
+      <header style={{ marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>📊 Version History</h1>
+        <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
+          Compare and track all versions of your prompts
+        </p>
+
+        <div className="card" style={{ backgroundColor: 'var(--color-background)', padding: '1rem' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--color-accent)', marginBottom: '0.75rem' }}>
+            🔍 How to use Version History
+          </h3>
+          <ul style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)', marginLeft: '1.5rem', listStyle: 'disc' }}>
+            <li style={{ marginBottom: '0.5rem' }}>Every time you save a prompt, a new version is created</li>
+            <li style={{ marginBottom: '0.5rem' }}>Click on versions to see the full template</li>
+            <li style={{ marginBottom: '0.5rem' }}>Select TWO versions to compare changes side-by-side</li>
+            <li style={{ marginBottom: '0.5rem' }}>Rollback to any previous version with one click</li>
+            <li>Each version includes a changelog explaining what changed</li>
+          </ul>
         </div>
       </header>
 
-      {/* Content */}
-      <main className="container mx-auto px-4 py-8">
-        {selectedVersions.length === 2 && (
-          <Card className="mb-8 bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white">
-                Diff: {selectedVersions[0].promptName} v{selectedVersions[0].versionNumber}{' '}
-                → v{selectedVersions[1].versionNumber}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-slate-400 mb-3">Changes</p>
-                  <div className="bg-slate-900 rounded p-4 space-y-1 text-sm font-mono max-h-96 overflow-y-auto">
-                    {getHighlightedDiff(
-                      selectedVersions[0].template_body,
-                      selectedVersions[1].template_body
-                    ).map((line, idx) => (
-                      <div
-                        key={idx}
-                        className={`${
-                          line.type === 'remove'
-                            ? 'bg-red-900 text-red-100'
-                            : line.type === 'add'
-                            ? 'bg-green-900 text-green-100'
-                            : 'text-slate-300'
-                        } px-2 py-0.5 whitespace-pre-wrap break-words`}
-                      >
-                        {line.type === 'remove' && <span className="font-bold">- </span>}
-                        {line.type === 'add' && <span className="font-bold">+ </span>}
-                        {line.text}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+      {selectedVersions.length === 2 && (
+        <div className="card" style={{ marginBottom: '2rem', backgroundColor: 'var(--color-background)' }}>
+          <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-accent)' }}>
+            Diff: {selectedVersions[0].promptName} v{selectedVersions[0].versionNumber}{' '}
+            → v{selectedVersions[1].versionNumber}
+          </h2>
 
-                <div>
-                  <p className="text-sm text-slate-400 mb-3">Changelog</p>
-                  <div className="bg-slate-900 p-4 rounded text-slate-200 text-sm">
-                    {selectedVersions[1].changeLog}
-                  </div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.75rem', color: 'var(--color-accent)' }}>Changes</p>
+            <div style={{
+              backgroundColor: 'var(--color-background)',
+              padding: '1rem',
+              borderRadius: '0.25rem',
+              fontFamily: 'monospace',
+              maxHeight: '400px',
+              overflow: 'auto',
+              fontSize: '0.8rem',
+              lineHeight: '1.4',
+            }}>
+              {getHighlightedDiff(
+                selectedVersions[0].template_body,
+                selectedVersions[1].template_body
+              ).map((line, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    backgroundColor: line.type === 'remove' ? 'var(--color-error)' : line.type === 'add' ? 'var(--color-success)' : 'transparent',
+                    color: line.type === 'remove' ? '#fff' : line.type === 'add' ? '#000' : 'var(--color-foregroundAlt)',
+                    padding: '0.25rem 0.5rem',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {line.type === 'remove' && <span style={{ fontWeight: 'bold' }}>- </span>}
+                  {line.type === 'add' && <span style={{ fontWeight: 'bold' }}>+ </span>}
+                  {line.text}
                 </div>
+              ))}
+            </div>
+          </div>
 
-                <div className="flex gap-2 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setSelectedVersionIds(null)}
-                  >
-                    Clear Comparison
-                  </Button>
+          <div>
+            <p style={{ fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.75rem', color: 'var(--color-accent)' }}>Changelog</p>
+            <div style={{ backgroundColor: 'var(--color-background)', padding: '1rem', borderRadius: '0.25rem', fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>
+              {selectedVersions[1].changeLog}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setSelectedVersionIds(null)}
+            className="btn btn-secondary"
+            style={{ marginTop: '1rem' }}
+          >
+            Clear Comparison
+          </button>
+        </div>
+      )}
+
+      <div>
+        <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-foreground)' }}>All Versions</h2>
+
+        <div style={{ display: 'grid', gap: '1rem' }}>
+          {versions.map((version) => (
+            <div
+              key={version.id}
+              className="card"
+              onClick={() => toggleVersionSelection(version.id)}
+              style={{
+                cursor: 'pointer',
+                borderColor: selectedVersionIds?.includes(version.id) ? 'var(--color-accent)' : 'var(--color-border)',
+                borderWidth: selectedVersionIds?.includes(version.id) ? '2px' : '1px',
+              }}
+            >
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedVersionIds?.includes(version.id) || false}
+                    onChange={() => {}}
+                    style={{ cursor: 'pointer' }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
+                      v{version.versionNumber} • {version.promptName}
+                    </h3>
+                    <p style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>
+                      {version.changeLog}
+                    </p>
+                  </div>
+                  <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>
+                    <p>{new Date(version.createdAt).toLocaleDateString()}</p>
+                    <p>by {version.createdBy}</p>
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Version List */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-white mb-4">All Versions</h2>
-
-          {versions.map((version) => (
-            <Card
-              key={version.id}
-              className={`bg-slate-800 border-slate-700 cursor-pointer transition-colors ${
-                selectedVersionIds?.includes(version.id)
-                  ? 'ring-2 ring-blue-500'
-                  : 'hover:border-slate-600'
-              }`}
-              onClick={() => toggleVersionSelection(version.id)}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedVersionIds?.includes(version.id) || false}
-                        onChange={() => {}}
-                        className="w-4 h-4"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <div>
-                        <CardTitle className="text-white">
-                          v{version.versionNumber} • {version.promptName}
-                        </CardTitle>
-                        <p className="text-sm text-slate-400 mt-1">
-                          {version.changeLog}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-slate-400">
-                      {new Date(version.createdAt).toLocaleDateString()}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      by {version.createdBy}
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <pre className="bg-slate-900 p-4 rounded text-slate-200 text-sm overflow-auto max-h-32">
-                  {version.template_body}
-                </pre>
-              </CardContent>
-            </Card>
+              <pre style={{
+                backgroundColor: 'var(--color-background)',
+                padding: '0.75rem',
+                borderRadius: '0.25rem',
+                fontSize: '0.8rem',
+                overflow: 'auto',
+                maxHeight: '200px',
+                fontFamily: 'monospace',
+                color: 'var(--color-foregroundAlt)',
+              }}>
+                {version.template_body}
+              </pre>
+            </div>
           ))}
         </div>
 
         {selectedVersionIds?.[1] === '' && (
-          <div className="mt-8 p-4 bg-blue-900/20 border border-blue-700 rounded text-blue-100 text-sm">
-            Select another version to compare with v{
+          <div style={{
+            marginTop: '1.5rem',
+            padding: '1rem',
+            backgroundColor: 'var(--color-background)',
+            border: `1px solid var(--color-accent)`,
+            borderRadius: '0.5rem',
+            fontSize: '0.875rem',
+            color: 'var(--color-accent)',
+          }}>
+            📌 Select another version to compare with v{
               versions.find((v) => v.id === selectedVersionIds[0])?.versionNumber
             }
           </div>
         )}
-      </main>
+      </div>
     </div>
   )
 }

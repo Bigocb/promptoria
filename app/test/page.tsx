@@ -1,12 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Play, ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
 
 export default function TestRunnerPage() {
   const [variables, setVariables] = useState({
@@ -22,7 +16,6 @@ export default function TestRunnerPage() {
   const handleExecute = async () => {
     setIsLoading(true)
     try {
-      // Mock execution
       await new Promise(resolve => setTimeout(resolve, 1000))
     } finally {
       setIsLoading(false)
@@ -30,70 +23,98 @@ export default function TestRunnerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      <header className="border-b border-slate-700 bg-slate-800/50 backdrop-blur">
-        <div className="container mx-auto px-4 py-6 flex items-center gap-4">
-          <Link href="/">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-white">Test Runner</h1>
-            <p className="text-slate-400">Execute and test prompts in real-time</p>
-          </div>
+    <div style={{ padding: '2rem' }}>
+      <header style={{ marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>▶️ Test Runner</h1>
+        <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
+          Execute prompts against LLM APIs and see real-time responses
+        </p>
+
+        <div className="card" style={{ backgroundColor: 'var(--color-background)', padding: '1rem' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--color-accent)', marginBottom: '0.75rem' }}>
+            🧪 How to test your prompts
+          </h3>
+          <ul style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)', marginLeft: '1.5rem', listStyle: 'disc' }}>
+            <li style={{ marginBottom: '0.5rem' }}><strong>Select a prompt</strong> from your library</li>
+            <li style={{ marginBottom: '0.5rem' }}><strong>Fill in variables</strong> like {"{topic}"} or {"{tone}"}</li>
+            <li style={{ marginBottom: '0.5rem' }}><strong>Choose an API</strong> (OpenAI, Claude, etc.)</li>
+            <li style={{ marginBottom: '0.5rem' }}><strong>Set parameters</strong> (temperature, max tokens)</li>
+            <li style={{ marginBottom: '0.5rem' }}><strong>Execute</strong> and see the response instantly</li>
+            <li>Results are logged for comparison and iteration</li>
+          </ul>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <Card className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Variables</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Object.entries(variables).map(([key, value]) => (
-                  <div key={key}>
-                    <Label htmlFor={key} className="text-white text-sm">
-                      Variable: {key}
-                    </Label>
-                    <Input
-                      id={key}
-                      value={value}
-                      onChange={(e) => handleVariableChange(key, e.target.value)}
-                      className="mt-1 bg-slate-700 border-slate-600 text-white text-sm"
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Button
-              onClick={handleExecute}
-              disabled={isLoading}
-              className="w-full gap-2 h-12 text-base"
-              size="lg"
-            >
-              <Play className="w-4 h-4" />
-              {isLoading ? 'Executing...' : 'Execute Prompt'}
-            </Button>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+        {/* Variables Panel */}
+        <div>
+          <div className="card" style={{ marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-foreground)' }}>
+              Variables
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {Object.entries(variables).map(([key, value]) => (
+                <div key={key}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600', color: 'var(--color-accent)' }}>
+                    {key}
+                  </label>
+                  <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => handleVariableChange(key, e.target.value)}
+                    className="input"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="space-y-6">
-            <Card className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Output</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-slate-900 p-4 rounded text-slate-200 text-sm">
-                  Run a prompt to see output here
-                </div>
-              </CardContent>
-            </Card>
+          <button
+            onClick={handleExecute}
+            disabled={isLoading}
+            className="btn btn-primary"
+            style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '1rem' }}
+          >
+            {isLoading ? '⏳ Executing...' : '▶️ Execute Prompt'}
+          </button>
+        </div>
+
+        {/* Output Panel */}
+        <div>
+          <div className="card">
+            <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-foreground)' }}>
+              Output
+            </h2>
+            <div style={{
+              backgroundColor: 'var(--color-background)',
+              padding: '1rem',
+              borderRadius: '0.25rem',
+              minHeight: '200px',
+              fontSize: '0.875rem',
+              color: 'var(--color-foregroundAlt)',
+              fontFamily: 'monospace',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+            }}>
+              Run a prompt to see the LLM response here...
+            </div>
           </div>
         </div>
-      </main>
+      </div>
+
+      <div className="card" style={{ marginTop: '2rem', backgroundColor: 'var(--color-background)' }}>
+        <h3 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--color-accent)', marginBottom: '0.75rem' }}>
+          ⚙️ Coming Soon
+        </h3>
+        <ul style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)', marginLeft: '1.5rem', listStyle: 'disc' }}>
+          <li>Multiple LLM API integrations (OpenAI, Claude, Cohere)</li>
+          <li>Token counting and cost estimation</li>
+          <li>Parameter tuning (temperature, max_tokens, top_p)</li>
+          <li>Batch testing with multiple inputs</li>
+          <li>Comparison mode to A/B test prompts</li>
+        </ul>
+      </div>
     </div>
   )
 }
