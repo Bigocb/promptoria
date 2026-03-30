@@ -17,19 +17,20 @@ jobs:
     name: Test and Build
 
     services:
-      postgres:
-        image: postgres:15
+      mysql:
+        image: mysql:8
         env:
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: promptoria_test
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: promptoria_test
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
         options: >-
-          --health-cmd pg_isready
+          --health-cmd="mysqladmin ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432:5432
+          - 3306:3306
 
     steps:
       - uses: actions/checkout@v3
@@ -45,7 +46,7 @@ jobs:
 
       - name: Setup database
         env:
-          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/promptoria_test
+          DATABASE_URL: mysql://test_user:test_password@localhost:3306/promptoria_test
         run: npx prisma migrate deploy
 
       - name: Run linter
@@ -84,13 +85,15 @@ jobs:
           TARGET: ${{ secrets.DREAMHOST_PATH }}
           SCRIPT_BEFORE: |
             cd ${{ secrets.DREAMHOST_PATH }}
-            git fetch origin
-            git reset --hard origin/main
+            # Backup current deployment
+            if [ -d ".next" ]; then cp -r .next .next.backup; fi
           SCRIPT_AFTER: |
             cd ${{ secrets.DREAMHOST_PATH }}
-            npm ci --legacy-peer-deps
+            # Install production dependencies only
+            NODE_OPTIONS="--max-old-space-size=256" npm ci --legacy-peer-deps --production
+            # Run migrations
             npx prisma migrate deploy
-            npm run build
+            # Restart app
             pm2 restart all || pm2 start "npm start" --name "promptoria"
 
       - name: Notify deployment success

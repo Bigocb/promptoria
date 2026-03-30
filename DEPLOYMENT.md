@@ -6,8 +6,8 @@ This guide explains how to set up automatic deployment to DreamHost using GitHub
 
 1. **GitHub Repository**: Your code must be in a GitHub repository
 2. **DreamHost Account**: SSH access configured
-3. **Node.js Hosting**: DreamHost account with Node.js support and PM2
-4. **Database**: PostgreSQL database on DreamHost
+3. **Node.js Hosting**: DreamHost account with Node.js support
+4. **Database**: MySQL database on DreamHost
 
 ## Setup Steps
 
@@ -54,8 +54,8 @@ git init
 Create `.env.production` in your application directory with:
 
 ```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/promptoria_prod
+# Database (MySQL format)
+DATABASE_URL=mysql://user:password@localhost:3306/promptoria_prod
 
 # Next.js
 NODE_ENV=production
@@ -158,7 +158,7 @@ ssh -i ~/.ssh/dreamhost_deploy username@your-domain.com
 
 Verify database connection on DreamHost:
 ```bash
-psql $DATABASE_URL -c "SELECT version();"
+mysql -u user -p -h localhost promptoria_prod -e "SELECT VERSION();"
 ```
 
 ### PM2 Issues
