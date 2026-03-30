@@ -8,9 +8,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { verifyToken } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,8 +48,18 @@ interface CreateInteractionTypeRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')
+
+    let userId = 'default-user'
+    if (token) {
+      const payload = verifyToken(token)
+      if (payload) {
+        userId = payload.userId
+      }
+    }
+
     const body: CreateInteractionTypeRequest = await request.json()
-    const { name, description, emoji, workspaceId = 'workspace_default' } = body
+    const { name, description, emoji } = body
 
     if (!name) {
       return NextResponse.json(
@@ -59,25 +68,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Ensure workspace exists
-    let workspace = await prisma.workspace.findUnique({
-      where: { id: workspaceId },
+    // Get or create workspace for this user
+    let workspace = await prisma.workspace.findFirst({
+      where: { userId },
     })
 
     if (!workspace) {
       workspace = await prisma.workspace.create({
         data: {
-          id: workspaceId,
-          name: workspaceId,
-          slug: workspaceId.toLowerCase().replace(/_/g, '-'),
-          ownerId: 'default-owner',
+          name: 'My Workspace',
+          slug: `workspace-${userId.substring(0, 8)}`,
+          userId: userId,
         },
       })
     }
 
     // Check for duplicate
     const existing = await prisma.agentInteractionType.findFirst({
-      where: { workspaceId, name },
+      where: { workspaceId: workspace.id, name },
     })
 
     if (existing) {
@@ -92,7 +100,7 @@ export async function POST(request: NextRequest) {
         name,
         description,
         emoji,
-        workspaceId,
+        workspaceId: workspace.id,
       },
     })
 
