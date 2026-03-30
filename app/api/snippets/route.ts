@@ -11,8 +11,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { validateBraces } from '@/lib/compiler'
-
-const prisma = new PrismaClient()
+import { verifyToken } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
@@ -71,8 +71,18 @@ interface CreateSnippetRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')
+
+    let userId = 'default-user'
+    if (token) {
+      const payload = verifyToken(token)
+      if (payload) {
+        userId = payload.userId
+      }
+    }
+
     const body: CreateSnippetRequest = await request.json()
-    const { name, description, content, workspaceId = 'workspace_default', folderId } = body
+    const { name, description, content, workspaceId, folderId } = body
 
     // Validation
     if (!name || !content) {
@@ -90,25 +100,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Ensure workspace exists
-    let workspace = await prisma.workspace.findUnique({
-      where: { id: workspaceId },
+    // Get or create workspace for this user
+    let workspace = await prisma.workspace.findFirst({
+      where: { userId },
     })
 
     if (!workspace) {
       workspace = await prisma.workspace.create({
         data: {
-          id: workspaceId,
-          name: workspaceId,
-          slug: workspaceId.toLowerCase().replace(/_/g, '-'),
-          ownerId: 'default-owner',
+          name: 'My Workspace',
+          slug: `workspace-${userId.substring(0, 8)}`,
+          userId: userId,
         },
       })
     }
 
     // Check for duplicate name in workspace
     const existing = await prisma.snippet.findFirst({
-      where: { workspaceId, name },
+      where: { workspaceId: workspace.id, name },
     })
 
     if (existing) {
@@ -124,7 +133,7 @@ export async function POST(request: NextRequest) {
         name,
         description,
         content,
-        workspaceId,
+        workspaceId: workspace.id,
         folderId,
         version: 1,
       },
