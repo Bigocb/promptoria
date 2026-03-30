@@ -188,7 +188,9 @@ export const SUPPORTED_MODELS = {
 
 /**
  * Create a new AI provider configuration
+ * TODO: Implement after adding aiProviderSettings model to Prisma schema
  */
+/*
 export async function createAIProviderConfig(data: {
   workspace_id: string
   provider: AIProvider
@@ -233,6 +235,7 @@ export async function createAIProviderConfig(data: {
     throw new Error(`Failed to create AI provider config: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
+*/
 
 /**
  * Get all AI provider configs for a workspace
