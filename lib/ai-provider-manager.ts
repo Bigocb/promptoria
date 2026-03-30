@@ -239,7 +239,9 @@ export async function createAIProviderConfig(data: {
 
 /**
  * Get all AI provider configs for a workspace
+ * TODO: Implement after adding aiProviderSettings model to Prisma schema
  */
+/*
 export async function getAIProviderConfigs(workspaceId: string) {
   try {
     const configs = await prisma.aiProviderSettings?.findMany({
@@ -255,10 +257,13 @@ export async function getAIProviderConfigs(workspaceId: string) {
     throw new Error(`Failed to fetch AI provider configs: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
+*/
 
 /**
  * Get default AI provider for workspace
+ * TODO: Implement after adding aiProviderSettings model to Prisma schema
  */
+/*
 export async function getDefaultAIProvider(workspaceId: string) {
   try {
     const config = await prisma.aiProviderSettings?.findFirst({
@@ -486,6 +491,7 @@ export async function deleteAIProviderConfig(configId: string) {
     throw new Error(`Failed to delete AI provider config: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
+*/
 
 /**
  * Get pricing information for a model
