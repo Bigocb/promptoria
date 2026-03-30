@@ -19,7 +19,7 @@ async function main() {
     create: {
       name: 'Demo Workspace',
       slug: 'demo-workspace',
-      ownerId: 'user_123', // Mock user ID
+      userId: 'user_123', // Mock user ID
     },
   })
 
