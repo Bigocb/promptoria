@@ -93,8 +93,9 @@ jobs:
             NODE_OPTIONS="--max-old-space-size=256" npm ci --legacy-peer-deps --production
             # Run migrations
             npx prisma migrate deploy
-            # Restart app
-            pm2 restart all || pm2 start "npm start" --name "promptoria"
+            # Restart Passenger app
+            mkdir -p tmp
+            touch tmp/restart.txt
 
       - name: Notify deployment success
         if: success()
