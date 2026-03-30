@@ -1,23 +1,28 @@
 'use client'
 
-import { useTheme } from '@/app/providers'
-import { themes } from '@/lib/themes'
+import { useAuth } from '@/app/providers'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 
 export function Sidebar() {
-  const { currentTheme, setTheme } = useTheme()
+  const { user, logout } = useAuth()
   const pathname = usePathname()
-  const [showThemeMenu, setShowThemeMenu] = useState(false)
+  const router = useRouter()
+
+  const handleLogout = () => {
+    logout()
+    router.push('/auth/login')
+  }
 
   const isActive = (path: string) => pathname === path
 
   const navItems = [
     { label: '📚 Snippets', href: '/snippets' },
-    { label: '⚡ Prompts', href: '/prompts' },
+    { label: '⚡ Workbench', href: '/prompts' },
+    { label: '🔍 Library', href: '/library' },
     { label: '📊 History', href: '/history' },
     { label: '▶️ Test', href: '/test' },
+    { label: '⚙️ Settings', href: '/settings' },
   ]
 
   return (
@@ -83,72 +88,51 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Theme Switcher */}
-      <div
-        style={{
-          borderTop: '1px solid var(--color-border)',
-          padding: '1.5rem',
-          position: 'relative',
-        }}
-      >
-        <button
-          onClick={() => setShowThemeMenu(!showThemeMenu)}
-          className="btn btn-secondary"
+      {/* User Info & Logout */}
+      {user && (
+        <div
           style={{
-            width: '100%',
-            textAlign: 'left',
-            marginBottom: showThemeMenu ? '0.75rem' : 0,
+            borderTop: '1px solid var(--color-border)',
+            padding: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
           }}
         >
-          🎨 {themes[currentTheme].label}
-        </button>
-
-        {showThemeMenu && (
           <div
             style={{
-              backgroundColor: 'var(--color-background)',
-              border: '1px solid var(--color-border)',
-              borderRadius: '0.5rem',
-              overflow: 'hidden',
+              color: 'var(--color-text-secondary)',
+              fontSize: '0.875rem',
+              wordBreak: 'break-all',
             }}
           >
-            {Object.entries(themes).map(([key, theme]) => (
-              <button
-                key={key}
-                onClick={() => {
-                  setTheme(key as any)
-                  setShowThemeMenu(false)
-                }}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  padding: '0.5rem 0.75rem',
-                  textAlign: 'left',
-                  backgroundColor:
-                    currentTheme === key ? 'var(--color-accent)' : 'transparent',
-                  color: currentTheme === key ? 'var(--color-background)' : 'var(--color-foreground)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  transition: 'background-color 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (currentTheme !== key) {
-                    e.currentTarget.style.backgroundColor = 'var(--color-backgroundAlt)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (currentTheme !== key) {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                  }
-                }}
-              >
-                {theme.label}
-              </button>
-            ))}
+            {user.email}
           </div>
-        )}
-      </div>
+          <button
+            onClick={handleLogout}
+            style={{
+              width: '100%',
+              padding: '0.5rem',
+              backgroundColor: 'var(--color-accent)',
+              color: 'var(--color-background)',
+              border: 'none',
+              borderRadius: '0.25rem',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.9'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1'
+            }}
+          >
+            Logout
+          </button>
+        </div>
+      )}
     </aside>
   )
 }

@@ -10,25 +10,60 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User - authentication and workspace ownership
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // bcrypt hashed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  workspace Workspace?
+  settings  UserSettings?
+
+  @@index([email])
+}
+
+// UserSettings - user preferences and configuration
+model UserSettings {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  theme               String   @default("gruvbox-dark")
+  suggestionsEnabled  Boolean  @default(true)
+  defaultModel        String   @default("claude-3-haiku")
+  defaultTemperature  Float    @default(0.7)
+  defaultMaxTokens    Int      @default(500)
+  anthropicApiKey     String?  // User's own Anthropic API key
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 // Workspace - top-level container for all prompts and snippets
 model Workspace {
   id        String   @id @default(cuid())
   name      String
   slug      String   @unique
-  ownerId   String   // Reference to auth system (e.g., Clerk, Auth0)
+  userId    String   @unique // Reference to User
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  folders               Folder[]
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folders              Folder[]
   snippets             Snippet[]
   prompts              Prompt[]
   testRuns             TestRun[]
   agentInteractionTypes AgentInteractionType[]
   promptCategories     PromptCategory[]
 
-  @@index([ownerId])
-  @@unique([ownerId, slug])
+  @@index([userId])
+  @@unique([userId, slug])
 }
 
 // Folder - optional organizational structure within a workspace
@@ -116,6 +151,7 @@ model Prompt {
   workspaceId String
   folderId    String?
   categoryId  String?  // Link to PromptCategory for taxonomy
+  tags        Json     @default("[]") // Array of tags for organization
   model       String   @default("gpt-4") // Default model
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

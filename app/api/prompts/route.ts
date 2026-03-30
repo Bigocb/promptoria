@@ -9,8 +9,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { verifyToken } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
@@ -85,14 +85,26 @@ interface CreatePromptRequest {
   description?: string
   content: string
   variables?: string[]
+  tags?: string[]
   workspaceId?: string
   folderId?: string
+  categoryId?: string
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')
+
+    let userId = 'default-user'
+    if (token) {
+      const payload = verifyToken(token)
+      if (payload) {
+        userId = payload.userId
+      }
+    }
+
     const body: CreatePromptRequest = await request.json()
-    const { name, description, content, variables = [], workspaceId = 'workspace_default', folderId } = body
+    const { name, description, content, variables = [], tags = [], workspaceId, folderId, categoryId } = body
 
     // Validation
     if (!name || !content) {
@@ -102,25 +114,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Ensure workspace exists
-    let workspace = await prisma.workspace.findUnique({
-      where: { id: workspaceId },
+    // Get or create workspace for this user
+    let workspace = await prisma.workspace.findFirst({
+      where: { userId },
     })
 
     if (!workspace) {
       workspace = await prisma.workspace.create({
         data: {
-          id: workspaceId,
-          name: workspaceId,
-          slug: workspaceId.toLowerCase().replace(/_/g, '-'),
-          ownerId: 'default-owner',
+          name: 'My Workspace',
+          slug: `workspace-${userId.substring(0, 8)}`,
+          userId: userId,
         },
       })
     }
 
+    // Verify category exists if provided
+    if (categoryId) {
+      const category = await prisma.promptCategory.findUnique({
+        where: { id: categoryId },
+      })
+
+      if (!category) {
+        return NextResponse.json(
+          { error: 'Category not found' },
+          { status: 404 }
+        )
+      }
+    }
+
     // Check for duplicate name in workspace
     const existing = await prisma.prompt.findFirst({
-      where: { workspaceId, name },
+      where: { workspaceId: workspace.id, name },
     })
 
     if (existing) {
@@ -135,8 +160,10 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         description,
-        workspaceId,
+        workspaceId: workspace.id,
         folderId,
+        categoryId,
+        tags,
       },
     })
 
@@ -148,7 +175,7 @@ export async function POST(request: NextRequest) {
         template_body: content,
         model_config: { temperature: 0.7, maxTokens: 500 },
         changeLog: 'Initial version',
-        createdBy: 'default-user',
+        createdBy: userId,
         isActive: true,
       },
     })

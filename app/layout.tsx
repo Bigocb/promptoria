@@ -1,5 +1,5 @@
 import './globals.css'
-import { ThemeProvider } from './providers'
+import { ThemeProvider, AuthProvider, SettingsProvider } from './providers'
 import SidebarWrapper from '@/components/SidebarWrapper'
 
 export const metadata = {
@@ -16,12 +16,16 @@ export default function RootLayout({
     <html lang="en">
       <head />
       <body style={{ display: 'flex', margin: 0, padding: 0 }}>
-        <ThemeProvider>
-          <SidebarWrapper />
-          <main style={{ marginLeft: '240px', flex: 1 }}>
-            {children}
-          </main>
-        </ThemeProvider>
+        <AuthProvider>
+          <SettingsProvider>
+            <ThemeProvider>
+              <SidebarWrapper />
+              <main style={{ marginLeft: '240px', flex: 1 }}>
+                {children}
+              </main>
+            </ThemeProvider>
+          </SettingsProvider>
+        </AuthProvider>
       </body>
     </html>
   )

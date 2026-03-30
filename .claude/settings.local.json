@@ -30,7 +30,32 @@
       "Bash(curl -s -I http://localhost:3100/_next/static/chunks/app/error.js)",
       "Bash(curl -s http://localhost:3100/prompts)",
       "Bash(DATABASE_URL=\"postgresql://postgres:password@localhost:5432/postgres\" npm run db:push)",
-      "Bash(curl -s http://localhost:3100/snippets)"
+      "Bash(curl -s http://localhost:3100/snippets)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"Implement groovy retro UI design with Fraunces typography and pop hover effects:*)",
+      "Bash(git commit -m \"Implement Prompt Workspace and enhance Test Runner:*)",
+      "Bash(git commit -m \"Add groovy branded logo and integrate into sidebar:*)",
+      "Bash(git commit -m \"Remove header text from home page:*)",
+      "Bash(git commit -m \"Fix API response handling in Prompt Workspace:*)",
+      "Bash(git commit -m \"Refine groovy UI with heavy borders, offset shadows, and improved typography:*)",
+      "Bash(pkill -f \"node.*next\")",
+      "Bash(netstat -tuln)",
+      "Bash(git commit -m \"Fix launch.json to consistently use port 3100:*)",
+      "Bash(taskkill /PID 18808 /F)",
+      "Bash(findstr \":3000 \\\\|:3001 \\\\|:3002\")",
+      "Bash(kill -9 40280)",
+      "Bash(git commit -m \"Force port 3100 for dev server:*)",
+      "Bash(lsof -ti:3100)",
+      "Bash(xargs -I {} taskkill /PID {} /F)",
+      "Bash(kill -9 17708 27793)",
+      "Bash(find . -name docker-compose* -o -name .env* -o -name *.dockerfile)",
+      "Bash(grep -r \"DATABASE_URL\\\\|POSTGRES_PASSWORD\\\\|db_password\" . --include=*.md --include=*.json --include=*.js --include=*.ts)",
+      "Bash(git commit -m \"Add taxonomy models to Prisma schema for prompt library:*)",
+      "Bash(C:UsersbigocdevPromptArchitect.env.example:*)",
+      "Bash(npx prisma:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:password@localhost:5432/postgres\" npx prisma migrate dev --name add_anthropic_api_key)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:password@localhost:5432/postgres\" npx prisma db push)"
     ]
   }
 }

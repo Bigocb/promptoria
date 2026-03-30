@@ -1,31 +1,21 @@
 'use client'
 
-import { useAuth } from './providers'
+import Link from 'next/link'
+import { useAuth } from '@/app/providers'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import Link from 'next/link'
 
-export default function Home() {
+export default function LandingPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
 
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users to app
   useEffect(() => {
     if (!loading && user) {
-      router.push('/dashboard')
+      router.push('/prompts')
     }
   }, [user, loading, router])
 
-  // Show landing page for unauthenticated users
-  if (loading) {
-    return null // Loading state
-  }
-
-  if (user) {
-    return null // Redirecting to app
-  }
-
-  // Landing page for unauthenticated users
   return (
     <div style={{
       minHeight: '100vh',

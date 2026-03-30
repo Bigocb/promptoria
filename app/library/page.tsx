@@ -1,419 +1,269 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Search, Filter, Copy, Heart, Share2, Download, Upload, Trash2, Edit2, ChevronDown, Star, Clock, TrendingUp } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
-type LibraryItem = {
+interface Prompt {
   id: string
-  type: 'prompt' | 'skill' | 'instruction' | 'template' | 'snippet'
   name: string
-  description: string
-  category: string
-  content: string
-  tags: string[]
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
-  use_count: number
-  rating: number
-  last_used: string
-  created_by: string
-  instructions?: string
-  example_output?: string
+  description?: string
 }
 
-const MOCK_LIBRARY: LibraryItem[] = [
-  {
-    id: '1',
-    type: 'prompt',
-    name: 'E-commerce Product Description',
-    description: 'Generate compelling product descriptions for e-commerce listings',
-    category: 'marketing',
-    content: 'You are a professional product writer. Create a compelling product description for {{product_name}}. Features: {{features}}. Price: {{price}}. Keep it under 150 words.',
-    tags: ['ecommerce', 'sales', 'seo'],
-    difficulty: 'intermediate',
-    use_count: 247,
-    rating: 4.8,
-    last_used: '2 hours ago',
-    created_by: 'john@example.com',
-    example_output: 'Premium Wireless Headphones deliver studio-quality audio wherever you go...',
-  },
-  {
-    id: '2',
-    type: 'skill',
-    name: 'Brand Voice Consistency',
-    description: 'Maintain consistent brand voice across all content',
-    category: 'content',
-    content: 'You are a content writer who maintains brand voice consistency. Key principles: {{principles}}. Apply these consistently to all outputs.',
-    tags: ['branding', 'consistency', 'voice'],
-    difficulty: 'beginner',
-    use_count: 156,
-    rating: 4.9,
-    last_used: '1 day ago',
-    created_by: 'sarah@example.com',
-  },
-  {
-    id: '3',
-    type: 'instruction',
-    name: 'SEO-Optimized Content Guidelines',
-    description: 'Step-by-step instructions for SEO-optimized content creation',
-    category: 'seo',
-    content: '1. Keyword research: Find 3-5 relevant keywords\n2. Include keywords naturally\n3. Write compelling meta descriptions\n4. Use headers for structure\n5. Include internal links',
-    tags: ['seo', 'content', 'marketing'],
-    difficulty: 'intermediate',
-    use_count: 312,
-    rating: 4.7,
-    last_used: '3 hours ago',
-    created_by: 'mike@example.com',
-    instructions: 'Follow these steps in order for best results.',
-  },
-  {
-    id: '4',
-    type: 'template',
-    name: 'Email Marketing Template',
-    description: 'Template for creating engaging marketing emails',
-    category: 'email',
-    content: 'Subject: {{subject}}\n\nHi {{first_name}},\n\n{{body}}\n\nBest regards,\n{{company_name}}',
-    tags: ['email', 'marketing', 'templates'],
-    difficulty: 'beginner',
-    use_count: 89,
-    rating: 4.5,
-    last_used: '1 week ago',
-    created_by: 'team@example.com',
-  },
-  {
-    id: '5',
-    type: 'prompt',
-    name: 'Code Review Assistant',
-    description: 'Review code and provide constructive feedback',
-    category: 'technical',
-    content: 'You are an expert code reviewer. Review the following code: {{code}}. Provide feedback on: readability, performance, security, and best practices.',
-    tags: ['code', 'review', 'technical'],
-    difficulty: 'advanced',
-    use_count: 534,
-    rating: 4.9,
-    last_used: '30 mins ago',
-    created_by: 'dev-team@example.com',
-  },
-]
+interface PromptCategory {
+  id: string
+  name: string
+  description?: string
+  prompts: Prompt[]
+}
 
-const CATEGORIES = ['All', 'marketing', 'content', 'seo', 'email', 'technical', 'social']
-const TYPES = ['All', 'prompt', 'skill', 'instruction', 'template', 'snippet']
-const DIFFICULTIES = ['All', 'beginner', 'intermediate', 'advanced']
+interface AgentInteractionType {
+  id: string
+  name: string
+  description?: string
+  emoji?: string
+  categories: PromptCategory[]
+}
 
 export default function LibraryPage() {
-  const [items, setItems] = useState<LibraryItem[]>(MOCK_LIBRARY)
-  const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('All')
-  const [typeFilter, setTypeFilter] = useState('All')
-  const [difficultyFilter, setDifficultyFilter] = useState('All')
-  const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'rated'>('popular')
-  const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [showFilters, setShowFilters] = useState(false)
+  const [interactionTypes, setInteractionTypes] = useState<AgentInteractionType[]>([])
+  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [workspaceId] = useState('workspace_default')
 
-  const filteredItems = items.filter((item) => {
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  // Fetch interaction types on mount
+  useEffect(() => {
+    fetchInteractionTypes()
+  }, [])
 
-    const matchesCategory = categoryFilter === 'All' || item.category === categoryFilter
-    const matchesType = typeFilter === 'All' || item.type === typeFilter
-    const matchesDifficulty = difficultyFilter === 'All' || item.difficulty === difficultyFilter
+  // Set first type as selected when types are loaded
+  useEffect(() => {
+    if (interactionTypes.length > 0 && !selectedTypeId) {
+      setSelectedTypeId(interactionTypes[0].id)
+    }
+  }, [interactionTypes, selectedTypeId])
 
-    return matchesSearch && matchesCategory && matchesType && matchesDifficulty
-  })
+  const fetchInteractionTypes = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const res = await fetch(`/api/taxonomy/interaction-types?workspaceId=${workspaceId}`)
 
-  const sortedItems = [...filteredItems].sort((a, b) => {
-    if (sortBy === 'recent') {
-      return new Date(b.last_used).getTime() - new Date(a.last_used).getTime()
-    } else if (sortBy === 'popular') {
-      return b.use_count - a.use_count
+      if (!res.ok) {
+        throw new Error('Failed to fetch interaction types')
+      }
+
+      const data = await res.json()
+      setInteractionTypes(data.types || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load library')
+      console.error('Error fetching interaction types:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleCategoryExpansion = (categoryId: string) => {
+    const newExpanded = new Set(expandedCategories)
+    if (newExpanded.has(categoryId)) {
+      newExpanded.delete(categoryId)
     } else {
-      return b.rating - a.rating
+      newExpanded.add(categoryId)
     }
-  })
-
-  const handleCopy = (content: string, id: string) => {
-    navigator.clipboard.writeText(content)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
+    setExpandedCategories(newExpanded)
   }
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'prompt':
-        return 'bg-blue-100 text-blue-800'
-      case 'skill':
-        return 'bg-purple-100 text-purple-800'
-      case 'instruction':
-        return 'bg-green-100 text-green-800'
-      case 'template':
-        return 'bg-orange-100 text-orange-800'
-      case 'snippet':
-        return 'bg-pink-100 text-pink-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'beginner':
-        return 'text-green-600'
-      case 'intermediate':
-        return 'text-yellow-600'
-      case 'advanced':
-        return 'text-red-600'
-      default:
-        return 'text-gray-600'
-    }
-  }
+  const selectedType = interactionTypes.find(t => t.id === selectedTypeId)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
-      {/* Header */}
-      <header className="border-b border-slate-700 bg-slate-800/50 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h1 className="text-3xl font-bold">Library</h1>
-              <p className="text-slate-400 text-sm">Browse and manage your saved prompts, skills, and instructions</p>
-            </div>
-            <div className="flex gap-2">
-              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                New Item
-              </button>
-              <button className="px-4 py-2 border border-slate-600 hover:bg-slate-700 rounded-lg flex items-center gap-2">
-                <Upload className="w-4 h-4" />
-                Import
-              </button>
-            </div>
-          </div>
-
-          {/* Search Bar */}
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search by name, description, or tags..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-700 border border-slate-600 text-white px-4 py-2 pl-10 rounded-lg focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="px-4 py-2 border border-slate-600 hover:bg-slate-700 rounded-lg flex items-center gap-2"
-            >
-              <Filter className="w-4 h-4" />
-              Filters
-            </button>
-          </div>
-
-          {/* Filters */}
-          {showFilters && (
-            <div className="mt-4 grid grid-cols-4 gap-4">
-              <div>
-                <label className="text-sm text-slate-400 block mb-2">Category</label>
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-lg text-sm"
-                >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 block mb-2">Type</label>
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-lg text-sm"
-                >
-                  {TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 block mb-2">Difficulty</label>
-                <select
-                  value={difficultyFilter}
-                  onChange={(e) => setDifficultyFilter(e.target.value)}
-                  className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-lg text-sm"
-                >
-                  {DIFFICULTIES.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 block mb-2">Sort By</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-lg text-sm"
-                >
-                  <option value="popular">Most Used</option>
-                  <option value="rated">Highest Rated</option>
-                  <option value="recent">Recently Used</option>
-                </select>
-              </div>
-            </div>
-          )}
-        </div>
+    <div style={{ padding: '2rem', minHeight: '100vh' }}>
+      <header style={{ marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>📚 Prompt Library</h1>
+        <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
+          Browse and discover prompts organized by agent interaction types and categories
+        </p>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-3 gap-6">
-          {/* List */}
-          <div className="col-span-2 space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <p className="text-slate-400">
-                Found <span className="font-bold text-white">{sortedItems.length}</span> items
+      {error && (
+        <div className="card" style={{ marginBottom: '2rem', borderColor: '#cc241d', backgroundColor: 'rgba(204, 36, 29, 0.1)' }}>
+          <p style={{ color: '#cc241d', marginBottom: 0 }}>⚠️ {error}</p>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '2rem' }}>
+        {/* Sidebar - Interaction Types */}
+        <aside>
+          <div className="card" style={{ position: 'sticky', top: '2rem' }}>
+            <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem', color: 'var(--color-accent)' }}>
+              Agent Types
+            </h3>
+
+            {loading ? (
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>
+                Loading...
               </p>
-            </div>
-
-            {sortedItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setSelectedItem(item)}
-                className={`w-full text-left p-4 rounded-lg border transition-all ${
-                  selectedItem?.id === item.id
-                    ? 'bg-blue-900/30 border-blue-500'
-                    : 'bg-slate-800 border-slate-700 hover:border-slate-600'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-2 py-1 rounded text-xs font-bold ${getTypeColor(item.type)}`}>
-                        {item.type}
-                      </span>
-                      <h3 className="font-bold text-lg">{item.name}</h3>
-                    </div>
-                    <p className="text-sm text-slate-400">{item.description}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 justify-end">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-bold">{item.rating.toFixed(1)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {item.tags.map((tag) => (
-                    <span key={tag} className="bg-slate-700 text-slate-200 text-xs px-2 py-1 rounded">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex justify-between items-center text-xs text-slate-500">
-                  <div className="flex gap-4">
-                    <span className="flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" />
-                      {item.use_count} uses
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {item.last_used}
-                    </span>
-                  </div>
-                  <span className={`font-medium ${getDifficultyColor(item.difficulty)}`}>
-                    {item.difficulty}
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Detail Panel */}
-          <div>
-            {selectedItem ? (
-              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 sticky top-24">
-                <h2 className="text-2xl font-bold mb-2">{selectedItem.name}</h2>
-                <p className="text-slate-400 text-sm mb-4">{selectedItem.description}</p>
-
-                <div className="space-y-4 mb-6">
-                  <div>
-                    <p className="text-xs text-slate-400 uppercase">Category</p>
-                    <p className="font-medium">{selectedItem.category}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-400 uppercase">Created by</p>
-                    <p className="font-medium text-sm">{selectedItem.created_by}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-400 uppercase">Rating</p>
-                    <div className="flex items-center gap-2">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < Math.floor(selectedItem.rating)
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-slate-600'
-                          }`}
-                        />
-                      ))}
-                      <span className="text-sm">({selectedItem.use_count} ratings)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 p-4 rounded mb-6 max-h-32 overflow-auto">
-                  <p className="text-xs text-slate-400 uppercase mb-2">Content Preview</p>
-                  <p className="text-sm text-slate-200 font-mono">{selectedItem.content.substring(0, 150)}...</p>
-                </div>
-
-                <div className="space-y-2">
-                  <button
-                    onClick={() => handleCopy(selectedItem.content, selectedItem.id)}
-                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium flex items-center justify-center gap-2"
-                  >
-                    {copiedId === selectedItem.id ? (
-                      <>
-                        <span>✓</span>
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        Copy to Clipboard
-                      </>
-                    )}
-                  </button>
-                  <button className="w-full px-4 py-2 border border-slate-600 hover:bg-slate-700 rounded-lg font-medium flex items-center justify-center gap-2">
-                    <Share2 className="w-4 h-4" />
-                    Use in Prompt
-                  </button>
-                  <button className="w-full px-4 py-2 border border-slate-600 hover:bg-slate-700 rounded-lg font-medium flex items-center justify-center gap-2">
-                    <Download className="w-4 h-4" />
-                    Fork
-                  </button>
-                </div>
-              </div>
+            ) : interactionTypes.length === 0 ? (
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>
+                No agent types yet
+              </p>
             ) : (
-              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 text-center text-slate-400">
-                <p>Select an item to view details</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {interactionTypes.map((type) => (
+                  <button
+                    key={type.id}
+                    onClick={() => setSelectedTypeId(type.id)}
+                    style={{
+                      padding: '0.75rem',
+                      backgroundColor: selectedTypeId === type.id ? 'var(--color-accent)' : 'var(--color-background)',
+                      border: `2px solid ${selectedTypeId === type.id ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      textAlign: 'left',
+                      transition: 'all 0.2s ease',
+                      color: selectedTypeId === type.id ? 'var(--color-background)' : 'var(--color-foreground)',
+                      fontWeight: selectedTypeId === type.id ? '600' : '400',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedTypeId !== type.id) {
+                        e.currentTarget.style.borderColor = 'var(--color-accent)'
+                        e.currentTarget.style.backgroundColor = 'var(--color-backgroundAlt)'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedTypeId !== type.id) {
+                        e.currentTarget.style.borderColor = 'var(--color-border)'
+                        e.currentTarget.style.backgroundColor = 'var(--color-background)'
+                      }
+                    }}
+                  >
+                    {type.emoji && <span style={{ marginRight: '0.5rem' }}>{type.emoji}</span>}
+                    {type.name}
+                  </button>
+                ))}
               </div>
             )}
           </div>
-        </div>
-      </main>
+        </aside>
+
+        {/* Main Content - Categories and Prompts */}
+        <main>
+          {loading ? (
+            <div className="card">
+              <p style={{ color: 'var(--color-foregroundAlt)' }}>Loading library...</p>
+            </div>
+          ) : selectedType ? (
+            <div>
+              <div className="card" style={{ marginBottom: '2rem' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                  {selectedType.emoji && <span style={{ marginRight: '0.5rem' }}>{selectedType.emoji}</span>}
+                  {selectedType.name}
+                </h2>
+                {selectedType.description && (
+                  <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: 0 }}>
+                    {selectedType.description}
+                  </p>
+                )}
+              </div>
+
+              {selectedType.categories.length === 0 ? (
+                <div className="card">
+                  <p style={{ color: 'var(--color-foregroundAlt)' }}>
+                    No categories in this agent type yet
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                  {selectedType.categories.map((category) => (
+                    <div key={category.id} className="card">
+                      <button
+                        onClick={() => toggleCategoryExpansion(category.id)}
+                        style={{
+                          width: '100%',
+                          padding: '1rem',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: expandedCategories.has(category.id) ? '0.5rem' : '0',
+                        }}
+                      >
+                        <div>
+                          <h3 style={{ fontWeight: '600', marginBottom: '0.25rem', color: 'var(--color-foreground)' }}>
+                            {category.name}
+                          </h3>
+                          {category.description && (
+                            <p style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', marginBottom: 0 }}>
+                              {category.description}
+                            </p>
+                          )}
+                        </div>
+                        <span style={{ marginLeft: '1rem', color: 'var(--color-accent)', fontWeight: 'bold' }}>
+                          {expandedCategories.has(category.id) ? '▼' : '▶'}
+                        </span>
+                      </button>
+
+                      {expandedCategories.has(category.id) && category.prompts.length > 0 && (
+                        <div style={{ borderTop: '2px solid var(--color-border)', paddingTop: '0.75rem' }}>
+                          {category.prompts.map((prompt) => (
+                            <div
+                              key={prompt.id}
+                              style={{
+                                padding: '0.75rem',
+                                backgroundColor: 'var(--color-background)',
+                                borderRadius: '0.375rem',
+                                marginBottom: '0.5rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'var(--color-backgroundAlt)'
+                                e.currentTarget.style.borderLeft = '3px solid var(--color-accent)'
+                                e.currentTarget.style.paddingLeft = 'calc(0.75rem - 3px)'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'var(--color-background)'
+                                e.currentTarget.style.borderLeft = 'none'
+                                e.currentTarget.style.paddingLeft = '0.75rem'
+                              }}
+                            >
+                              <p style={{ fontWeight: '500', marginBottom: '0.25rem', color: 'var(--color-foreground)' }}>
+                                {prompt.name}
+                              </p>
+                              {prompt.description && (
+                                <p style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', marginBottom: 0 }}>
+                                  {prompt.description}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {expandedCategories.has(category.id) && category.prompts.length === 0 && (
+                        <div style={{ padding: '0.75rem', color: 'var(--color-foregroundAlt)', fontSize: '0.875rem' }}>
+                          No prompts in this category yet
+                        </div>
+                      )}
+
+                      <div style={{ padding: '0.5rem 1rem 0', fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>
+                        {category.prompts.length} prompt{category.prompts.length !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="card">
+              <p style={{ color: 'var(--color-foregroundAlt)' }}>Select an agent type to view categories and prompts</p>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   )
 }
