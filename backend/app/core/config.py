@@ -3,9 +3,8 @@ Configuration settings for FastAPI application.
 Reads from environment variables via .env files.
 """
 
-import json
+import os
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
 from typing import Optional
 
 class Settings(BaseSettings):
@@ -27,24 +26,23 @@ class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = True
 
-    # CORS
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:3100", "https://syncellium.pro"]
-
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v):
-        if isinstance(v, str):
-            try:
-                return json.loads(v)
-            except json.JSONDecodeError:
-                return [v]
-        return v
-
     class Config:
         env_file = ".env.local"
         env_file_encoding = 'utf-8'
         case_sensitive = False
         extra = "ignore"  # Ignore extra fields from environment
+
+# Global settings instance
+settings = Settings()
+
+# CORS origins - set after settings to avoid env parsing issues
+settings.cors_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3100",
+    "https://syncellium.pro",
+    os.getenv("FRONTEND_URL", "https://promptoria-dev.vercel.app")
+]
 
 # Global settings instance
 settings = Settings()
