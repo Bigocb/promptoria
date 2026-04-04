@@ -26,15 +26,6 @@ class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = True
 
-    # CORS origins (not read from env to avoid parsing issues)
-    cors_origins: list[str] = [
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3100",
-        "https://syncellium.pro",
-        "https://promptoria-dev.vercel.app"
-    ]
-
     class Config:
         env_file = ".env.local"
         env_file_encoding = 'utf-8'
@@ -44,5 +35,11 @@ class Settings(BaseSettings):
 # Global settings instance
 settings = Settings()
 
-# Global settings instance
-settings = Settings()
+# CORS origins - set as class attribute AFTER instantiation to bypass pydantic-settings env parsing
+settings.cors_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3100",
+    "https://syncellium.pro",
+    "https://promptoria-dev.vercel.app"
+]
