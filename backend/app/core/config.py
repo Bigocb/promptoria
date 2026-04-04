@@ -4,7 +4,7 @@ Reads from environment variables via .env files.
 """
 
 import os
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 from typing import Optional
 
@@ -27,17 +27,29 @@ class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = True
 
-    # CORS origins (hardcoded, not read from env)
-    cors_origins: list[str] = Field(
-        default=[
-            "http://localhost:3000",
-            "http://localhost:3001",
-            "http://localhost:3100",
-            "https://syncellium.pro",
-            "https://promptoria-dev.vercel.app"
-        ],
-        exclude=True  # Don't read from environment
-    )
+    # CORS origins
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3100",
+        "https://syncellium.pro",
+        "https://promptoria-dev.vercel.app"
+    ]
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        # Handle empty or invalid values from environment
+        if isinstance(v, str):
+            if not v or v.isspace():
+                return [
+                    "http://localhost:3000",
+                    "http://localhost:3001",
+                    "http://localhost:3100",
+                    "https://syncellium.pro",
+                    "https://promptoria-dev.vercel.app"
+                ]
+        return v if v else []
 
     class Config:
         env_file = ".env.local"
