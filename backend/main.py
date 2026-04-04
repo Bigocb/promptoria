@@ -6,10 +6,10 @@ Migrated from Node.js to Python.
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from app.core.config import settings
-from app.core.database import engine, Base
-from app.api import auth, prompts, snippets, dashboard, settings as settings_routes
-from app.api import execute, suggestions, taxonomy
+from .app.core.config import settings
+from .app.core.database import engine, Base
+from .app.api import auth, prompts, snippets, dashboard, settings as settings_routes
+from .app.api import execute, suggestions, taxonomy
 
 # Create all database tables (only if database is available)
 try:
