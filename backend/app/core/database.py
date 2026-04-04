@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool, StaticPool
 
-from app.core.config import settings
+from .config import settings
 
 # Use SQLite for local development (no MySQL required)
 DB_URL = "sqlite:///./promptoria.db"
@@ -35,7 +35,7 @@ else:
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Import Base from models - this is the declarative base that all models use
-from app.models.base import Base
+from ..models.base import Base
 
 def get_db():
     """
