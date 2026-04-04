@@ -1,1 +1,49 @@
-"""\nConfiguration settings for FastAPI application.\nReads from environment variables via .env files.\n"""\n\nimport os\nfrom pydantic import Field\nfrom pydantic_settings import BaseSettings\nfrom typing import Optional\n\nclass Settings(BaseSettings):\n    """Application settings from environment variables"""\n\n    # Database\n    database_url: str = "mysql+mysqlconnector://test_user:test_password@localhost:3306/promptoria_test"\n\n    # JWT\n    jwt_secret: str = "dev-secret-key-change-in-production"\n    jwt_algorithm: str = "HS256"\n    jwt_expiration_days: int = 7\n\n    # API Keys\n    anthropic_api_key: Optional[str] = None\n    openai_api_key: Optional[str] = None\n\n    # Environment\n    environment: str = "development"\n    debug: bool = True\n\n    # CORS origins (hardcoded, not read from env)\n    cors_origins: list[str] = Field(\n        default=[\n            "http://localhost:3000",\n            "http://localhost:3001",\n            "http://localhost:3100",\n            "https://syncellium.pro",\n            "https://promptoria-dev.vercel.app"\n        ],\n        exclude=True  # Don't read from environment\n    )\n\n    class Config:\n        env_file = \".env.local\"\n        env_file_encoding = 'utf-8'\n        case_sensitive = False\n        extra = \"ignore\"  # Ignore extra fields from environment\n\n# Global settings instance\nsettings = Settings()\n
+"""
+Configuration settings for FastAPI application.
+Reads from environment variables via .env files.
+"""
+
+import os
+from pydantic import Field
+from pydantic_settings import BaseSettings
+from typing import Optional
+
+class Settings(BaseSettings):
+    """Application settings from environment variables"""
+
+    # Database
+    database_url: str = "mysql+mysqlconnector://test_user:test_password@localhost:3306/promptoria_test"
+
+    # JWT
+    jwt_secret: str = "dev-secret-key-change-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expiration_days: int = 7
+
+    # API Keys
+    anthropic_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
+
+    # Environment
+    environment: str = "development"
+    debug: bool = True
+
+    # CORS origins (hardcoded, not read from env)
+    cors_origins: list[str] = Field(
+        default=[
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://localhost:3100",
+            "https://syncellium.pro",
+            "https://promptoria-dev.vercel.app"
+        ],
+        exclude=True  # Don't read from environment
+    )
+
+    class Config:
+        env_file = ".env.local"
+        env_file_encoding = 'utf-8'
+        case_sensitive = False
+        extra = "ignore"  # Ignore extra fields from environment
+
+# Global settings instance
+settings = Settings()
