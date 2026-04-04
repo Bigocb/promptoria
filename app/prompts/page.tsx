@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { API_ENDPOINTS } from '@/lib/api-config'
+import { useAuth } from '@/app/providers'
 
 interface Snippet {
   id: string
@@ -32,6 +34,7 @@ interface Category {
 }
 
 export default function WorkbenchPage() {
+  const { user } = useAuth()
   const [snippets, setSnippets] = useState<Snippet[]>([])
   const [promptName, setPromptName] = useState('')
   const [promptContent, setPromptContent] = useState('')
@@ -69,13 +72,18 @@ export default function WorkbenchPage() {
   useEffect(() => {
     fetchSnippets()
     fetchInteractionTypes()
-  }, [])
+  }, [user])
 
   const fetchSnippets = async () => {
     try {
-      const res = await fetch('/api/snippets')
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.snippets.list, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
       const data = await res.json()
-      setSnippets(data.snippets || [])
+      setSnippets(data.snippets || data || [])
     } catch (error) {
       console.error('Failed to fetch snippets:', error)
     } finally {
@@ -85,9 +93,14 @@ export default function WorkbenchPage() {
 
   const fetchInteractionTypes = async () => {
     try {
-      const res = await fetch('/api/taxonomy/interaction-types?workspaceId=workspace_default')
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.taxonomy.interactionTypes, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
       const data = await res.json()
-      setInteractionTypes(data.types || [])
+      setInteractionTypes(data.types || data || [])
     } catch (error) {
       console.error('Failed to fetch interaction types:', error)
     }
@@ -100,9 +113,14 @@ export default function WorkbenchPage() {
       return
     }
     try {
-      const res = await fetch(`/api/taxonomy/categories?workspaceId=workspace_default&typeId=${typeId}`)
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.taxonomy.categories(typeId), {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
       const data = await res.json()
-      setCategories(data.categories || [])
+      setCategories(data.categories || data || [])
       setSelectedCategoryId('')
     } catch (error) {
       console.error('Failed to fetch categories:', error)
@@ -215,7 +233,7 @@ export default function WorkbenchPage() {
       const focusAreas = Array.from(suggestionFocus).join(', ')
       const token = localStorage.getItem('auth-token')
 
-      const res = await fetch('/api/suggestions', {
+      const res = await fetch(API_ENDPOINTS.suggestions, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -282,21 +300,25 @@ export default function WorkbenchPage() {
     }
 
     try {
-      const res = await fetch('/api/prompts', {
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.prompts.create, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           name: promptName,
-          content: promptContent,
-          variables: variables ? variables.split(', ').filter(v => v.trim()) : [],
+          template_body: promptContent,
           tags,
-          ...(selectedCategoryId && { categoryId: selectedCategoryId }),
+          ...(selectedCategoryId && { category_id: selectedCategoryId }),
         }),
       })
 
       if (!res.ok) {
         const error = await res.json()
-        alert(`Error: ${error.error}`)
+        const errorMsg = error.error || error.detail || 'Failed to save prompt'
+        alert(`Error: ${typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg)}`)
         return
       }
 
@@ -385,7 +407,7 @@ export default function WorkbenchPage() {
             </label>
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', marginBottom: '0.375rem', fontWeight: '500', fontSize: '0.875rem' }}>
-                Agent Type
+                Interaction type
               </label>
               <select
                 value={selectedInteractionTypeId}

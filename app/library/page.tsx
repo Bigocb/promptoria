@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { API_ENDPOINTS } from '@/lib/api-config'
+import { useAuth } from '@/app/providers'
 
 interface Prompt {
   id: string
@@ -24,17 +26,17 @@ interface AgentInteractionType {
 }
 
 export default function LibraryPage() {
+  const { user } = useAuth()
   const [interactionTypes, setInteractionTypes] = useState<AgentInteractionType[]>([])
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [workspaceId] = useState('workspace_default')
 
   // Fetch interaction types on mount
   useEffect(() => {
     fetchInteractionTypes()
-  }, [])
+  }, [user])
 
   // Set first type as selected when types are loaded
   useEffect(() => {
@@ -47,14 +49,19 @@ export default function LibraryPage() {
     try {
       setLoading(true)
       setError(null)
-      const res = await fetch(`/api/taxonomy/interaction-types?workspaceId=${workspaceId}`)
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.taxonomy.interactionTypes, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
 
       if (!res.ok) {
         throw new Error('Failed to fetch interaction types')
       }
 
       const data = await res.json()
-      setInteractionTypes(data.types || [])
+      setInteractionTypes(data.types || data || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load library')
       console.error('Error fetching interaction types:', err)
@@ -95,7 +102,7 @@ export default function LibraryPage() {
         <aside>
           <div className="card" style={{ position: 'sticky', top: '2rem' }}>
             <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem', color: 'var(--color-accent)' }}>
-              Agent Types
+              Interaction type
             </h3>
 
             {loading ? (
@@ -104,7 +111,7 @@ export default function LibraryPage() {
               </p>
             ) : interactionTypes.length === 0 ? (
               <p style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>
-                No agent types yet
+                No interaction types yet
               </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

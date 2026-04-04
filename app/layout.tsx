@@ -20,7 +20,7 @@ export default function RootLayout({
           <SettingsProvider>
             <ThemeProvider>
               <SidebarWrapper />
-              <main style={{ marginLeft: '240px', flex: 1 }}>
+              <main style={{ flex: 1, marginLeft: '240px' }}>
                 {children}
               </main>
             </ThemeProvider>

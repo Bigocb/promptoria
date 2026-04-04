@@ -4,6 +4,7 @@ import { useSettings } from '@/app/providers'
 import { useState, useEffect } from 'react'
 import { themes } from '@/lib/themes'
 import { ThemeName } from '@/lib/themes'
+import { API_ENDPOINTS } from '@/lib/api-config'
 
 export default function SettingsPage() {
   const { settings, updateSetting } = useSettings()
@@ -62,7 +63,7 @@ export default function SettingsPage() {
     setSaving(true)
     setApiKeySaved(false)
     try {
-      await fetch('/api/settings/api-key', {
+      await fetch(API_ENDPOINTS.settings.setApiKey, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -86,7 +87,7 @@ export default function SettingsPage() {
       try {
         const token = localStorage.getItem('auth-token')
         if (token) {
-          const res = await fetch('/api/settings/api-key', {
+          const res = await fetch(API_ENDPOINTS.settings.setApiKey, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },
@@ -326,7 +327,7 @@ export default function SettingsPage() {
           padding: '1.5rem',
         }}>
           <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--color-text)' }}>
-            Temperature: {settings.defaultTemperature.toFixed(1)}
+            Temperature: {(settings.defaultTemperature ?? 0.7).toFixed(1)}
           </h2>
           <input
             type="range"
@@ -355,7 +356,7 @@ export default function SettingsPage() {
           padding: '1.5rem',
         }}>
           <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--color-text)' }}>
-            Max Tokens: {settings.defaultMaxTokens}
+            Max Tokens: {settings.defaultMaxTokens ?? 500}
           </h2>
           <input
             type="range"

@@ -4,6 +4,7 @@ import { useAuth } from '@/app/providers'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { API_ENDPOINTS } from '@/lib/api-config'
 
 interface DashboardStats {
   stats: {
@@ -34,11 +35,28 @@ export default function DashboardPage() {
       const fetchStats = async () => {
         try {
           const token = localStorage.getItem('auth-token')
-          const res = await fetch('/api/dashboard/stats', {
+          const res = await fetch(`${API_ENDPOINTS.dashboard.stats}`, {
             headers: { 'Authorization': `Bearer ${token}` },
           })
           if (res.ok) {
-            setStats(await res.json())
+            const data = await res.json()
+            // Transform backend response to match frontend interface
+            setStats({
+              stats: {
+                totalPrompts: data.stats.prompts,
+                totalSnippets: data.stats.snippets,
+                workspaceName: data.workspace_name,
+              },
+              recent: {
+                prompts: data.recent_prompts.map((p: any) => ({
+                  id: p.id,
+                  name: p.name,
+                  createdAt: p.created_at,
+                  updatedAt: p.created_at,
+                })),
+                snippets: [],
+              },
+            })
           }
         } catch (error) {
           console.error('Failed to fetch dashboard stats:', error)

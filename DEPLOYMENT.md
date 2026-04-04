@@ -1,237 +1,148 @@
-# Deployment Guide
+# Deployment Guide: Vercel + Render
 
-This guide explains how to set up automatic deployment to DreamHost using GitHub Actions.
+This app is deployed across two platforms for optimal performance:
+- **Frontend**: Vercel (static Next.js export)
+- **Backend**: Render.com (Python/FastAPI)
 
-## Prerequisites
+## Architecture
 
-1. **GitHub Repository**: Your code must be in a GitHub repository
-2. **DreamHost Account**: SSH access configured
-3. **Node.js Hosting**: DreamHost account with Node.js support
-4. **Database**: MySQL database on DreamHost
-
-## Setup Steps
-
-### 1. Generate SSH Key Pair (if you don't have one)
-
-```bash
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/dreamhost_deploy
+```
+GitHub Repo (main branch)
+    ↓
+    ├→ Vercel (Frontend)
+    │  https://promptoria.vercel.app
+    │
+    └→ Render (Backend API)
+       https://promptoria-api.onrender.com
 ```
 
-### 2. Add Public Key to DreamHost
+## Setup Instructions
 
-Add the contents of `~/.ssh/dreamhost_deploy.pub` to your DreamHost server's `~/.ssh/authorized_keys`:
+### 1. Vercel Setup (Frontend)
 
-```bash
-cat ~/.ssh/dreamhost_deploy.pub >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-```
-
-### 3. Configure GitHub Secrets
-
-Go to your GitHub repository → Settings → Secrets and variables → Actions
-
-Add the following secrets:
-
-| Secret Name | Description | Value |
-|------------|-------------|-------|
-| `DREAMHOST_SSH_KEY` | Private SSH key | Contents of `~/.ssh/dreamhost_deploy` (entire file) |
-| `DREAMHOST_HOST` | DreamHost server hostname | e.g., `your-domain.com` or IP address |
-| `DREAMHOST_USER` | SSH username | e.g., `username` |
-| `DREAMHOST_PATH` | Application directory | e.g., `/home/username/promptoria` |
-
-### 4. Set Up DreamHost Environment
-
-#### Create Application Directory
-
-```bash
-mkdir -p ~/promptoria
-cd ~/promptoria
-git init
-```
-
-#### Create `.env` File on DreamHost
-
-Create `.env.production` in your application directory with:
-
-```env
-# Database (MySQL format)
-DATABASE_URL=mysql://user:password@localhost:3306/promptoria_prod
-
-# Next.js
-NODE_ENV=production
-NEXT_PUBLIC_API_URL=https://your-domain.com
-
-# Auth
-JWT_SECRET=your-super-secret-jwt-key-change-this
-
-# API Keys (if using external APIs)
-ANTHROPIC_API_KEY=your-key-here
-```
-
-#### Install PM2 Globally
-
-```bash
-npm install -g pm2
-```
-
-#### Create PM2 Ecosystem Config
-
-Create `ecosystem.config.js` in your application directory:
-
-```javascript
-module.exports = {
-  apps: [
-    {
-      name: 'promptoria',
-      script: 'npm start',
-      instances: 'max',
-      exec_mode: 'cluster',
-      error_file: './logs/error.log',
-      out_file: './logs/out.log',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 3100,
-      },
-    },
-  ],
-};
-```
-
-#### Set Up Database
-
-```bash
-cd ~/promptoria
-# Run migrations
-npx prisma migrate deploy
-```
-
-### 5. Configure Web Server (if using reverse proxy)
-
-If using Apache or Nginx as a reverse proxy:
-
-**Apache Configuration (.htaccess or VirtualHost)**:
-```apache
-ProxyPreserveHost On
-ProxyPass / http://localhost:3100/
-ProxyPassReverse / http://localhost:3100/
-```
-
-**Nginx Configuration**:
-```nginx
-location / {
-    proxy_pass http://localhost:3100;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection 'upgrade';
-    proxy_set_header Host $host;
-    proxy_cache_bypass $http_upgrade;
-}
-```
-
-### 6. Verify Deployment
-
-Once you push to `main` with passing tests:
-
-1. GitHub Actions will automatically:
-   - Run tests
-   - Build the project
-   - Deploy to DreamHost
-   - Restart the application using PM2
-
-2. Monitor logs:
-   ```bash
-   pm2 logs promptoria
-   pm2 monit
+1. Go to [vercel.com](https://vercel.com) and sign up with GitHub
+2. Click "Import Project" and select your GitHub repo
+3. Framework: **Next.js**
+4. Build Command: `npm run build`
+5. Output Directory: `out`
+6. Environment Variables:
    ```
+   NEXT_PUBLIC_API_URL=https://your-render-backend.onrender.com
+   ```
+7. Click "Deploy"
+
+**Note your Vercel URL** (e.g., `https://promptoria.vercel.app`)
+
+### 2. Render Setup (Backend)
+
+1. Go to [render.com](https://render.com) and sign up
+2. Click "New +" → "Web Service"
+3. Connect GitHub repo
+4. Configure:
+   - **Name**: `promptoria-api`
+   - **Environment**: `Python 3.11`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+
+5. Environment Variables:
+   ```
+   CORS_ORIGINS=["https://your-vercel-domain.vercel.app"]
+   DATABASE_URL=sqlite:///./promptoria.db
+   DEBUG=false
+   ```
+
+6. Click "Deploy"
+
+**Note your Render URL** (e.g., `https://promptoria-api.onrender.com`)
+
+### 3. GitHub Secrets
+
+Add these to your repo (Settings → Secrets and variables → Actions):
+
+**Vercel Secrets:**
+```
+VERCEL_TOKEN        → Get from Vercel Settings → Tokens
+VERCEL_ORG_ID       → Your Vercel account ID (Settings)
+VERCEL_PROJECT_ID   → From Vercel project settings
+```
+
+**Environment:**
+```
+NEXT_PUBLIC_API_URL → https://your-render-backend.onrender.com
+```
+
+**Render Secrets (for backend redeployment):**
+```
+RENDER_SERVICE_ID   → From Render URL: https://dashboard.render.com/web/srv-xxxxx
+RENDER_DEPLOY_KEY   → From Render → Service Settings → Deploy Hook
+```
+
+### 4. CORS Configuration
+
+Update your Render environment variables with your Vercel domain:
+
+In Render Dashboard:
+1. Go to your service
+2. Settings → Environment
+3. Update `CORS_ORIGINS` to include your Vercel URL
+
+## Deployment Flow
+
+When you push to `main` branch:
+
+1. ✅ GitHub Actions builds Next.js → uploads to Vercel
+2. ✅ Vercel automatically deploys frontend
+3. ✅ GitHub Actions triggers Render backend redeployment
+4. ✅ Both live and synced
+
+## Testing Deployment
+
+After both services are live:
+
+```bash
+# Test frontend
+curl https://your-vercel-domain.vercel.app
+
+# Test backend
+curl https://your-render-backend.onrender.com/api/taxonomy/interaction-types
+```
+
+## Local Development
+
+```bash
+# Terminal 1: Backend
+cd backend
+python -m uvicorn app.main:app --reload --port 3100
+
+# Terminal 2: Frontend  
+npm run dev
+# http://localhost:3001
+```
+
+## Important Notes
+
+### Database on Render Free Tier
+- SQLite data is **ephemeral** (lost on redeploy)
+- For production, upgrade Render to paid tier or use PostgreSQL:
+  1. In Render dashboard, create a PostgreSQL database
+  2. Update `DATABASE_URL` to point to PostgreSQL
+  3. Redeploy backend
+
+### First Deploy
+Render free tier may take 30 seconds to start up. Subsequent deploys are faster.
 
 ## Troubleshooting
 
-### SSH Connection Issues
+**Frontend can't reach backend:**
+- Check `NEXT_PUBLIC_API_URL` environment variable in Vercel
+- Verify Render backend is running (check logs in Render dashboard)
+- Check CORS_ORIGINS in Render environment matches your Vercel URL
 
-Check SSH connectivity:
-```bash
-ssh -i ~/.ssh/dreamhost_deploy username@your-domain.com
-```
+**Render keeps going to sleep:**
+- Free tier pauses inactive services after 15 minutes
+- Upgrade to paid tier for continuous uptime
+- Or ping the service periodically to keep it awake
 
-### Database Migration Failures
-
-Verify database connection on DreamHost:
-```bash
-mysql -u user -p -h localhost promptoria_prod -e "SELECT VERSION();"
-```
-
-### PM2 Issues
-
-Check PM2 status:
-```bash
-pm2 status
-pm2 logs promptoria
-pm2 delete promptoria  # if needed to reset
-pm2 start ecosystem.config.js
-```
-
-### Build Failures
-
-Check workflow logs in GitHub Actions for details. Common issues:
-- Missing environment variables
-- Dependency installation failures
-- TypeScript compilation errors
-
-## Manual Deployment (if needed)
-
-```bash
-cd ~/promptoria
-git pull origin main
-npm ci --legacy-peer-deps
-npx prisma migrate deploy
-npm run build
-pm2 restart all
-```
-
-## Monitoring
-
-### View Logs
-
-```bash
-# Real-time logs
-pm2 logs promptoria
-
-# Previous logs
-pm2 logs promptoria --lines 100
-
-# Save logs to file
-pm2 logs promptoria > logs/app.log
-```
-
-### Health Check
-
-Your application should respond to HTTP requests:
-```bash
-curl http://your-domain.com/
-```
-
-## Security Notes
-
-1. **JWT Secret**: Change `JWT_SECRET` to a strong random value
-2. **SSH Key**: Treat your private key like a password - never commit it
-3. **Environment Variables**: Never commit `.env` files
-4. **Database Password**: Use a strong password and rotate regularly
-5. **HTTPS**: Configure SSL/TLS on your domain
-
-## Environment Variables Reference
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `NODE_ENV` | Yes | Set to `production` |
-| `JWT_SECRET` | Yes | Secret key for JWT tokens |
-| `ANTHROPIC_API_KEY` | No | API key for Claude API (if using suggestions) |
-| `NEXT_PUBLIC_API_URL` | No | Public API URL (for client-side requests) |
-
-## Additional Resources
-
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [DreamHost Node.js Hosting](https://www.dreamhost.com/)
-- [PM2 Documentation](https://pm2.keymetrics.io/)
-- [Next.js Production Deployment](https://nextjs.org/docs/deployment)
+**Database lost after deploy:**
+- This is normal on free tier (ephemeral storage)
+- Upgrade Render tier or migrate to persistent database

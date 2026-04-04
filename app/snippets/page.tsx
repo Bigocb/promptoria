@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { API_ENDPOINTS } from '@/lib/api-config'
+import { useAuth } from '@/app/providers'
 
 interface Snippet {
   id: string
@@ -12,6 +14,7 @@ interface Snippet {
 }
 
 export default function SnippetsPage() {
+  const { user } = useAuth()
   const [snippets, setSnippets] = useState<Snippet[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -20,11 +23,16 @@ export default function SnippetsPage() {
 
   useEffect(() => {
     fetchSnippets()
-  }, [])
+  }, [user])
 
   async function fetchSnippets() {
     try {
-      const res = await fetch('/api/snippets')
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.snippets.list, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
       const data = await res.json()
       setSnippets(Array.isArray(data) ? data : data.snippets || [])
     } catch (error) {
@@ -37,10 +45,16 @@ export default function SnippetsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     try {
+      const token = localStorage.getItem('auth-token')
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      }
+
       if (editing) {
-        const res = await fetch(`/api/snippets/${editing.id}`, {
+        const res = await fetch(API_ENDPOINTS.snippets.update(editing.id), {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(formData),
         })
         if (res.ok) {
@@ -50,9 +64,9 @@ export default function SnippetsPage() {
           fetchSnippets()
         }
       } else {
-        const res = await fetch('/api/snippets', {
+        const res = await fetch(API_ENDPOINTS.snippets.create, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(formData),
         })
         if (res.ok) {
@@ -69,7 +83,13 @@ export default function SnippetsPage() {
   async function handleDelete(id: string) {
     if (!confirm('Delete this snippet?')) return
     try {
-      const res = await fetch(`/api/snippets/${id}`, { method: 'DELETE' })
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.snippets.delete(id), {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
       if (res.ok) {
         fetchSnippets()
       }

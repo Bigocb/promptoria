@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { ThemeName, themes, defaultTheme } from '@/lib/themes'
+import { API_ENDPOINTS } from '@/lib/api-config'
 
 interface ThemeContextType {
   currentTheme: ThemeName
@@ -115,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(API_ENDPOINTS.auth.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -123,11 +124,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!res.ok) {
         const error = await res.json()
-        throw new Error(error.error || 'Login failed')
+        throw new Error(error.detail || error.error || 'Login failed')
       }
 
       const data = await res.json()
-      localStorage.setItem('auth-token', data.token)
+      localStorage.setItem('auth-token', data.access_token)
       localStorage.setItem('auth-user', JSON.stringify(data.user))
       setUser(data.user)
     } catch (error) {
@@ -137,19 +138,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signup = async (email: string, password: string, confirmPassword: string) => {
     try {
-      const res = await fetch('/api/auth/signup', {
+      const res = await fetch(API_ENDPOINTS.auth.signup, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, confirmPassword }),
+        body: JSON.stringify({ email, password }),
       })
 
       if (!res.ok) {
         const error = await res.json()
-        throw new Error(error.error || 'Signup failed')
+        throw new Error(error.detail || error.error || 'Signup failed')
       }
 
       const data = await res.json()
-      localStorage.setItem('auth-token', data.token)
+      localStorage.setItem('auth-token', data.access_token)
       localStorage.setItem('auth-user', JSON.stringify(data.user))
       setUser(data.user)
     } catch (error) {
@@ -232,7 +233,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (user) {
           const token = localStorage.getItem('auth-token')
           if (token) {
-            const res = await fetch('/api/settings', {
+            const res = await fetch(API_ENDPOINTS.settings.get, {
               headers: {
                 'Authorization': `Bearer ${token}`,
               },
@@ -271,7 +272,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       try {
         const token = localStorage.getItem('auth-token')
         if (token) {
-          await fetch('/api/settings', {
+          await fetch(API_ENDPOINTS.settings.update, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

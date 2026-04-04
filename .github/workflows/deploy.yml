@@ -1,122 +1,33 @@
-name: Build and Deploy
+name: Deploy to Vercel + Render
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
-env:
-  NODE_VERSION: '18'
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  test:
+  deploy-frontend:
     runs-on: ubuntu-latest
-    name: Test and Build
-
-    services:
-      mysql:
-        image: mysql:8
-        env:
-          MYSQL_ROOT_PASSWORD: root_password
-          MYSQL_DATABASE: promptoria_test
-          MYSQL_USER: test_user
-          MYSQL_PASSWORD: test_password
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 3306:3306
-
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: Setup database
+      - name: Deploy to Vercel
+        run: |
+          npm install -g vercel
+          vercel deploy \
+            --prod \
+            --token ${{ secrets.VERCEL_TOKEN }} \
+            --scope ${{ secrets.VERCEL_ORG_ID }} \
+            --project-id ${{ secrets.VERCEL_PROJECT_ID }}
         env:
-          DATABASE_URL: mysql://test_user:test_password@localhost:3306/promptoria_test
-        run: npx prisma migrate deploy
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
 
-      - name: Run linter
-        run: npm run lint || true
-
-      - name: Build project
-        run: npm run build
-
-  deploy:
-    needs: test
+  deploy-backend:
     runs-on: ubuntu-latest
-    name: Deploy to DreamHost
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: Build project
-        run: npm run build
-
-      - name: Deploy to DreamHost
-        uses: easingthemes/ssh-deploy@main
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.DREAMHOST_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.DREAMHOST_HOST }}
-          REMOTE_USER: ${{ secrets.DREAMHOST_USER }}
-          TARGET: ${{ secrets.DREAMHOST_PATH }}
-          SCRIPT_BEFORE: |
-            cd ${{ secrets.DREAMHOST_PATH }}
-            # Backup current deployment
-            if [ -d ".next" ]; then cp -r .next .next.backup; fi
-          SCRIPT_AFTER: |
-            cd ${{ secrets.DREAMHOST_PATH }}
-            # Install production dependencies only
-            NODE_OPTIONS="--max-old-space-size=256" npm ci --legacy-peer-deps --production
-            # Run migrations
-            npx prisma migrate deploy
-            # Restart Passenger app
-            mkdir -p tmp
-            touch tmp/restart.txt
-
-      - name: Notify deployment success
-        if: success()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '✅ Deployment to DreamHost successful!'
-            })
-
-      - name: Notify deployment failure
-        if: failure()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '❌ Deployment to DreamHost failed! Check the logs for details.'
-            })
+      - name: Deploy Python backend to Render
+        run: |
+          curl -X POST "https://api.render.com/deploy/srv-${{ secrets.RENDER_SERVICE_ID }}" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_DEPLOY_KEY }}"
