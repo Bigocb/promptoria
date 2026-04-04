@@ -3,7 +3,7 @@ Configuration settings for FastAPI application.
 Reads from environment variables via .env files.
 """
 
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings
 from typing import Optional
 
 class Settings(BaseSettings):
