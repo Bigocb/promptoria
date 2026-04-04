@@ -3,7 +3,9 @@ Configuration settings for FastAPI application.
 Reads from environment variables via .env files.
 """
 
+import json
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from typing import Optional
 
 class Settings(BaseSettings):
@@ -27,6 +29,16 @@ class Settings(BaseSettings):
 
     # CORS
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:3100", "https://syncellium.pro"]
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return [v]
+        return v
 
     class Config:
         env_file = ".env.local"
