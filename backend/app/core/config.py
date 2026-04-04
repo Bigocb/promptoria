@@ -30,7 +30,7 @@ class Settings(BaseSettings):
         env_file = ".env.local"
         env_file_encoding = 'utf-8'
         case_sensitive = False
-        extra = "ignore"  # Ignore extra fields from environment
+        extra = "allow"  # Allow setting extra attributes like cors_origins
 
 # Global settings instance
 settings = Settings()
