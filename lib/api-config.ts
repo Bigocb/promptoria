@@ -7,7 +7,7 @@ const isDevelopment = process.env.NODE_ENV === 'development'
 
 export const API_BASE_URL = isDevelopment
   ? 'http://localhost:3100'  // Local development
-  : (process.env.NEXT_PUBLIC_API_URL || 'https://promptoria-api.onrender.com') // Production
+  : (process.env.NEXT_PUBLIC_API_URL || '') // Production (set via environment variable)
 
 export const API_ENDPOINTS = {
   auth: {
