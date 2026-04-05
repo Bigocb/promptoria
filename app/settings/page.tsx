@@ -105,9 +105,10 @@ export default function SettingsPage() {
   }, [])
 
   const models = [
-    { id: 'claude-3-opus', name: 'Claude 3 Opus', description: 'Most capable, best for complex tasks' },
-    { id: 'claude-3-sonnet', name: 'Claude 3 Sonnet', description: 'Balanced performance and speed' },
-    { id: 'claude-3-haiku', name: 'Claude 3 Haiku', description: 'Fastest, best for simple tasks' },
+    { id: 'llama3.2', name: 'Llama 3.2', description: 'Fast, capable, works locally or via Ollama Cloud' },
+    { id: 'gpt-oss:120b-cloud', name: 'GPT-OSS 120B (Cloud)', description: 'Larger model, best for complex tasks via Ollama Cloud' },
+    { id: 'mistral', name: 'Mistral', description: 'Balanced performance and speed' },
+    { id: 'neural-chat', name: 'Neural Chat', description: 'Optimized for chat interactions' },
   ]
 
   return (
@@ -164,13 +165,14 @@ export default function SettingsPage() {
           padding: '1.5rem',
         }}>
           <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--color-text)' }}>
-            Claude API Key
+            Ollama API Key (Cloud)
           </h2>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-            Enter your Anthropic API key to enable AI-powered features. Get yours at{' '}
-            <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>
-              console.anthropic.com
+            For Ollama Cloud, enter your API key to access cloud models. Get yours at{' '}
+            <a href="https://ollama.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>
+              ollama.com
             </a>
+            {' '}(leave blank for local Ollama)
           </p>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
             <input
@@ -178,7 +180,7 @@ export default function SettingsPage() {
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               onBlur={() => handleApiKeyChange(apiKey)}
-              placeholder="sk-ant-..."
+              placeholder="ollama-api-key-..."
               disabled={saving}
               style={{
                 flex: 1,

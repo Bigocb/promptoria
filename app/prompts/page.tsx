@@ -61,7 +61,7 @@ export default function WorkbenchPage() {
 
   // Test panel state
   const [showTestPanel, setShowTestPanel] = useState(false)
-  const [testModel, setTestModel] = useState('claude-3-sonnet')
+  const [testModel, setTestModel] = useState('llama3.2')
   const [testTemperature, setTestTemperature] = useState(0.7)
   const [testMaxTokens, setTestMaxTokens] = useState(500)
   const [testVariables, setTestVariables] = useState<Record<string, string>>({})
@@ -83,9 +83,11 @@ export default function WorkbenchPage() {
         },
       })
       const data = await res.json()
-      setSnippets(data.snippets || data || [])
+      // Backend returns array directly, not wrapped in object
+      setSnippets(Array.isArray(data) ? data : (data.snippets || []))
     } catch (error) {
       console.error('Failed to fetch snippets:', error)
+      setSnippets([])
     } finally {
       setLoading(false)
     }
@@ -100,9 +102,11 @@ export default function WorkbenchPage() {
         },
       })
       const data = await res.json()
-      setInteractionTypes(data.types || data || [])
+      // Backend returns array directly, not wrapped in object
+      setInteractionTypes(Array.isArray(data) ? data : (data.types || []))
     } catch (error) {
       console.error('Failed to fetch interaction types:', error)
+      setInteractionTypes([])
     }
   }
 
@@ -120,7 +124,8 @@ export default function WorkbenchPage() {
         },
       })
       const data = await res.json()
-      setCategories(data.categories || data || [])
+      // Backend returns array directly, not wrapped in object
+      setCategories(Array.isArray(data) ? data : (data.categories || []))
       setSelectedCategoryId('')
     } catch (error) {
       console.error('Failed to fetch categories:', error)
@@ -167,7 +172,7 @@ export default function WorkbenchPage() {
     try {
       const varsList = variables ? variables.split(', ').filter(v => v.trim()).join(', ') : 'none'
 
-      // Simulate Claude Haiku API response for tag suggestions
+      // Simulate Ollama API response for tag suggestions
       const mockSuggestedTags = [
         'instruction-following',
         'structured-output',
@@ -262,7 +267,7 @@ export default function WorkbenchPage() {
 
   const runTest = async () => {
     if (!promptContent.trim()) {
-      alert('Please enter prompt content before testing')
+      alert('Please save the prompt first, then test it')
       return
     }
 
@@ -270,8 +275,9 @@ export default function WorkbenchPage() {
     try {
       const compiled = compilePrompt()
 
-      // Simulate LLM response
-      const mockResponse = `This is a simulated response from ${testModel}. In a production environment, this would call your LLM API (OpenAI, Anthropic, etc.).\n\nYour compiled prompt:\n"${compiled.substring(0, 100)}..."\n\nWould be processed with temperature ${testTemperature} and max tokens ${testMaxTokens}.`
+      // For now, show that testing would use Ollama
+      // (Full integration requires saving prompt first to get prompt_version_id)
+      const mockResponse = `Testing with Ollama (${testModel})\n\nCompiled prompt:\n"${compiled.substring(0, 150)}${compiled.length > 150 ? '...' : ''}"\n\nTemperature: ${testTemperature}\nMax Tokens: ${testMaxTokens}\n\nNote: Save your prompt first to test it against the live Ollama backend.`
 
       setTestOutput(mockResponse)
 
@@ -755,10 +761,10 @@ export default function WorkbenchPage() {
                     className="input"
                     style={{ width: '100%', fontSize: '0.75rem' }}
                   >
-                    <option value="claude-3-sonnet">Claude 3 Sonnet</option>
-                    <option value="claude-3-opus">Claude 3 Opus</option>
-                    <option value="gpt-4">GPT-4</option>
-                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                    <option value="llama3.2">Llama 3.2</option>
+                    <option value="gpt-oss:120b-cloud">GPT-OSS 120B (Cloud)</option>
+                    <option value="mistral">Mistral</option>
+                    <option value="neural-chat">Neural Chat</option>
                   </select>
                 </div>
 

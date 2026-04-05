@@ -212,7 +212,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>({
     theme: defaultTheme,
     suggestionsEnabled: true,
-    defaultModel: 'claude-3-haiku',
+    defaultModel: 'llama3.2',
     defaultTemperature: 0.7,
     defaultMaxTokens: 500,
   })
@@ -303,7 +303,7 @@ export function useSettings() {
       settings: {
         theme: defaultTheme,
         suggestionsEnabled: true,
-        defaultModel: 'claude-3-haiku',
+        defaultModel: 'llama3.2',
         defaultTemperature: 0.7,
         defaultMaxTokens: 500,
       },

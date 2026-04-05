@@ -15,7 +15,7 @@ export default function TestRunnerPage() {
     topic: 'sustainable fashion',
     style: 'professional',
   })
-  const [model, setModel] = useState('claude-3-sonnet')
+  const [model, setModel] = useState('llama3.2')
   const [temperature, setTemperature] = useState('0.7')
   const [maxTokens, setMaxTokens] = useState('500')
   const [isLoading, setIsLoading] = useState(false)
@@ -34,10 +34,10 @@ export default function TestRunnerPage() {
       // Simulate API call - in production, this would call actual LLM APIs
       await new Promise(resolve => setTimeout(resolve, 1500))
 
-      const mockResponse = `Sample output from ${model} with temperature ${temperature}:\n\n` +
+      const mockResponse = `Ollama Response (${model}) with temperature ${temperature}:\n\n` +
         `This is a simulated response testing your prompt with the variables you provided.\n` +
         `Variables used:\n${Object.entries(variables).map(([k, v]) => `- ${k}: ${v}`).join('\n')}\n\n` +
-        `In production, this would call the actual ${model} API.`
+        `In production, this would call Ollama locally or via Ollama Cloud API.`
 
       setOutput(mockResponse)
 
@@ -100,10 +100,10 @@ export default function TestRunnerPage() {
               className="input"
               style={{ width: '100%' }}
             >
-              <option value="claude-3-sonnet">Claude 3 Sonnet</option>
-              <option value="claude-3-opus">Claude 3 Opus</option>
-              <option value="gpt-4">GPT-4</option>
-              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+              <option value="llama3.2">Llama 3.2</option>
+              <option value="gpt-oss:120b-cloud">GPT-OSS 120B (Cloud)</option>
+              <option value="mistral">Mistral</option>
+              <option value="neural-chat">Neural Chat</option>
             </select>
           </div>
 
