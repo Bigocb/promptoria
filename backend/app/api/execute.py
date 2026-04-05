@@ -6,9 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from uuid import uuid4
 
-from app.core.database import get_db
-from app.core.security import get_current_user
-from app.models import Workspace, PromptVersion, TestRun
+from ..core.database import get_db
+from ..core.security import get_current_user
+from ..models import Workspace, PromptVersion, TestRun
 
 router = APIRouter()
 

@@ -5,17 +5,17 @@ Snippets endpoints: list, create, update, delete
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
-from app.core.security import get_current_user
-from app.schemas.snippet import (
+from ..core.database import get_db
+from ..core.security import get_current_user
+from ..schemas.snippet import (
     SnippetCreate, SnippetUpdate, SnippetResponse,
     FolderCreate, FolderUpdate, FolderResponse
 )
-from app.crud.snippet import (
+from ..crud.snippet import (
     create_snippet, get_snippet, get_snippets, update_snippet, delete_snippet,
     create_folder, get_folder, get_folders, update_folder, delete_folder
 )
-from app.models import Workspace
+from ..models import Workspace
 
 router = APIRouter()
 

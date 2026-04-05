@@ -5,17 +5,17 @@ Prompts endpoints: list, create, update, delete, get versions
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
-from app.core.security import get_current_user
-from app.schemas.prompt import (
+from ..core.database import get_db
+from ..core.security import get_current_user
+from ..schemas.prompt import (
     PromptCreate, PromptUpdate, PromptResponse, PromptDetailResponse,
     PromptVersionCreate, PromptVersionResponse
 )
-from app.crud.prompt import (
+from ..crud.prompt import (
     create_prompt, get_prompt, get_prompts, update_prompt, delete_prompt,
     create_version, get_prompt_versions
 )
-from app.models import Workspace
+from ..models import Workspace
 
 router = APIRouter()
 

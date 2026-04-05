@@ -5,8 +5,8 @@ CRUD operations for User model.
 from uuid import uuid4
 from sqlalchemy.orm import Session
 
-from app.models import User, UserSettings, Workspace, AgentInteractionType
-from app.core.security import hash_password, verify_password
+from ..models import User, UserSettings, Workspace, AgentInteractionType
+from ..core.security import hash_password, verify_password
 
 
 def create_user(db: Session, email: str, password: str) -> User:

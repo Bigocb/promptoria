@@ -5,13 +5,13 @@ Authentication endpoints: login, signup, logout
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
-from app.core.security import create_access_token
-from app.schemas.user import UserLogin, UserCreate, TokenResponse
-from app.crud.user import (
+from ..core.database import get_db
+from ..core.security import create_access_token
+from ..schemas.user import UserLogin, UserCreate, TokenResponse
+from ..crud.user import (
     authenticate_user, create_user, get_user_by_email, user_exists
 )
-from app.models import UserSettings
+from ..models import UserSettings
 
 router = APIRouter()
 

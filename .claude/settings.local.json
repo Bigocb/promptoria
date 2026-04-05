@@ -144,7 +144,15 @@
       "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1MGM3OWY0OS1iYzYwLTRlM2EtODA3ZC1kYzI4NmViZTAwN2EiLCJlbWFpbCI6InRlc3QtMTc3NTA4OTg3MUBleGFtcGxlLmNvbSIsImlhdCI6MTc3NTA4OTg3MSwiZXhwIjoxNzc1Njk0NjcxfQ.cNM8DvURvik9TbUL0F1Dmrj3D3gg26Vyiw3v50nRJM4\" __NEW_LINE_311570eb0ff66b3f__ curl -s -X POST http://localhost:3100/api/prompts -H \"Content-Type: application/json\" -H \"Authorization: Bearer $TOKEN\" -d '{\"\"\"\"name\"\"\"\":\"\"\"\"Library Test\"\"\"\",\"\"\"\"template_body\"\"\"\":\"\"\"\"Test content\"\"\"\"}')",
       "Bash(sqlite3 promptoria.db \"SELECT COUNT\\(*\\) as user_count FROM users; SELECT COUNT\\(*\\) as workspace_count FROM workspaces;\")",
       "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ZTJkMDcwMi03ODdiLTQzNzEtOTc1YS05YWU1MWExZGIyN2YiLCJlbWFpbCI6ImZyZXNoLXVzZXItMTc3NTE3MzcxOEB0ZXN0LmNvbSIsImlhdCI6MTc3NTE3MzcxOCwiZXhwIjoxNzc1Nzc4NTE4fQ.Eprc1t9boqNHUhb4Nem3NWFs3bBV4gykJhAQ_GxlBF0\" __NEW_LINE_d84473deba5c0c8e__ curl -s http://localhost:3100/api/taxonomy/interaction-types -H \"Authorization: Bearer $TOKEN\")",
-      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ZTJkMDcwMi03ODdiLTQzNzEtOTc1YS05YWU1MWExZGIyN2YiLCJlbWFpbCI6ImZyZXNoLXVzZXItMTc3NTE3MzcxOEB0ZXN0LmNvbSIsImlhdCI6MTc3NTE3MzcxOCwiZXhwIjoxNzc1Nzc4NTE4fQ.Eprc1t9boqNHUhb4Nem3NWFs3bBV4gykJhAQ_GxlBF0\" __NEW_LINE_5ec7e0b0f9e15996__ curl -s http://localhost:3100/api/taxonomy/interaction-types -H \"Authorization: Bearer $TOKEN\")"
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ZTJkMDcwMi03ODdiLTQzNzEtOTc1YS05YWU1MWExZGIyN2YiLCJlbWFpbCI6ImZyZXNoLXVzZXItMTc3NTE3MzcxOEB0ZXN0LmNvbSIsImlhdCI6MTc3NTE3MzcxOCwiZXhwIjoxNzc1Nzc4NTE4fQ.Eprc1t9boqNHUhb4Nem3NWFs3bBV4gykJhAQ_GxlBF0\" __NEW_LINE_5ec7e0b0f9e15996__ curl -s http://localhost:3100/api/taxonomy/interaction-types -H \"Authorization: Bearer $TOKEN\")",
+      "mcp__render__list_services",
+      "mcp__render__list_workspaces",
+      "mcp__render__list_deploys",
+      "mcp__render__list_logs",
+      "mcp__21f9e17b-c37a-41c8-b9d4-7a6ee50f5167__list_teams",
+      "mcp__21f9e17b-c37a-41c8-b9d4-7a6ee50f5167__list_projects",
+      "mcp__21f9e17b-c37a-41c8-b9d4-7a6ee50f5167__list_deployments",
+      "Bash(git pull:*)"
     ]
   }
 }

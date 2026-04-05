@@ -5,11 +5,11 @@ Settings endpoints: get and update user preferences
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
-from app.core.security import get_current_user
-from app.schemas.user import UpdateSettingsRequest, UserSettingsResponse
-from app.crud.user import update_user_settings
-from app.models import User, UserSettings
+from ..core.database import get_db
+from ..core.security import get_current_user
+from ..schemas.user import UpdateSettingsRequest, UserSettingsResponse
+from ..crud.user import update_user_settings
+from ..models import User, UserSettings
 
 router = APIRouter()
 

@@ -6,7 +6,7 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from app.models import Prompt, PromptVersion, PromptComposition
+from ..models import Prompt, PromptVersion, PromptComposition
 
 
 def create_prompt(

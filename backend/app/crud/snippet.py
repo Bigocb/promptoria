@@ -5,7 +5,7 @@ CRUD operations for Snippet and Folder models.
 from uuid import uuid4
 from sqlalchemy.orm import Session
 
-from app.models import Snippet, Folder
+from ..models import Snippet, Folder
 
 
 def create_folder(db: Session, workspace_id: str, name: str, description: str = None) -> Folder:
