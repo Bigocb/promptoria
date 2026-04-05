@@ -42,20 +42,19 @@ app.include_router(suggestions.router, prefix="/api/suggestions", tags=["suggest
 app.include_router(taxonomy.router, prefix="/api/taxonomy", tags=["taxonomy"])
 
 # Add CORS middleware - ensure all required origins are allowed
-cors_origins = getattr(settings, 'cors_origins', []) or []
-# Always include production frontend URLs
 production_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
     "https://promptoria-dev.vercel.app",
     "https://promptoria.vercel.app",
     "https://promptoria-api.onrender.com",
 ]
-all_origins = list(set(cors_origins + production_origins))
 
-print(f"DEBUG: CORS origins configured: {all_origins}")
+print(f"DEBUG: CORS origins configured: {production_origins}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=all_origins,
+    allow_origins=production_origins,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     allow_credentials=False,

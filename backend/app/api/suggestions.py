@@ -4,6 +4,7 @@ Uses Ollama for local LLM-based analysis (zero configuration needed).
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ..core.database import get_db
@@ -14,15 +15,32 @@ from ..utils.llm import compile_prompt, get_ollama_client
 router = APIRouter()
 
 
-@router.post("/{prompt_version_id}")
-async def get_suggestions(
-    prompt_version_id: str,
+class SuggestionsRequest(BaseModel):
+    """Request body for suggestions endpoint"""
+    prompt_version_id: str
+
+
+@router.post("")
+async def get_suggestions_from_body(
+    data: SuggestionsRequest,
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
     """
     Get AI-powered suggestions for improving a prompt.
-    Uses Ollama to analyze and suggest improvements (no configuration needed).
+    Accepts prompt_version_id in request body.
+    """
+    return await _get_suggestions_impl(data.prompt_version_id, db, user_id)
+
+
+@router.post("/{prompt_version_id}")
+async def _get_suggestions_impl(
+    prompt_version_id: str,
+    db: Session,
+    user_id: str,
+):
+    """
+    Implementation of suggestions logic (shared by both endpoints).
     """
     workspace = db.query(Workspace).filter(Workspace.user_id == user_id).first()
     if not workspace:
@@ -56,3 +74,15 @@ async def get_suggestions(
     except Exception as e:
         # Return helpful error message
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def get_suggestions(
+    prompt_version_id: str,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Get AI-powered suggestions for improving a prompt.
+    Accepts prompt_version_id in URL path.
+    """
+    return await _get_suggestions_impl(prompt_version_id, db, user_id)
