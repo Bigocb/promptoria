@@ -23,3 +23,6 @@ httpx==0.25.2
 
 # AI/LLM APIs
 anthropic==0.80.0
+
+# NOTE: psycopg2-binary is required for PostgreSQL support on Render
+# If psycopg2-binary is not installing, there is a caching issue with Render's build system
