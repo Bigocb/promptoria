@@ -14,11 +14,18 @@ from ..models import PromptVersion, PromptComposition, Snippet
 
 
 class OllamaClient:
-    """Client for Ollama API integration"""
+    """Client for Ollama API integration (local or cloud)"""
 
-    def __init__(self, base_url: str = "http://localhost:11434"):
+    def __init__(self, base_url: str = "http://localhost:11434", api_key: Optional[str] = None):
         self.base_url = base_url
-        self.client = httpx.AsyncClient(timeout=None)  # No timeout for long-running requests
+        self.api_key = api_key
+
+        # Build headers with authentication if API key provided
+        headers = {}
+        if api_key:
+            headers['Authorization'] = f'Bearer {api_key}'
+
+        self.client = httpx.AsyncClient(timeout=None, headers=headers)  # No timeout for long-running requests
 
     async def generate(self, model: str, prompt: str, **kwargs) -> str:
         """
@@ -62,8 +69,9 @@ class OllamaClient:
             return result.get("response", "")
         except httpx.ConnectError:
             raise Exception(
-                "Ollama is not available at http://localhost:11434. "
-                "Please start Ollama with: ollama serve"
+                "Ollama is not available. "
+                "For local: Start Ollama with 'ollama serve'. "
+                "For cloud: Set OLLAMA_ENDPOINT=https://ollama.com and OLLAMA_API_KEY=your_key"
             )
         except Exception as e:
             raise Exception(f"Ollama API error: {str(e)}")
@@ -157,10 +165,16 @@ _ollama_client: Optional[OllamaClient] = None
 
 
 def get_ollama_client() -> OllamaClient:
-    """Get or create the global Ollama client"""
+    """Get or create the global Ollama client
+    Uses settings from config.py for endpoint and API key
+    """
     global _ollama_client
     if _ollama_client is None:
-        _ollama_client = OllamaClient()
+        from ..core.config import settings
+        _ollama_client = OllamaClient(
+            base_url=settings.ollama_endpoint,
+            api_key=settings.ollama_api_key
+        )
     return _ollama_client
 
 

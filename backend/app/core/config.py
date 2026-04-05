@@ -22,8 +22,9 @@ class Settings(BaseSettings):
     anthropic_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
 
-    # Ollama (local LLM, zero configuration)
+    # Ollama - can be local or cloud
     ollama_endpoint: str = "http://localhost:11434"
+    ollama_api_key: Optional[str] = None  # Required for cloud models at ollama.com
     ollama_default_model: str = "llama3.2"
 
     # Environment
