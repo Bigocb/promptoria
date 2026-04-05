@@ -1,6 +1,7 @@
 """
 FastAPI application for PromptArchitect backend.
 Migrated from Node.js to Python.
+Production database: Render PostgreSQL (automatic connection via DATABASE_URL env var)
 """
 
 from fastapi import FastAPI
