@@ -10,6 +10,8 @@ from .config import settings
 
 # Use MySQL in production (via settings.database_url), SQLite in development
 # Check if we have a MySQL database configured
+print(f"DEBUG: settings.database_url = {settings.database_url}")
+print(f"DEBUG: 'mysql' in database_url = {'mysql' in (settings.database_url or '')}")
 if settings.database_url and "mysql" in settings.database_url:
     DB_URL = settings.database_url
     # MySQL with connection pooling
