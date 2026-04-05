@@ -1,88 +1,119 @@
 """
 Execute endpoints: run prompts and manage test results
+Uses Ollama for local LLM execution (zero configuration needed).
 """
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from uuid import uuid4
+from pydantic import BaseModel
+from typing import Optional, Dict
 
 from ..core.database import get_db
 from ..core.security import get_current_user
-from ..models import Workspace, PromptVersion, TestRun
+from ..models import Workspace, PromptVersion, TestRun, Prompt
+from ..utils.llm import compile_prompt, execute_with_ollama
 
 router = APIRouter()
 
 
-class ExecuteRequest:
+class ExecuteRequest(BaseModel):
     """Execute prompt request"""
-    def __init__(self, prompt_version_id: str, variables: dict = None):
-        self.prompt_version_id = prompt_version_id
-        self.variables = variables or {}
-
-
-class ExecuteResponse:
-    """Execute prompt response"""
-    pass
+    prompt_version_id: str
+    variables: Optional[Dict[str, str]] = None
 
 
 @router.post("", status_code=201)
 async def execute_prompt(
-    data: dict,
+    data: ExecuteRequest,
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
     """
-    Execute a prompt against Claude API.
-    Stores result as test run.
+    Execute a prompt using Ollama (no configuration needed - just works!).
+    Stores result as test run with output, tokens, and latency.
     """
-    prompt_version_id = data.get("prompt_version_id")
-    variables = data.get("variables", {})
-
-    if not prompt_version_id:
+    if not data.prompt_version_id:
         raise HTTPException(status_code=400, detail="prompt_version_id required")
 
-    # Get prompt version
+    variables = data.variables or {}
+
+    # Get user's workspace
     workspace = db.query(Workspace).filter(Workspace.user_id == user_id).first()
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
 
+    # Get prompt version
     version = db.query(PromptVersion).filter(
-        PromptVersion.id == prompt_version_id
+        PromptVersion.id == data.prompt_version_id
     ).first()
 
     if not version:
         raise HTTPException(status_code=404, detail="Prompt version not found")
 
-    # Check that version belongs to user's workspace
-    from app.models import Prompt
+    # Verify access: version belongs to user's workspace
     prompt = db.query(Prompt).filter(Prompt.id == version.prompt_id).first()
     if not prompt or prompt.workspace_id != workspace.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    # TODO: Compile prompt with variables
-    compiled_prompt = version.template_body
+    try:
+        # Compile prompt with snippets and variable substitution
+        compiled_prompt = compile_prompt(db, data.prompt_version_id, variables)
 
-    # TODO: Call Claude API
-    # For now, return pending test run
-    test_run = TestRun(
-        id=str(uuid4()),
-        prompt_version_id=version.id,
-        prompt_id=version.prompt_id,
-        workspace_id=workspace.id,
-        variables=variables,
-        compiled_prompt=compiled_prompt,
-        status="pending",
-    )
-    db.add(test_run)
-    db.commit()
-    db.refresh(test_run)
+        # Execute via Ollama (uses default model transparently)
+        result = await execute_with_ollama(compiled_prompt)
 
-    return {
-        "id": test_run.id,
-        "prompt_version_id": test_run.prompt_version_id,
-        "status": test_run.status,
-        "created_at": test_run.created_at,
-    }
+        # Create and store test run with results
+        test_run = TestRun(
+            id=str(uuid4()),
+            prompt_version_id=version.id,
+            prompt_id=version.prompt_id,
+            workspace_id=workspace.id,
+            compiled_prompt=compiled_prompt,
+            variables=variables,
+            output=result["output"],
+            input_tokens=result["input_tokens"],
+            output_tokens=result["output_tokens"],
+            total_tokens=result["total_tokens"],
+            latency_ms=result["latency_ms"],
+            cost_usd=result["cost_usd"],
+            model="mistral",  # Using mistral as default
+            status="success",
+        )
+        db.add(test_run)
+        db.commit()
+        db.refresh(test_run)
+
+        return {
+            "id": test_run.id,
+            "prompt_version_id": test_run.prompt_version_id,
+            "status": test_run.status,
+            "model": test_run.model,
+            "output": test_run.output,
+            "input_tokens": test_run.input_tokens,
+            "output_tokens": test_run.output_tokens,
+            "total_tokens": test_run.total_tokens,
+            "latency_ms": test_run.latency_ms,
+            "cost_usd": test_run.cost_usd,
+            "created_at": test_run.created_at,
+        }
+
+    except Exception as e:
+        # Store error state in test run
+        test_run = TestRun(
+            id=str(uuid4()),
+            prompt_version_id=version.id,
+            prompt_id=version.prompt_id,
+            workspace_id=workspace.id,
+            compiled_prompt="",
+            variables=variables,
+            status="error",
+            error_message=str(e),
+        )
+        db.add(test_run)
+        db.commit()
+
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{prompt_version_id}")

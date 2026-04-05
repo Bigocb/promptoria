@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     anthropic_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
 
+    # Ollama (local LLM, zero configuration)
+    ollama_endpoint: str = "http://localhost:11434"
+    ollama_default_model: str = "mistral"
+
     # Environment
     environment: str = "development"
     debug: bool = True

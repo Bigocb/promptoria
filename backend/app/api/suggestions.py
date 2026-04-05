@@ -1,5 +1,6 @@
 """
 Suggestions endpoint: get AI-powered prompt improvement suggestions
+Uses Ollama for local LLM-based analysis (zero configuration needed).
 """
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from ..core.database import get_db
 from ..core.security import get_current_user
-from ..models import Workspace, PromptVersion
+from ..models import Workspace, PromptVersion, Prompt
+from ..utils.llm import compile_prompt, get_ollama_client
 
 router = APIRouter()
 
@@ -20,7 +22,7 @@ async def get_suggestions(
 ):
     """
     Get AI-powered suggestions for improving a prompt.
-    Uses Claude API to analyze and suggest improvements.
+    Uses Ollama to analyze and suggest improvements (no configuration needed).
     """
     workspace = db.query(Workspace).filter(Workspace.user_id == user_id).first()
     if not workspace:
@@ -34,27 +36,23 @@ async def get_suggestions(
         raise HTTPException(status_code=404, detail="Prompt version not found")
 
     # Check that version belongs to user's workspace
-    from app.models import Prompt
     prompt = db.query(Prompt).filter(Prompt.id == version.prompt_id).first()
     if not prompt or prompt.workspace_id != workspace.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    # TODO: Call Claude API to get suggestions
-    # For now, return placeholder suggestions
-    suggestions = [
-        {
-            "type": "clarity",
-            "message": "Consider being more specific about the expected output format",
-            "severity": "low",
-        },
-        {
-            "type": "structure",
-            "message": "Add more context about the task at the beginning",
-            "severity": "medium",
-        },
-    ]
+    try:
+        # Compile prompt (without variables for suggestions)
+        compiled_prompt = compile_prompt(db, prompt_version_id, {})
 
-    return {
-        "prompt_version_id": version.id,
-        "suggestions": suggestions,
-    }
+        # Get suggestions from Ollama
+        client = get_ollama_client()
+        suggestions = await client.suggest_improvements(compiled_prompt)
+
+        return {
+            "prompt_version_id": version.id,
+            "suggestions": suggestions,
+        }
+
+    except Exception as e:
+        # Return helpful error message
+        raise HTTPException(status_code=500, detail=str(e))
