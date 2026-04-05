@@ -20,20 +20,6 @@ class SuggestionsRequest(BaseModel):
     prompt_version_id: str
 
 
-@router.post("")
-async def get_suggestions_from_body(
-    data: SuggestionsRequest,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user),
-):
-    """
-    Get AI-powered suggestions for improving a prompt.
-    Accepts prompt_version_id in request body.
-    """
-    return await _get_suggestions_impl(data.prompt_version_id, db, user_id)
-
-
-@router.post("/{prompt_version_id}")
 async def _get_suggestions_impl(
     prompt_version_id: str,
     db: Session,
@@ -76,6 +62,20 @@ async def _get_suggestions_impl(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("")
+async def get_suggestions_from_body(
+    data: SuggestionsRequest,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Get AI-powered suggestions for improving a prompt.
+    Accepts prompt_version_id in request body.
+    """
+    return await _get_suggestions_impl(data.prompt_version_id, db, user_id)
+
+
+@router.post("/{prompt_version_id}")
 async def get_suggestions(
     prompt_version_id: str,
     db: Session = Depends(get_db),
