@@ -27,9 +27,6 @@ class Settings(BaseSettings):
     ollama_api_key: Optional[str] = None  # Required for cloud models at ollama.com
     ollama_default_model: str = "llama3.2"
 
-    # CORS - will be set manually after initialization
-    cors_origins: list = []
-
     # Environment
     environment: str = "development"
     debug: bool = True
