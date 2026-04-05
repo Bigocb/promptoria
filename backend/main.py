@@ -2,6 +2,10 @@
 FastAPI application for PromptArchitect backend.
 Migrated from Node.js to Python.
 Production database: Render PostgreSQL (automatic connection via DATABASE_URL env var)
+
+CRITICAL: Requirements updated - psycopg2-binary==2.9.9 must be installed for PostgreSQL support.
+If ModuleNotFoundError: No module named 'psycopg2' occurs, Render's git checkout is stale.
+Force-trigger a complete rebuild to refresh the cached repository.
 """
 
 from fastapi import FastAPI
