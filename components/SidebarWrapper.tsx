@@ -20,14 +20,23 @@ export default function SidebarWrapper() {
 
   return (
     <>
+      <style>{`
+        @media (max-width: 767px) {
+          .sidebar-toggle { display: block !important; }
+          .sidebar-overlay { display: block !important; }
+        }
+        @media (min-width: 768px) {
+          .sidebar-toggle { display: none !important; }
+          .sidebar-overlay { display: none !important; }
+        }
+      `}</style>
+
       {/* Mobile hamburger menu */}
       <button
+        className="sidebar-toggle"
         onClick={() => setSidebarOpen(!sidebarOpen)}
         style={{
           display: 'none',
-          '@media (max-width: 767px)': {
-            display: 'block',
-          },
           position: 'fixed',
           top: '1rem',
           left: '1rem',
@@ -47,6 +56,7 @@ export default function SidebarWrapper() {
       {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
+          className="sidebar-overlay"
           onClick={() => setSidebarOpen(false)}
           style={{
             display: 'none',
@@ -54,9 +64,6 @@ export default function SidebarWrapper() {
             inset: 0,
             backgroundColor: 'rgba(0,0,0,0.5)',
             zIndex: 999,
-            '@media (max-width: 767px)': {
-              display: 'block',
-            },
           }}
         />
       )}

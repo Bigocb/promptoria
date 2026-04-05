@@ -24,14 +24,15 @@ export default function RootLayout({
               <style>{`
                 @media (min-width: 768px) {
                   body { flex-direction: row; }
-                  main { margin-left: 240px; }
+                  main.layout-main { margin-left: 240px; }
                 }
                 @media (max-width: 767px) {
-                  main { margin-left: 0; }
+                  body { flex-direction: column; }
+                  main.layout-main { margin-left: 0; }
                 }
               `}</style>
               <SidebarWrapper />
-              <main style={{ flex: 1, marginLeft: 0 }}>
+              <main className="layout-main" style={{ flex: 1, marginLeft: 0 }}>
                 {children}
               </main>
             </ThemeProvider>
