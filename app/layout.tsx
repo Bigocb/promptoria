@@ -14,13 +14,24 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head />
-      <body style={{ display: 'flex', margin: 0, padding: 0 }}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+      <body style={{ display: 'flex', margin: 0, padding: 0, flexDirection: 'column' }}>
         <AuthProvider>
           <SettingsProvider>
             <ThemeProvider>
+              <style>{`
+                @media (min-width: 768px) {
+                  body { flex-direction: row; }
+                  main { margin-left: 240px; }
+                }
+                @media (max-width: 767px) {
+                  main { margin-left: 0; }
+                }
+              `}</style>
               <SidebarWrapper />
-              <main style={{ flex: 1, marginLeft: '240px' }}>
+              <main style={{ flex: 1, marginLeft: 0 }}>
                 {children}
               </main>
             </ThemeProvider>

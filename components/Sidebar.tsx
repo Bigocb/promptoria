@@ -4,7 +4,12 @@ import { useAuth } from '@/app/providers'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean
+  onClose?: () => void
+}
+
+export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const { user, logout } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
@@ -38,6 +43,9 @@ export function Sidebar() {
         top: 0,
         display: 'flex',
         flexDirection: 'column',
+        zIndex: 1000,
+        transform: `translateX(${isOpen ? '0' : '-100%'})`,
+        transition: 'transform 0.3s ease',
       }}
     >
       {/* Logo */}
@@ -63,6 +71,7 @@ export function Sidebar() {
           <Link
             key={item.href}
             href={item.href}
+            onClick={() => onClose?.()}
             style={{
               display: 'block',
               padding: '0.75rem 1.5rem',
