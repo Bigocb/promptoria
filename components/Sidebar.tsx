@@ -44,9 +44,8 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         display: 'flex',
         flexDirection: 'column',
         zIndex: 1000,
-        transform: `translateX(${isOpen ? '0' : '-100%'})`,
-        transition: 'transform 0.3s ease',
       }}
+      className={`sidebar ${isOpen ? 'sidebar-open' : 'sidebar-closed'}`}
     >
       {/* Logo */}
       <div

@@ -21,13 +21,24 @@ export default function SidebarWrapper() {
   return (
     <>
       <style>{`
+        .sidebar {
+          transform: translateX(-100%);
+          transition: transform 0.3s ease;
+        }
+        .sidebar.sidebar-open {
+          transform: translateX(0);
+        }
+
         @media (max-width: 767px) {
           .sidebar-toggle { display: block !important; }
           .sidebar-overlay { display: block !important; }
+          .sidebar.sidebar-closed { transform: translateX(-100%); }
+          .sidebar.sidebar-open { transform: translateX(0); }
         }
         @media (min-width: 768px) {
           .sidebar-toggle { display: none !important; }
           .sidebar-overlay { display: none !important; }
+          .sidebar { transform: translateX(0) !important; }
         }
       `}</style>
 
