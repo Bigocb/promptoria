@@ -10,8 +10,8 @@ from typing import Optional
 class Settings(BaseSettings):
     """Application settings from environment variables"""
 
-    # Database
-    database_url: str = "mysql+mysqlconnector://test_user:test_password@localhost:3306/promptoria_test"
+    # Database - use empty string if not set, will default to SQLite in database.py
+    database_url: Optional[str] = None
 
     # JWT
     jwt_secret: str = "dev-secret-key-change-in-production"
