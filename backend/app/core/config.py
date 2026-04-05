@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     # Ollama (local LLM, zero configuration)
     ollama_endpoint: str = "http://localhost:11434"
-    ollama_default_model: str = "mistral"
+    ollama_default_model: str = "llama3.2"
 
     # Environment
     environment: str = "development"

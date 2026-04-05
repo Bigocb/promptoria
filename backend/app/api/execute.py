@@ -60,8 +60,8 @@ async def execute_prompt(
         # Compile prompt with snippets and variable substitution
         compiled_prompt = compile_prompt(db, data.prompt_version_id, variables)
 
-        # Execute via Ollama (uses default model transparently)
-        result = await execute_with_ollama(compiled_prompt)
+        # Execute via Ollama (uses llama3.2 transparently)
+        result = await execute_with_ollama(compiled_prompt, model="llama3.2")
 
         # Create and store test run with results
         test_run = TestRun(
@@ -77,7 +77,7 @@ async def execute_prompt(
             total_tokens=result["total_tokens"],
             latency_ms=result["latency_ms"],
             cost_usd=result["cost_usd"],
-            model="mistral",  # Using mistral as default
+            model="llama3.2",  # Using llama3.2 as default
             status="success",
         )
         db.add(test_run)
