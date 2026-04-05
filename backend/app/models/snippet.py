@@ -6,7 +6,7 @@ Snippets are reusable text blocks that can be composed into prompts.
 from sqlalchemy import Column, String, Text, Integer, ForeignKey, Index
 from sqlalchemy.orm import relationship
 
-from app.models.base import BaseModel
+from .base import BaseModel
 
 class Folder(BaseModel):
     """Folder for organizing prompts and snippets"""

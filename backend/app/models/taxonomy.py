@@ -6,7 +6,7 @@ Creates a 2-level hierarchy for organizing prompts.
 from sqlalchemy import Column, String, Text, ForeignKey, Index
 from sqlalchemy.orm import relationship
 
-from app.models.base import BaseModel
+from .base import BaseModel
 
 class AgentInteractionType(BaseModel):
     """Top-level category (e.g., 'Research', 'Code Generation')"""

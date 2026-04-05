@@ -2,13 +2,13 @@
 SQLAlchemy models for PromptArchitect backend.
 """
 
-from app.models.base import Base, BaseModel
-from app.models.user import User, UserSettings
-from app.models.workspace import Workspace
-from app.models.prompt import Prompt, PromptVersion, PromptComposition
-from app.models.snippet import Folder, Snippet
-from app.models.taxonomy import AgentInteractionType, PromptCategory
-from app.models.testrun import TestRun
+from .base import Base, BaseModel
+from .user import User, UserSettings
+from .workspace import Workspace
+from .prompt import Prompt, PromptVersion, PromptComposition
+from .snippet import Folder, Snippet
+from .taxonomy import AgentInteractionType, PromptCategory
+from .testrun import TestRun
 
 __all__ = [
     "Base",

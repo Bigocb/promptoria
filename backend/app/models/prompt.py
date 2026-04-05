@@ -6,7 +6,7 @@ Implements prompt versioning with immutable snapshots.
 from sqlalchemy import Column, String, Integer, ForeignKey, Text, JSON, Boolean, Index
 from sqlalchemy.orm import relationship
 
-from app.models.base import BaseModel
+from .base import BaseModel
 
 class Prompt(BaseModel):
     """Prompt template model"""

@@ -6,7 +6,7 @@ Stores execution logs for testing prompts against LLMs.
 from sqlalchemy import Column, String, Integer, Float, Text, JSON, ForeignKey, Index
 from sqlalchemy.orm import relationship
 
-from app.models.base import BaseModel
+from .base import BaseModel
 
 class TestRun(BaseModel):
     """Execution log for testing a prompt against an LLM"""

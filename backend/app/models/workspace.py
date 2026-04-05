@@ -6,7 +6,7 @@ Each user has exactly one workspace (1:1 relationship).
 from sqlalchemy import Column, String, ForeignKey, Index
 from sqlalchemy.orm import relationship
 
-from app.models.base import BaseModel
+from .base import BaseModel
 
 class Workspace(BaseModel):
     """Workspace model - container for all user data"""

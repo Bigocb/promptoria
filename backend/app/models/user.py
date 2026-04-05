@@ -5,7 +5,7 @@ User and UserSettings models.
 from sqlalchemy import Column, String, Boolean, Float, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 
-from app.models.base import BaseModel
+from .base import BaseModel
 
 class User(BaseModel):
     """User account model"""
