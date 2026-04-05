@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, status, Depends, Header
 
-from app.core.config import settings
+from .config import settings
 
 class JWTPayload:
     """JWT token payload structure - matches Node.js implementation"""
