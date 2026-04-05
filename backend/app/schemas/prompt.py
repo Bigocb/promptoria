@@ -2,7 +2,7 @@
 Pydantic schemas for prompt-related requests/responses.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
@@ -10,8 +10,10 @@ from datetime import datetime
 class PromptVersionBase(BaseModel):
     """Base prompt version schema"""
     template_body: str
-    model_config: Optional[dict] = None
+    config: Optional[dict] = Field(None, alias='model_config')
     is_active: bool = True
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class PromptVersionCreate(PromptVersionBase):
@@ -27,8 +29,7 @@ class PromptVersionResponse(PromptVersionBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class PromptBase(BaseModel):
@@ -63,8 +64,7 @@ class PromptResponse(PromptBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PromptDetailResponse(PromptResponse):
@@ -79,5 +79,4 @@ class PromptCompositionResponse(BaseModel):
     snippet_id: str
     rank: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

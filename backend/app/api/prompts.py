@@ -145,7 +145,7 @@ async def create_new_version(
         db,
         prompt_id,
         data.template_body,
-        model_config=data.model_config,
+        model_config=data.config,
     )
 
     return version
