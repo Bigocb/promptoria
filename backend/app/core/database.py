@@ -8,26 +8,27 @@ from sqlalchemy.pool import QueuePool, StaticPool
 
 from .config import settings
 
-# Use SQLite for local development (no MySQL required)
-DB_URL = "sqlite:///./promptoria.db"
-
-# Create engine with connection pooling
-if "sqlite" in DB_URL:
+# Use MySQL in production (via settings.database_url), SQLite in development
+# Check if we have a MySQL database configured
+if settings.database_url and "mysql" in settings.database_url:
+    DB_URL = settings.database_url
+    # MySQL with connection pooling
+    engine = create_engine(
+        DB_URL,
+        poolclass=QueuePool,
+        pool_size=5,
+        max_overflow=10,
+        pool_pre_ping=True,
+        echo=settings.debug
+    )
+else:
+    # Fall back to SQLite for local development (no MySQL required)
+    DB_URL = "sqlite:///./promptoria.db"
     # SQLite needs StaticPool for in-memory or thread safety
     engine = create_engine(
         DB_URL,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
-        echo=settings.debug
-    )
-else:
-    # MySQL with connection pooling
-    engine = create_engine(
-        settings.database_url,
-        poolclass=QueuePool,
-        pool_size=5,
-        max_overflow=10,
-        pool_pre_ping=True,
         echo=settings.debug
     )
 
