@@ -1,17 +1,13 @@
 'use client'
 
 import { useSettings } from '@/app/providers'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { themes } from '@/lib/themes'
 import { ThemeName } from '@/lib/themes'
-import { API_ENDPOINTS } from '@/lib/api-config'
 
 export default function SettingsPage() {
   const { settings, updateSetting } = useSettings()
   const [saving, setSaving] = useState(false)
-  const [apiKey, setApiKey] = useState('')
-  const [showApiKey, setShowApiKey] = useState(false)
-  const [apiKeySaved, setApiKeySaved] = useState(false)
 
   const handleThemeChange = async (theme: ThemeName) => {
     setSaving(true)
@@ -58,51 +54,6 @@ export default function SettingsPage() {
     }
   }
 
-  const handleApiKeyChange = async (key: string) => {
-    setApiKey(key)
-    setSaving(true)
-    setApiKeySaved(false)
-    try {
-      await fetch(API_ENDPOINTS.settings.setApiKey, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth-token')}`,
-        },
-        body: JSON.stringify({ apiKey: key }),
-      })
-      setApiKeySaved(true)
-      // Hide the saved indicator after 3 seconds
-      setTimeout(() => setApiKeySaved(false), 3000)
-    } catch (error) {
-      console.error('Failed to save API key:', error)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Load API key on mount
-  useEffect(() => {
-    const loadApiKey = async () => {
-      try {
-        const token = localStorage.getItem('auth-token')
-        if (token) {
-          const res = await fetch(API_ENDPOINTS.settings.setApiKey, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          })
-          if (res.ok) {
-            const data = await res.json()
-            setApiKey(data.apiKey || '')
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load API key:', error)
-      }
-    }
-    loadApiKey()
-  }, [])
 
   const models = [
     { id: 'llama3.2', name: 'Llama 3.2', description: 'Fast, capable, works locally or via Ollama Cloud' },
@@ -157,81 +108,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* API Key Settings */}
-        <section style={{
-          backgroundColor: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: '8px',
-          padding: '1.5rem',
-        }}>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--color-text)' }}>
-            Ollama API Key (Cloud)
-          </h2>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-            For Ollama Cloud, enter your API key to access cloud models. Get yours at{' '}
-            <a href="https://ollama.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>
-              ollama.com
-            </a>
-            {' '}(leave blank for local Ollama)
-          </p>
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-            <input
-              type={showApiKey ? 'text' : 'password'}
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              onBlur={() => handleApiKeyChange(apiKey)}
-              placeholder="ollama-api-key-..."
-              disabled={saving}
-              style={{
-                flex: 1,
-                padding: '0.75rem',
-                backgroundColor: 'var(--color-background)',
-                color: 'var(--color-text)',
-                border: apiKeySaved ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                borderRadius: '4px',
-                fontSize: '0.875rem',
-                fontFamily: 'monospace',
-                opacity: saving ? 0.6 : 1,
-                cursor: saving ? 'not-allowed' : 'text',
-              }}
-            />
-            <button
-              onClick={() => setShowApiKey(!showApiKey)}
-              disabled={saving}
-              style={{
-                padding: '0.75rem 1rem',
-                backgroundColor: 'var(--color-background)',
-                color: 'var(--color-text)',
-                border: '1px solid var(--color-border)',
-                borderRadius: '4px',
-                cursor: saving ? 'not-allowed' : 'pointer',
-                opacity: saving ? 0.6 : 1,
-              }}
-            >
-              {showApiKey ? '🙈 Hide' : '👁 Show'}
-            </button>
-            {apiKeySaved && (
-              <div style={{
-                padding: '0.75rem 1rem',
-                backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                color: '#4CB050',
-                border: '1px solid #4CB050',
-                borderRadius: '4px',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}>
-                ✓ Saved
-              </div>
-            )}
-          </div>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.75rem' }}>
-            ✓ Your API key is stored securely and only used for your requests
-          </p>
-        </section>
 
         {/* Suggestions Settings */}
         <section style={{
