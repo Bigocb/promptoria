@@ -40,11 +40,19 @@ class Settings(BaseSettings):
 # Global settings instance
 settings = Settings()
 
-# CORS origins - set as class attribute AFTER instantiation to bypass pydantic-settings env parsing
-settings.cors_origins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3100",
-    "https://syncellium.pro",
-    "https://promptoria-dev.vercel.app"
-]
+# CORS origins - read from env var or use defaults
+cors_env = os.getenv("CORS_ORIGINS", "")
+if cors_env:
+    # Parse comma-separated list from environment
+    settings.cors_origins = [origin.strip() for origin in cors_env.split(",")]
+else:
+    # Default origins for development
+    settings.cors_origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3100",
+        "https://syncellium.pro",
+        "https://promptoria-dev.vercel.app",
+        "https://promptoria.onrender.com",
+        "https://promptoria-api.onrender.com",
+    ]

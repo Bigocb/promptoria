@@ -93,7 +93,7 @@ def extract_token_from_header(auth_header: Optional[str]) -> Optional[str]:
 
 
 def is_valid_email(email: str) -> bool:
-    """
+    r"""
     Simple email validation.
     Matches Node.js regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     """
