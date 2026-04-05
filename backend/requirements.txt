@@ -1,0 +1,27 @@
+# PostgreSQL driver - CRITICAL for Render PostgreSQL support
+psycopg2-binary==2.9.9
+
+# FastAPI Web Framework
+fastapi==0.104.1
+uvicorn==0.24.0
+
+# Database ORM
+sqlalchemy==2.0.23
+alembic==1.13.0
+
+# Configuration & Environment
+python-dotenv==1.0.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+pydantic[email]==2.5.0
+
+# Authentication & Security
+PyJWT==2.12.1
+bcrypt==4.1.1
+
+# HTTP & Networking
+python-multipart==0.0.6
+httpx==0.25.2
+
+# AI/LLM APIs
+anthropic==0.80.0
