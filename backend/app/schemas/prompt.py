@@ -9,11 +9,11 @@ from datetime import datetime
 
 class PromptVersionBase(BaseModel):
     """Base prompt version schema"""
+    model_config = ConfigDict(populate_by_name=True)
+
     template_body: str
     config: Optional[dict] = Field(None, alias='model_config')
     is_active: bool = True
-
-    model_config = ConfigDict(populate_by_name=True)
 
 
 class PromptVersionCreate(PromptVersionBase):
@@ -23,13 +23,13 @@ class PromptVersionCreate(PromptVersionBase):
 
 class PromptVersionResponse(PromptVersionBase):
     """Prompt version response"""
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
     id: str
     prompt_id: str
     version_number: int
     created_at: datetime
     updated_at: datetime
-
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class PromptBase(BaseModel):
@@ -59,12 +59,12 @@ class PromptUpdate(BaseModel):
 
 class PromptResponse(PromptBase):
     """Prompt response"""
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     workspace_id: str
     created_at: datetime
     updated_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class PromptDetailResponse(PromptResponse):
@@ -74,9 +74,9 @@ class PromptDetailResponse(PromptResponse):
 
 class PromptCompositionResponse(BaseModel):
     """Prompt composition (snippet reference)"""
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     prompt_version_id: str
     snippet_id: str
     rank: int
-
-    model_config = ConfigDict(from_attributes=True)
