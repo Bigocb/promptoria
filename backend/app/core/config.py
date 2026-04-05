@@ -10,8 +10,8 @@ from typing import Optional
 class Settings(BaseSettings):
     """Application settings from environment variables"""
 
-    # Database - use empty string if not set, will default to SQLite in database.py
-    database_url: Optional[str] = None
+    # Database - DATABASE_URL is set by Render for PostgreSQL, or omitted for local SQLite
+    database_url: Optional[str] = None  # Will be set by Render or omitted for dev
 
     # JWT
     jwt_secret: str = "dev-secret-key-change-in-production"
