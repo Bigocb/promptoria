@@ -17,22 +17,26 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body style={{ display: 'flex', margin: 0, padding: 0, flexDirection: 'column' }}>
+      <body style={{ display: 'flex', margin: 0, padding: 0 }}>
         <AuthProvider>
           <SettingsProvider>
             <ThemeProvider>
               <style>{`
-                @media (min-width: 768px) {
-                  body { flex-direction: row; }
-                  main.layout-main { margin-left: 240px; }
+                body {
+                  flex-direction: row;
+                }
+                main.layout-main {
+                  margin-left: 240px;
+                  flex: 1;
                 }
                 @media (max-width: 767px) {
-                  body { flex-direction: column; }
-                  main.layout-main { margin-left: 0; }
+                  main.layout-main {
+                    margin-left: 0;
+                  }
                 }
               `}</style>
               <SidebarWrapper />
-              <main className="layout-main" style={{ flex: 1, marginLeft: 0 }}>
+              <main className="layout-main">
                 {children}
               </main>
             </ThemeProvider>
