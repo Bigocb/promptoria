@@ -41,10 +41,21 @@ app.include_router(execute.router, prefix="/api/execute", tags=["execute"])
 app.include_router(suggestions.router, prefix="/api/suggestions", tags=["suggestions"])
 app.include_router(taxonomy.router, prefix="/api/taxonomy", tags=["taxonomy"])
 
-# Add CORS middleware - use configured origins
+# Add CORS middleware - ensure all required origins are allowed
+cors_origins = getattr(settings, 'cors_origins', []) or []
+# Always include production frontend URLs
+production_origins = [
+    "https://promptoria-dev.vercel.app",
+    "https://promptoria.vercel.app",
+    "https://promptoria-api.onrender.com",
+]
+all_origins = list(set(cors_origins + production_origins))
+
+print(f"DEBUG: CORS origins configured: {all_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=all_origins,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     allow_credentials=False,
