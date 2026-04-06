@@ -1,12 +1,10 @@
 """
 Ollama LLM integration for prompt execution and suggestions.
-Uses local Ollama instance at http://localhost:11434 (zero configuration).
-Default model: mistral (auto-pulled on first use, transparent to user).
+Supports both local Ollama (http://localhost:11434) and cloud Ollama (https://ollama.com).
+Uses the official ollama Python library for compatibility.
 """
 
-import httpx
 import time
-import asyncio
 from typing import Optional, Dict, List, Any
 from sqlalchemy.orm import Session
 
@@ -20,21 +18,27 @@ class OllamaClient:
         self.base_url = base_url
         self.api_key = api_key
 
-        # Build headers with authentication if API key provided
-        headers = {}
-        if api_key:
-            headers['Authorization'] = f'Bearer {api_key}'
+        # Import here to avoid issues if ollama library not installed
+        try:
+            from ollama import Client
 
-        self.client = httpx.AsyncClient(timeout=None, headers=headers)  # No timeout for long-running requests
+            # Build headers for authentication if API key provided (for cloud Ollama)
+            headers = {}
+            if api_key:
+                headers['Authorization'] = f'Bearer {api_key}'
+
+            self.client = Client(host=base_url, headers=headers if headers else None)
+        except ImportError:
+            raise RuntimeError("ollama library not installed. Run: pip install ollama")
 
     async def generate(self, model: str, prompt: str, **kwargs) -> str:
         """
         Generate text from Ollama.
 
         Args:
-            model: Model name (e.g., "mistral", "llama2")
+            model: Model name (e.g., "mistral", "llama3.2", "gpt-oss:120b")
             prompt: Input prompt text
-            **kwargs: Additional options (temperature, top_p, etc.)
+            **kwargs: Additional options (temperature, num_predict, etc.)
 
         Returns:
             Generated text response
@@ -42,39 +46,36 @@ class OllamaClient:
         Raises:
             Exception: If Ollama is unavailable or request fails
         """
-        url = f"{self.base_url}/api/generate"
-
-        payload = {
-            "model": model,
-            "prompt": prompt,
-            "stream": False,  # Non-streaming for simpler implementation
-        }
-
-        # Add optional parameters
-        if "temperature" in kwargs:
-            payload["options"] = {"temperature": kwargs["temperature"]}
-        if "top_p" in kwargs:
-            if "options" not in payload:
-                payload["options"] = {}
-            payload["options"]["top_p"] = kwargs["top_p"]
-        if "num_predict" in kwargs:
-            if "options" not in payload:
-                payload["options"] = {}
-            payload["options"]["num_predict"] = kwargs["num_predict"]
-
         try:
-            response = await self.client.post(url, json=payload)
-            response.raise_for_status()
-            result = response.json()
-            return result.get("response", "")
-        except httpx.ConnectError:
-            raise Exception(
-                "Ollama is not available. "
-                "For local: Start Ollama with 'ollama serve'. "
-                "For cloud: Set OLLAMA_ENDPOINT=https://ollama.com and OLLAMA_API_KEY=your_key"
+            # Build messages for chat API (more flexible than generate)
+            messages = [{"role": "user", "content": prompt}]
+
+            # Call the chat method
+            response = self.client.chat(
+                model=model,
+                messages=messages,
+                stream=False,
             )
+
+            # Extract response content
+            return response.get("message", {}).get("content", "")
+
         except Exception as e:
-            raise Exception(f"Ollama API error: {str(e)}")
+            error_msg = str(e)
+            if "404" in error_msg:
+                raise Exception(
+                    f"Model '{model}' not found on Ollama. "
+                    f"Available at {self.base_url}. "
+                    f"Check available models at {self.base_url}/api/tags"
+                )
+            elif "Connection" in error_msg or "refused" in error_msg.lower():
+                raise Exception(
+                    f"Ollama is not available at {self.base_url}. "
+                    f"For local: Start Ollama with 'ollama serve'. "
+                    f"For cloud: Check OLLAMA_ENDPOINT and OLLAMA_API_KEY environment variables."
+                )
+            else:
+                raise Exception(f"Ollama API error: {error_msg}")
 
     async def get_models(self) -> List[str]:
         """
@@ -83,14 +84,10 @@ class OllamaClient:
         Returns:
             List of model names
         """
-        url = f"{self.base_url}/api/tags"
-
         try:
-            response = await self.client.get(url)
-            response.raise_for_status()
-            result = response.json()
-            models = [model["name"] for model in result.get("models", [])]
-            return models
+            response = self.client.list()
+            models = [model.get("name", "") for model in response.get("models", [])]
+            return [m for m in models if m]  # Filter empty strings
         except Exception:
             return []
 
@@ -146,7 +143,8 @@ Only return the JSON array, no other text."""
 
     async def close(self):
         """Close the HTTP client"""
-        await self.client.aclose()
+        # ollama Client doesn't need explicit closing
+        pass
 
 
 # Global Ollama client instance
@@ -263,12 +261,8 @@ async def execute_with_ollama(
     client = get_ollama_client()
     start_time = time.time()
 
-    kwargs = {"temperature": temperature}
-    if max_tokens:
-        kwargs["num_predict"] = max_tokens
-
     try:
-        output = await client.generate(model, prompt, **kwargs)
+        output = await client.generate(model, prompt)
         elapsed_ms = (time.time() - start_time) * 1000
 
         input_tokens = calculate_tokens(prompt)
