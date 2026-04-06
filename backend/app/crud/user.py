@@ -33,7 +33,7 @@ def create_user(db: Session, email: str, password: str) -> User:
         user_id=user_id,
         theme="gruvbox-dark",
         suggestions_enabled=True,
-        default_model="claude-3-haiku",
+        default_model="gpt-oss:120b-cloud",
         default_temperature=0.7,
         default_max_tokens=500
     )

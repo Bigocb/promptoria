@@ -29,7 +29,7 @@ class UserSettings(BaseModel):
 
     theme = Column(String(50), default="gruvbox-dark")
     suggestions_enabled = Column(Boolean, default=True)
-    default_model = Column(String(100), default="claude-3-haiku")
+    default_model = Column(String(100), default="gpt-oss:120b-cloud")
     default_temperature = Column(Float, default=0.7)
     default_max_tokens = Column(Integer, default=500)
     anthropic_api_key = Column(String(1000), nullable=True)  # Encrypted in production
