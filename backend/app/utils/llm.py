@@ -104,6 +104,9 @@ class OllamaClient:
 
         Returns:
             List of suggestion objects with type, message, severity
+
+        Raises:
+            Exception: If Ollama is unavailable or response cannot be parsed
         """
         system_prompt = """You are an expert prompt engineer. Analyze the given prompt and provide 2-3 specific, actionable suggestions to improve it.
 
@@ -122,38 +125,24 @@ Only return the JSON array, no other text."""
 
         critique_prompt = f"{system_prompt}\n\nPrompt to analyze:\n{prompt}"
 
-        try:
-            response_text = await self.generate(model, critique_prompt, num_predict=500)
+        response_text = await self.generate(model, critique_prompt, num_predict=500)
 
-            # Parse JSON response
-            import json
+        # Parse JSON response
+        import json
 
-            # Extract JSON from response (handle cases where model adds text around JSON)
-            start_idx = response_text.find("[")
-            end_idx = response_text.rfind("]") + 1
+        # Extract JSON from response (handle cases where model adds text around JSON)
+        start_idx = response_text.find("[")
+        end_idx = response_text.rfind("]") + 1
 
-            if start_idx != -1 and end_idx > start_idx:
-                json_str = response_text[start_idx:end_idx]
+        if start_idx != -1 and end_idx > start_idx:
+            json_str = response_text[start_idx:end_idx]
+            try:
                 suggestions = json.loads(json_str)
                 return suggestions
-            else:
-                # Fallback if parsing fails
-                return [
-                    {
-                        "type": "clarity",
-                        "message": "Consider making the prompt more specific",
-                        "severity": "medium",
-                    }
-                ]
-        except Exception:
-            # Return default suggestion if Ollama fails
-            return [
-                {
-                    "type": "clarity",
-                    "message": "Consider making the prompt more specific",
-                    "severity": "medium",
-                }
-            ]
+            except json.JSONDecodeError as e:
+                raise Exception(f"Failed to parse suggestions JSON: {str(e)}\nResponse was: {response_text[:200]}")
+        else:
+            raise Exception(f"No JSON array found in response: {response_text[:200]}")
 
     async def close(self):
         """Close the HTTP client"""

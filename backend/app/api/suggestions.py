@@ -65,7 +65,10 @@ async def _get_suggestions_impl(
         return {"suggestions": formatted}
 
     except Exception as e:
-        # Return helpful error message
+        # Return helpful error message with debugging info
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"ERROR in suggestions: {error_trace}")
         raise HTTPException(status_code=500, detail=f"Failed to generate suggestions: {str(e)}")
 
 
@@ -111,3 +114,72 @@ async def get_suggestions(
         raise HTTPException(status_code=400, detail="Either 'prompt' or 'prompt_version_id' is required")
 
     return await _get_suggestions_impl(prompt_text, data.focus_areas, db, user_id)
+
+
+class TagSuggestionsRequest(BaseModel):
+    """Request for tag suggestions"""
+    prompt_content: str = Field(..., alias="promptContent")
+
+    class Config:
+        populate_by_name = True
+
+
+class TagSuggestionsResponse(BaseModel):
+    """Response with suggested tags"""
+    tags: list[str]
+
+
+@router.post("/tags", response_model=TagSuggestionsResponse)
+async def get_tag_suggestions(
+    data: TagSuggestionsRequest = Body(...),
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Get AI-powered tag suggestions based on prompt content.
+    Uses Ollama to analyze the prompt and suggest relevant tags.
+    """
+    workspace = db.query(Workspace).filter(Workspace.user_id == user_id).first()
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    if not data.prompt_content.strip():
+        raise HTTPException(status_code=400, detail="Prompt content is required")
+
+    try:
+        client = get_ollama_client()
+
+        system_prompt = """You are an expert at tagging and categorizing prompts. Analyze the given prompt and suggest 5-8 relevant tags that describe its purpose, technique, and characteristics.
+
+Tags should be:
+- Lowercase, hyphenated (e.g., "instruction-following", "chain-of-thought")
+- Specific and meaningful
+- Related to the prompt's purpose, domain, or technique
+
+Return ONLY a JSON array of strings, like:
+["tag1", "tag2", "tag3", "tag4", "tag5"]
+
+No other text."""
+
+        tag_prompt = f"{system_prompt}\n\nPrompt to tag:\n{data.prompt_content}"
+
+        response_text = await client.generate("llama3.2", tag_prompt, num_predict=100)
+
+        # Parse JSON response
+        import json
+        start_idx = response_text.find("[")
+        end_idx = response_text.rfind("]") + 1
+
+        if start_idx != -1 and end_idx > start_idx:
+            json_str = response_text[start_idx:end_idx]
+            tags = json.loads(json_str)
+            # Ensure we return a list of strings
+            return {"tags": [str(t).lower().replace(" ", "-") for t in tags if isinstance(t, str)]}
+        else:
+            raise ValueError("Could not parse tags from response")
+
+    except Exception as e:
+        # Log the error but don't expose internal details
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to generate tag suggestions: {str(e)}")

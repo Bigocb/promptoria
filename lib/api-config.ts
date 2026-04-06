@@ -43,4 +43,5 @@ export const API_ENDPOINTS = {
     categories: (typeId: string) => `${API_BASE_URL}/api/taxonomy/categories?typeId=${typeId}`,
   },
   suggestions: `${API_BASE_URL}/api/suggestions`,
+  tags: `${API_BASE_URL}/api/suggestions/tags`,
 }

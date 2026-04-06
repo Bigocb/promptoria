@@ -334,20 +334,31 @@ export default function WorkbenchPage() {
 
     setTagsLoading(true)
     try {
-      const varsList = variables ? variables.split(', ').filter(v => v.trim()).join(', ') : 'none'
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.tags, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          promptContent: promptContent,
+        }),
+      })
 
-      // Simulate Ollama API response for tag suggestions
-      const mockSuggestedTags = [
-        'instruction-following',
-        'structured-output',
-        'reasoning',
-        'creative-writing',
-        'analysis',
-      ].filter(tag => !tags.includes(tag))
+      if (!res.ok) {
+        const error = await res.json()
+        alert(`Error getting tag suggestions: ${error.detail || 'Unknown error'}`)
+        return
+      }
 
-      setSuggestedTags(mockSuggestedTags)
+      const data = await res.json()
+      // Filter out tags that are already added
+      const newTags = data.tags.filter((tag: string) => !tags.includes(tag))
+      setSuggestedTags(newTags)
     } catch (error) {
       console.error('Error getting tag suggestions:', error)
+      alert(`Failed to get tag suggestions: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setTagsLoading(false)
     }
