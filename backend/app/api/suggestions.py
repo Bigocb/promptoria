@@ -3,9 +3,10 @@ Suggestions endpoint: get AI-powered prompt improvement suggestions
 Uses Ollama for local LLM-based analysis (zero configuration needed).
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from typing import Optional
 
 from ..core.database import get_db
 from ..core.security import get_current_user
@@ -64,15 +65,24 @@ async def _get_suggestions_impl(
 
 @router.post("")
 async def get_suggestions_from_body(
-    data: SuggestionsRequest,
+    prompt_version_id: Optional[str] = Query(None),
+    data: Optional[SuggestionsRequest] = None,
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
     """
     Get AI-powered suggestions for improving a prompt.
-    Accepts prompt_version_id in request body.
+    Accepts prompt_version_id in query parameter or request body.
     """
-    return await _get_suggestions_impl(data.prompt_version_id, db, user_id)
+    # Try to get prompt_version_id from query param first, then from body
+    version_id = prompt_version_id
+    if not version_id and data:
+        version_id = data.prompt_version_id
+
+    if not version_id:
+        raise HTTPException(status_code=400, detail="prompt_version_id is required")
+
+    return await _get_suggestions_impl(version_id, db, user_id)
 
 
 @router.post("/{prompt_version_id}")
