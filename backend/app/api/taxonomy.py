@@ -29,16 +29,20 @@ async def list_interaction_types(
         AgentInteractionType.workspace_id == workspace.id
     ).all()
 
+    # Fetch all prompts for workspace at once (avoid N+1)
+    all_prompts = db.query(Prompt).filter(Prompt.workspace_id == workspace.id).all()
+    prompts_by_category = {}
+    for p in all_prompts:
+        if p.category_id:
+            if p.category_id not in prompts_by_category:
+                prompts_by_category[p.category_id] = []
+            prompts_by_category[p.category_id].append(p)
+
     result = []
     for t in types:
         categories = []
         for c in t.categories:
-            # Fetch prompts for this category
-            prompts = db.query(Prompt).filter(
-                Prompt.workspace_id == workspace.id,
-                Prompt.category_id == c.id
-            ).all()
-
+            prompts = prompts_by_category.get(c.id, [])
             categories.append({
                 "id": c.id,
                 "name": c.name,
