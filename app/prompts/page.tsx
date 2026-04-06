@@ -101,6 +101,7 @@ export default function WorkbenchPage() {
   // Load prompt state
   const [availablePrompts, setAvailablePrompts] = useState<LoadablePrompt[]>([])
   const [loadedPromptId, setLoadedPromptId] = useState<string | null>(null)
+  const [currentPromptVersionId, setCurrentPromptVersionId] = useState<string | null>(null)
   const [loadedPromptDescription, setLoadedPromptDescription] = useState('')
   const [loadedPromptModel, setLoadedPromptModel] = useState('gpt-4')
   const [promptsLoading, setPromptsLoading] = useState(false)
@@ -218,9 +219,10 @@ export default function WorkbenchPage() {
       const data = await res.json()
 
       // Load the latest version's content
-      const latestVersion = data.versions?.[0]
+      const latestVersion = data.versions?.[0] || data.latest_version
 
       setLoadedPromptId(promptId)
+      setCurrentPromptVersionId(latestVersion?.id || null)
       setPromptName(data.name)
       setPromptContent(latestVersion?.template_body || data.template_body || '')
       setLoadedPromptDescription(data.description || '')
@@ -246,6 +248,7 @@ export default function WorkbenchPage() {
 
   const clearLoadedPrompt = () => {
     setLoadedPromptId(null)
+    setCurrentPromptVersionId(null)
     setPromptName('')
     setPromptContent('')
     setLoadedPromptDescription('')
@@ -468,34 +471,48 @@ export default function WorkbenchPage() {
   }
 
   const runTest = async () => {
-    if (!promptContent.trim()) {
+    if (!currentPromptVersionId) {
       alert('Please save the prompt first, then test it')
       return
     }
 
     setTestLoading(true)
     try {
-      const compiled = compilePrompt()
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.execute.run, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          prompt_version_id: currentPromptVersionId,
+          variables: testVariables,
+        })
+      })
 
-      // For now, show that testing would use Ollama
-      // (Full integration requires saving prompt first to get prompt_version_id)
-      const mockResponse = `Testing with Ollama (${testModel})\n\nCompiled prompt:\n"${compiled.substring(0, 150)}${compiled.length > 150 ? '...' : ''}"\n\nTemperature: ${testTemperature}\nMax Tokens: ${testMaxTokens}\n\nNote: Save your prompt first to test it against the live Ollama backend.`
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.detail || 'Test execution failed')
+      }
 
-      setTestOutput(mockResponse)
+      const result = await res.json()
+      setTestOutput(result.output)
 
-      const result: TestResult = {
-        id: Date.now().toString(),
+      const testResult: TestResult = {
+        id: result.id,
         timestamp: new Date().toLocaleTimeString(),
-        model: testModel,
+        model: result.model,
         temperature: testTemperature,
         maxTokens: testMaxTokens,
         variables: { ...testVariables },
-        output: mockResponse,
+        output: result.output,
       }
 
-      setTestResults([result, ...testResults])
+      setTestResults([testResult, ...testResults])
     } catch (error) {
-      setTestOutput(`Error running test: ${error instanceof Error ? error.message : String(error)}`)
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      setTestOutput(`Error running test: ${errorMsg}`)
     } finally {
       setTestLoading(false)
     }
@@ -537,6 +554,18 @@ export default function WorkbenchPage() {
         alert('Prompt updated successfully!')
         // Reload the prompt to get updated versions
         await loadPrompt(loadedPromptId)
+        // Capture the latest version ID for testing
+        if (loadedPromptId) {
+          const freshRes = await fetch(API_ENDPOINTS.prompts.get(loadedPromptId), {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+          if (freshRes.ok) {
+            const freshData = await freshRes.json()
+            if (freshData.latest_version?.id) {
+              setCurrentPromptVersionId(freshData.latest_version.id)
+            }
+          }
+        }
       } else {
         // Creating new prompt
         const createRes = await fetch(API_ENDPOINTS.prompts.create, {
@@ -560,11 +589,17 @@ export default function WorkbenchPage() {
           return
         }
 
+        const newPromptData = await createRes.json()
         alert('Prompt saved successfully!')
+
+        // Capture the version ID for testing
+        if (newPromptData.latest_version?.id) {
+          setCurrentPromptVersionId(newPromptData.latest_version.id)
+          setLoadedPromptId(newPromptData.id)
+        }
+
         // Refresh prompts list
         await fetchAvailablePrompts()
-        // Clear form
-        clearLoadedPrompt()
       }
     } catch (error) {
       alert(`Failed to save prompt: ${error}`)

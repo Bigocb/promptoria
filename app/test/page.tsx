@@ -5,9 +5,9 @@ import { API_ENDPOINTS } from '@/lib/api-config'
 
 interface Prompt {
   id: string
-  title: string
-  description: string
-  latest_version: {
+  name: string
+  description?: string
+  latest_version?: {
     id: string
     template_body: string
   }
@@ -41,15 +41,24 @@ export default function TestRunnerPage() {
     const fetchPrompts = async () => {
       try {
         const token = localStorage.getItem('auth-token')
+        if (!token) {
+          setError('Not authenticated')
+          setFetchingPrompts(false)
+          return
+        }
+
         const res = await fetch(API_ENDPOINTS.prompts.list, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         if (res.ok) {
           const data = await res.json()
-          setPrompts(data)
+          setPrompts(Array.isArray(data) ? data : [])
+        } else {
+          setError('Failed to load prompts')
         }
       } catch (err) {
         console.error('Failed to fetch prompts:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load prompts')
       } finally {
         setFetchingPrompts(false)
       }
@@ -58,23 +67,43 @@ export default function TestRunnerPage() {
   }, [])
 
   // Extract variables from selected prompt
-  const handleSelectPrompt = (prompt: Prompt) => {
-    setSelectedPrompt(prompt)
+  const handleSelectPrompt = async (prompt: Prompt) => {
     setOutput('')
     setResults([])
     setError('')
+    setVariables({})
 
-    // Extract variables from template (e.g., {{variable_name}})
-    const templateBody = prompt.latest_version.template_body
-    const varMatches = templateBody.match(/\{\{(\w+)\}\}/g) || []
-    const extractedVars: Record<string, string> = {}
+    try {
+      const token = localStorage.getItem('auth-token')
+      // Fetch full prompt details to get latest_version
+      const res = await fetch(API_ENDPOINTS.prompts.detail(prompt.id), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
 
-    varMatches.forEach((match) => {
-      const varName = match.slice(2, -2) // Remove {{ and }}
-      extractedVars[varName] = ''
-    })
+      if (!res.ok) {
+        throw new Error('Failed to load prompt details')
+      }
 
-    setVariables(extractedVars)
+      const fullPrompt = await res.json()
+      setSelectedPrompt(fullPrompt)
+
+      // Extract variables from template (e.g., {{variable_name}})
+      const latestVersion = fullPrompt.latest_version || fullPrompt.versions?.[0]
+      if (latestVersion?.template_body) {
+        const templateBody = latestVersion.template_body
+        const varMatches = templateBody.match(/\{\{(\w+)\}\}/g) || []
+        const extractedVars: Record<string, string> = {}
+
+        varMatches.forEach((match) => {
+          const varName = match.slice(2, -2) // Remove {{ and }}
+          extractedVars[varName] = ''
+        })
+
+        setVariables(extractedVars)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load prompt')
+    }
   }
 
   const handleVariableChange = (key: string, value: string) => {
@@ -170,8 +199,8 @@ export default function TestRunnerPage() {
                       color: selectedPrompt?.id === prompt.id ? 'white' : 'var(--color-foreground)',
                     }}
                   >
-                    <div style={{ fontWeight: '600' }}>{prompt.title}</div>
-                    <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{prompt.description}</div>
+                    <div style={{ fontWeight: '600' }}>{prompt.name}</div>
+                    <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{prompt.description || 'No description'}</div>
                   </button>
                 ))}
               </div>
