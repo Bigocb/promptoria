@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from ..core.database import get_db
 from ..core.security import get_current_user
-from ..models import Workspace, AgentInteractionType, PromptCategory
+from ..models import Workspace, AgentInteractionType, PromptCategory, Prompt
 
 router = APIRouter()
 
@@ -19,7 +19,7 @@ async def list_interaction_types(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    """List all interaction types with their categories"""
+    """List all interaction types with their categories and prompts"""
     workspace = db.query(Workspace).filter(Workspace.user_id == user_id).first()
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
@@ -28,24 +28,39 @@ async def list_interaction_types(
         AgentInteractionType.workspace_id == workspace.id
     ).all()
 
-    return [
-        {
+    result = []
+    for t in types:
+        categories = []
+        for c in t.categories:
+            # Fetch prompts for this category
+            prompts = db.query(Prompt).filter(
+                Prompt.workspace_id == workspace.id,
+                Prompt.category_id == c.id
+            ).all()
+
+            categories.append({
+                "id": c.id,
+                "name": c.name,
+                "description": c.description,
+                "prompts": [
+                    {
+                        "id": p.id,
+                        "name": p.name,
+                        "description": p.description
+                    }
+                    for p in prompts
+                ]
+            })
+
+        result.append({
             "id": t.id,
             "name": t.name,
             "description": t.description,
             "emoji": t.emoji,
-            "categories": [
-                {
-                    "id": c.id,
-                    "name": c.name,
-                    "description": c.description,
-                    "prompts": []
-                }
-                for c in t.categories
-            ]
-        }
-        for t in types
-    ]
+            "categories": categories
+        })
+
+    return result
 
 
 @router.post("/interaction-types", status_code=201)
