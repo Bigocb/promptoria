@@ -226,7 +226,7 @@ export default function WorkbenchPage() {
       setLoadedPromptDescription(data.description || '')
       setLoadedPromptModel(data.model || 'gpt-4')
       setTags(data.tags || [])
-      setSelectedInteractionTypeId(data.category_id ? '' : '') // Will need to fetch category details
+      setSelectedCategoryId(data.category_id || '')
       setVersions(data.versions || [])
       setSelectedVersionForView(latestVersion || null)
 
@@ -512,6 +512,7 @@ export default function WorkbenchPage() {
             description: loadedPromptDescription,
             tags,
             model: loadedPromptModel,
+            template_body: promptContent,
             ...(selectedCategoryId && { category_id: selectedCategoryId }),
           }),
         })
@@ -684,7 +685,7 @@ export default function WorkbenchPage() {
 
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600' }}>
-              📂 Organize
+              📋 Metadata
             </label>
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', marginBottom: '0.375rem', fontWeight: '500', fontSize: '0.875rem' }}>
@@ -815,6 +816,40 @@ export default function WorkbenchPage() {
                 )}
               </div>
             )}
+
+            {/* Description Field */}
+            <div style={{ marginTop: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.375rem', fontWeight: '500', fontSize: '0.875rem' }}>
+                Description
+              </label>
+              <textarea
+                value={loadedPromptDescription}
+                onChange={(e) => setLoadedPromptDescription(e.target.value)}
+                placeholder="Brief description of what this prompt does"
+                className="input"
+                style={{
+                  width: '100%',
+                  fontSize: '0.875rem',
+                  minHeight: '60px',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+
+            {/* Model Field */}
+            <div style={{ marginTop: '0.75rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.375rem', fontWeight: '500', fontSize: '0.875rem' }}>
+                Model
+              </label>
+              <input
+                type="text"
+                value={loadedPromptModel}
+                onChange={(e) => setLoadedPromptModel(e.target.value)}
+                placeholder="e.g., gpt-4"
+                className="input"
+                style={{ width: '100%', fontSize: '0.875rem' }}
+              />
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '1rem' }}>

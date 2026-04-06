@@ -107,15 +107,25 @@ async def update_prompt_metadata(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    """Update prompt metadata"""
+    """Update prompt metadata and/or create new version if content changed"""
     workspace = get_user_workspace(user_id, db)
 
+    # Separate template_body from other updates
+    update_data = data.model_dump(exclude_unset=True)
+    template_body = update_data.pop('template_body', None)
+
+    # Update metadata
     prompt = update_prompt(
         db,
         prompt_id,
         workspace.id,
-        **data.model_dump(exclude_unset=True),
+        **update_data,
     )
+
+    # If template_body provided, create a new version
+    if template_body:
+        from ..crud.prompt import create_prompt_version
+        create_prompt_version(db, prompt_id, template_body)
 
     if not prompt:
         raise HTTPException(status_code=404, detail="Prompt not found")

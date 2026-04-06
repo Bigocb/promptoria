@@ -48,13 +48,14 @@ class PromptCreate(PromptBase):
 
 
 class PromptUpdate(BaseModel):
-    """Update prompt metadata"""
+    """Update prompt metadata and/or content"""
     name: Optional[str] = None
     description: Optional[str] = None
     folder_id: Optional[str] = None
     category_id: Optional[str] = None
     tags: Optional[List[str]] = None
     model: Optional[str] = None
+    template_body: Optional[str] = None  # If provided, creates new version
 
 
 class PromptResponse(PromptBase):
