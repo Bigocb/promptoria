@@ -106,7 +106,7 @@ export default function WorkbenchPage() {
   useEffect(() => {
     fetchSnippets()
     fetchInteractionTypes()
-    fetchAvailablePrompts()
+    // Lazy load prompts only when load selector is opened
   }, [user])
 
   const fetchSnippets = async () => {
@@ -575,11 +575,18 @@ export default function WorkbenchPage() {
                     loadPrompt(e.target.value)
                   }
                 }}
+                onFocus={() => {
+                  if (availablePrompts.length === 0 && !promptsLoading) {
+                    fetchAvailablePrompts()
+                  }
+                }}
                 disabled={promptsLoading}
                 className="input"
                 style={{ flex: 1, fontSize: '0.875rem' }}
               >
-                <option value="">Select a prompt to edit...</option>
+                <option value="">
+                  {promptsLoading ? 'Loading prompts...' : 'Select a prompt to edit...'}
+                </option>
                 {availablePrompts.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
