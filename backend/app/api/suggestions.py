@@ -3,7 +3,7 @@ Suggestions endpoint: get AI-powered prompt improvement suggestions
 Uses Ollama for local LLM-based analysis (zero configuration needed).
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -11,88 +11,100 @@ from typing import Optional
 from ..core.database import get_db
 from ..core.security import get_current_user
 from ..models import Workspace, PromptVersion, Prompt
-from ..utils.llm import compile_prompt, get_ollama_client
+from ..utils.llm import get_ollama_client
 
 router = APIRouter()
 
 
 class SuggestionsRequest(BaseModel):
     """Request body for suggestions endpoint"""
-    prompt_version_id: str
+    prompt_version_id: Optional[str] = None
+    prompt: Optional[str] = None  # For direct prompt text
+    focus_areas: Optional[str] = None  # e.g., "effectiveness, clarity"
+
+
+class SuggestionsResponse(BaseModel):
+    """Response for suggestions endpoint"""
+    suggestions: str
 
 
 async def _get_suggestions_impl(
-    prompt_version_id: str,
+    prompt_text: str,
+    focus_areas: Optional[str],
     db: Session,
     user_id: str,
 ):
     """
-    Implementation of suggestions logic (shared by both endpoints).
+    Implementation of suggestions logic.
+    Gets AI suggestions for a prompt using Ollama.
     """
     workspace = db.query(Workspace).filter(Workspace.user_id == user_id).first()
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
 
-    version = db.query(PromptVersion).filter(
-        PromptVersion.id == prompt_version_id
-    ).first()
-
-    if not version:
-        raise HTTPException(status_code=404, detail="Prompt version not found")
-
-    # Check that version belongs to user's workspace
-    prompt = db.query(Prompt).filter(Prompt.id == version.prompt_id).first()
-    if not prompt or prompt.workspace_id != workspace.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    if not prompt_text.strip():
+        raise HTTPException(status_code=400, detail="Prompt text is required")
 
     try:
-        # Compile prompt (without variables for suggestions)
-        compiled_prompt = compile_prompt(db, prompt_version_id, {})
-
         # Get suggestions from Ollama
         client = get_ollama_client()
-        suggestions = await client.suggest_improvements(compiled_prompt)
+        suggestion_list = await client.suggest_improvements(prompt_text)
 
-        return {
-            "prompt_version_id": version.id,
-            "suggestions": suggestions,
-        }
+        # Format suggestions as readable text
+        if suggestion_list:
+            formatted = "\n\n".join([
+                f"• {s.get('message', 'No message')} ({s.get('type', 'general')} - {s.get('severity', 'medium')} severity)"
+                for s in suggestion_list
+            ])
+        else:
+            formatted = "No specific suggestions available at this time."
+
+        return {"suggestions": formatted}
 
     except Exception as e:
         # Return helpful error message
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to generate suggestions: {str(e)}")
 
 
-@router.post("")
-async def get_suggestions_from_body(
-    prompt_version_id: Optional[str] = Query(None),
-    data: Optional[SuggestionsRequest] = None,
-    db: Session = Depends(get_db),
-    user_id: str = Depends(get_current_user),
-):
-    """
-    Get AI-powered suggestions for improving a prompt.
-    Accepts prompt_version_id in query parameter or request body.
-    """
-    # Try to get prompt_version_id from query param first, then from body
-    version_id = prompt_version_id
-    if not version_id and data:
-        version_id = data.prompt_version_id
-
-    if not version_id:
-        raise HTTPException(status_code=400, detail="prompt_version_id is required")
-
-    return await _get_suggestions_impl(version_id, db, user_id)
-
-
-@router.post("/{prompt_version_id}")
+@router.post("", response_model=SuggestionsResponse)
 async def get_suggestions(
-    prompt_version_id: str,
+    data: SuggestionsRequest = Body(...),
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
     """
     Get AI-powered suggestions for improving a prompt.
-    Accepts prompt_version_id in URL path.
+    Accepts either:
+    - Direct prompt text: {prompt: "...", focus_areas: "..."}
+    - Saved prompt version: {prompt_version_id: "..."}
     """
-    return await _get_suggestions_impl(prompt_version_id, db, user_id)
+    prompt_text = None
+
+    # If prompt_version_id is provided, fetch and compile the prompt
+    if data.prompt_version_id:
+        version = db.query(PromptVersion).filter(
+            PromptVersion.id == data.prompt_version_id
+        ).first()
+
+        if not version:
+            raise HTTPException(status_code=404, detail="Prompt version not found")
+
+        # Check that version belongs to user's workspace
+        workspace = db.query(Workspace).filter(Workspace.user_id == user_id).first()
+        if not workspace:
+            raise HTTPException(status_code=404, detail="Workspace not found")
+
+        prompt = db.query(Prompt).filter(Prompt.id == version.prompt_id).first()
+        if not prompt or prompt.workspace_id != workspace.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        prompt_text = version.template_body
+
+    # Otherwise use the prompt text directly
+    elif data.prompt:
+        prompt_text = data.prompt
+
+    else:
+        raise HTTPException(status_code=400, detail="Either 'prompt' or 'prompt_version_id' is required")
+
+    return await _get_suggestions_impl(prompt_text, data.focus_areas, db, user_id)

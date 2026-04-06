@@ -19,7 +19,7 @@ async def list_interaction_types(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    """List all interaction types"""
+    """List all interaction types with their categories"""
     workspace = db.query(Workspace).filter(Workspace.user_id == user_id).first()
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
@@ -34,6 +34,15 @@ async def list_interaction_types(
             "name": t.name,
             "description": t.description,
             "emoji": t.emoji,
+            "categories": [
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "description": c.description,
+                    "prompts": []
+                }
+                for c in t.categories
+            ]
         }
         for t in types
     ]
