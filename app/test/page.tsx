@@ -1,54 +1,131 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { API_ENDPOINTS } from '@/lib/api-config'
+
+interface Prompt {
+  id: string
+  title: string
+  description: string
+  latest_version: {
+    id: string
+    template_body: string
+  }
+}
 
 interface TestResult {
   id: string
-  timestamp: string
+  created_at: string
   model: string
-  prompt: string
   output: string
+  total_tokens: number
+  latency_ms: number
 }
 
 export default function TestRunnerPage() {
-  const [variables, setVariables] = useState({
-    topic: 'sustainable fashion',
-    style: 'professional',
-  })
-  const [model, setModel] = useState('llama3.2')
+  const [prompts, setPrompts] = useState<Prompt[]>([])
+  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null)
+  const [variables, setVariables] = useState<Record<string, string>>({})
+  const [model, setModel] = useState('gpt-oss:120b-cloud')
   const [temperature, setTemperature] = useState('0.7')
   const [maxTokens, setMaxTokens] = useState('500')
   const [isLoading, setIsLoading] = useState(false)
   const [output, setOutput] = useState('')
   const [results, setResults] = useState<TestResult[]>([])
   const [selectedResult, setSelectedResult] = useState<TestResult | null>(null)
+  const [error, setError] = useState('')
+  const [fetchingPrompts, setFetchingPrompts] = useState(true)
+
+  // Fetch prompts on mount
+  useEffect(() => {
+    const fetchPrompts = async () => {
+      try {
+        const token = localStorage.getItem('auth-token')
+        const res = await fetch(API_ENDPOINTS.prompts.list, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setPrompts(data)
+        }
+      } catch (err) {
+        console.error('Failed to fetch prompts:', err)
+      } finally {
+        setFetchingPrompts(false)
+      }
+    }
+    fetchPrompts()
+  }, [])
+
+  // Extract variables from selected prompt
+  const handleSelectPrompt = (prompt: Prompt) => {
+    setSelectedPrompt(prompt)
+    setOutput('')
+    setResults([])
+    setError('')
+
+    // Extract variables from template (e.g., {{variable_name}})
+    const templateBody = prompt.latest_version.template_body
+    const varMatches = templateBody.match(/\{\{(\w+)\}\}/g) || []
+    const extractedVars: Record<string, string> = {}
+
+    varMatches.forEach((match) => {
+      const varName = match.slice(2, -2) // Remove {{ and }}
+      extractedVars[varName] = ''
+    })
+
+    setVariables(extractedVars)
+  }
 
   const handleVariableChange = (key: string, value: string) => {
     setVariables((prev) => ({ ...prev, [key]: value }))
   }
 
   const handleExecute = async () => {
+    if (!selectedPrompt) {
+      setError('Please select a prompt to test')
+      return
+    }
+
     setIsLoading(true)
     setOutput('')
+    setError('')
+
     try {
-      // Simulate API call - in production, this would call actual LLM APIs
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.execute.run, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          prompt_version_id: selectedPrompt.latest_version.id,
+          variables,
+        })
+      })
 
-      const mockResponse = `Ollama Response (${model}) with temperature ${temperature}:\n\n` +
-        `This is a simulated response testing your prompt with the variables you provided.\n` +
-        `Variables used:\n${Object.entries(variables).map(([k, v]) => `- ${k}: ${v}`).join('\n')}\n\n` +
-        `In production, this would call Ollama locally or via Ollama Cloud API.`
-
-      setOutput(mockResponse)
-
-      const result: TestResult = {
-        id: Date.now().toString(),
-        timestamp: new Date().toLocaleString(),
-        model,
-        prompt: JSON.stringify(variables),
-        output: mockResponse
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.detail || 'Execution failed')
       }
-      setResults([result, ...results])
+
+      const result = await res.json()
+      setOutput(result.output)
+
+      const testResult: TestResult = {
+        id: result.id,
+        created_at: result.created_at,
+        model: result.model,
+        output: result.output,
+        total_tokens: result.total_tokens,
+        latency_ms: result.latency_ms,
+      }
+
+      setResults([testResult, ...results])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Execution failed')
+      setOutput('')
     } finally {
       setIsLoading(false)
     }
@@ -59,103 +136,152 @@ export default function TestRunnerPage() {
       <header style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>▶️ Test Runner</h1>
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
-          Execute prompts against LLM APIs and see real-time responses
+          Select a prompt and test it against your configured LLM
         </p>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '2rem' }}>
         {/* Control Panel */}
         <div>
-          {/* Variables */}
+          {/* Prompt Selection */}
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
-              📝 Variables
+              📄 Select Prompt
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {Object.entries(variables).map(([key, value]) => (
-                <div key={key}>
-                  <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-accent)', textTransform: 'uppercase' }}>
-                    {key}
-                  </label>
-                  <input
-                    type="text"
-                    value={value}
-                    onChange={(e) => handleVariableChange(key, e.target.value)}
-                    className="input"
-                    style={{ width: '100%' }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Model Selection */}
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
-              🤖 Model
-            </h3>
-            <select
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              className="input"
-              style={{ width: '100%' }}
-            >
-              <option value="llama3.2">Llama 3.2</option>
-              <option value="gpt-oss:120b-cloud">GPT-OSS 120B (Cloud)</option>
-              <option value="mistral">Mistral</option>
-              <option value="neural-chat">Neural Chat</option>
-            </select>
-          </div>
-
-          {/* Parameters */}
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
-              ⚙️ Parameters
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-accent)', textTransform: 'uppercase' }}>
-                  Temperature: {temperature}
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="2"
-                  step="0.1"
-                  value={temperature}
-                  onChange={(e) => setTemperature(e.target.value)}
-                  style={{ width: '100%' }}
-                />
+            {fetchingPrompts ? (
+              <div style={{ color: 'var(--color-foregroundAlt)' }}>Loading prompts...</div>
+            ) : prompts.length === 0 ? (
+              <div style={{ color: 'var(--color-foregroundAlt)' }}>No prompts found. Create one first!</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '250px', overflowY: 'auto' }}>
+                {prompts.map((prompt) => (
+                  <button
+                    key={prompt.id}
+                    onClick={() => handleSelectPrompt(prompt)}
+                    style={{
+                      padding: '0.75rem',
+                      backgroundColor: selectedPrompt?.id === prompt.id ? 'var(--color-primary)' : 'var(--color-background)',
+                      border: `1px solid ${selectedPrompt?.id === prompt.id ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      textAlign: 'left',
+                      transition: 'all 0.2s ease',
+                      color: selectedPrompt?.id === prompt.id ? 'white' : 'var(--color-foreground)',
+                    }}
+                  >
+                    <div style={{ fontWeight: '600' }}>{prompt.title}</div>
+                    <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{prompt.description}</div>
+                  </button>
+                ))}
               </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-accent)', textTransform: 'uppercase' }}>
-                  Max Tokens
-                </label>
-                <input
-                  type="number"
-                  value={maxTokens}
-                  onChange={(e) => setMaxTokens(e.target.value)}
+            )}
+          </div>
+
+          {selectedPrompt && (
+            <>
+              {/* Variables */}
+              {Object.keys(variables).length > 0 && (
+                <div className="card" style={{ marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
+                    📝 Variables
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {Object.entries(variables).map(([key, value]) => (
+                      <div key={key}>
+                        <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-accent)', textTransform: 'uppercase' }}>
+                          {key}
+                        </label>
+                        <input
+                          type="text"
+                          value={value}
+                          onChange={(e) => handleVariableChange(key, e.target.value)}
+                          className="input"
+                          style={{ width: '100%' }}
+                          placeholder={`Enter ${key}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Model Selection */}
+              <div className="card" style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
+                  🤖 Model
+                </h3>
+                <select
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
                   className="input"
                   style={{ width: '100%' }}
-                  min="1"
-                  max="4000"
-                />
+                >
+                  <option value="llama3.2">Llama 3.2</option>
+                  <option value="gpt-oss:120b-cloud">GPT-OSS 120B (Cloud)</option>
+                  <option value="mistral">Mistral</option>
+                  <option value="neural-chat">Neural Chat</option>
+                </select>
               </div>
-            </div>
-          </div>
 
-          <button
-            onClick={handleExecute}
-            disabled={isLoading}
-            className="btn btn-primary"
-            style={{ width: '100%' }}
-          >
-            {isLoading ? '⏳ Executing...' : '▶️ Execute'}
-          </button>
+              {/* Parameters */}
+              <div className="card" style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
+                  ⚙️ Parameters
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-accent)', textTransform: 'uppercase' }}>
+                      Temperature: {temperature}
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="2"
+                      step="0.1"
+                      value={temperature}
+                      onChange={(e) => setTemperature(e.target.value)}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-accent)', textTransform: 'uppercase' }}>
+                      Max Tokens
+                    </label>
+                    <input
+                      type="number"
+                      value={maxTokens}
+                      onChange={(e) => setMaxTokens(e.target.value)}
+                      className="input"
+                      style={{ width: '100%' }}
+                      min="1"
+                      max="4000"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleExecute}
+                disabled={isLoading}
+                className="btn btn-primary"
+                style={{ width: '100%', opacity: isLoading ? 0.6 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}
+              >
+                {isLoading ? '⏳ Executing...' : '▶️ Execute'}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Output Panel */}
         <div>
+          {error && (
+            <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: 'rgba(255, 0, 0, 0.1)', borderLeft: '4px solid #ff6b6b' }}>
+              <div style={{ color: '#ff6b6b', fontWeight: '600' }}>Error</div>
+              <div style={{ color: 'var(--color-foregroundAlt)', fontSize: '0.875rem', marginTop: '0.5rem' }}>{error}</div>
+            </div>
+          )}
+
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <h2 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-foreground)' }}>
               Output
@@ -174,7 +300,7 @@ export default function TestRunnerPage() {
               overflowY: 'auto',
               maxHeight: '500px'
             }}>
-              {output || 'Run a prompt to see the LLM response here...'}
+              {output || (selectedPrompt ? 'Run the prompt to see the response here...' : 'Select a prompt to begin')}
             </div>
           </div>
 
@@ -184,7 +310,7 @@ export default function TestRunnerPage() {
               <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
                 📋 Test History ({results.length})
               </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '250px', overflowY: 'auto' }}>
                 {results.map((result) => (
                   <button
                     key={result.id}
@@ -202,7 +328,9 @@ export default function TestRunnerPage() {
                     }}
                   >
                     <div style={{ fontWeight: '600' }}>{result.model}</div>
-                    <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>{result.timestamp}</div>
+                    <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>
+                      {new Date(result.created_at).toLocaleString()} • {result.total_tokens} tokens • {result.latency_ms}ms
+                    </div>
                   </button>
                 ))}
               </div>

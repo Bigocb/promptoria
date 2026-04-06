@@ -44,4 +44,8 @@ export const API_ENDPOINTS = {
   },
   suggestions: `${API_BASE_URL}/api/suggestions`,
   tags: `${API_BASE_URL}/api/suggestions/tags`,
+  execute: {
+    run: `${API_BASE_URL}/api/execute`,
+    history: (promptVersionId: string) => `${API_BASE_URL}/api/execute/${promptVersionId}`,
+  },
 }
