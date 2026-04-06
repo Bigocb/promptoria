@@ -29,6 +29,19 @@ async def list_interaction_types(
         AgentInteractionType.workspace_id == workspace.id
     ).all()
 
+    # Ensure each interaction type has at least one category
+    for t in types:
+        if not t.categories:
+            default_category = PromptCategory(
+                id=str(uuid4()),
+                name="General",
+                description="Default category",
+                workspace_id=workspace.id,
+                agent_interaction_type_id=t.id,
+            )
+            db.add(default_category)
+    db.commit()
+
     # Fetch all prompts for workspace at once (avoid N+1)
     all_prompts = db.query(Prompt).filter(Prompt.workspace_id == workspace.id).all()
     prompts_by_category = {}
@@ -128,8 +141,28 @@ async def list_categories(
 
     categories = query.all()
 
-    # Auto-create default category if none exist (only when not filtering by typeId)
-    if not categories and not typeId:
+    # Auto-create default category for a specific type if it has none
+    if typeId and not categories:
+        # Ensure the type exists and belongs to user
+        interaction_type = db.query(AgentInteractionType).filter(
+            AgentInteractionType.id == typeId,
+            AgentInteractionType.workspace_id == workspace.id
+        ).first()
+
+        if interaction_type:
+            default_category = PromptCategory(
+                id=str(uuid4()),
+                name="General",
+                description="Default category",
+                workspace_id=workspace.id,
+                agent_interaction_type_id=typeId,
+            )
+            db.add(default_category)
+            db.commit()
+            categories = [default_category]
+
+    # Auto-create default category if none exist globally (only when not filtering by typeId)
+    elif not categories and not typeId:
         # Create default interaction type
         default_type = db.query(AgentInteractionType).filter(
             AgentInteractionType.workspace_id == workspace.id,
