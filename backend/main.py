@@ -16,6 +16,15 @@ from .app.core.database import engine, Base
 from .app.api import auth, prompts, snippets, dashboard, settings as settings_routes
 from .app.api import execute, suggestions, taxonomy
 
+# CORS configuration - hardcoded to avoid environment variable issues
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3100",
+    "https://promptoria-dev.vercel.app",
+    "https://promptoria.vercel.app",
+]
+
 # Create all database tables (only if database is available)
 try:
     Base.metadata.create_all(bind=engine)
@@ -41,23 +50,15 @@ app.include_router(execute.router, prefix="/api/execute", tags=["execute"])
 app.include_router(suggestions.router, prefix="/api/suggestions", tags=["suggestions"])
 app.include_router(taxonomy.router, prefix="/api/taxonomy", tags=["taxonomy"])
 
-# Add CORS middleware - ensure all required origins are allowed
-production_origins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "https://promptoria-dev.vercel.app",
-    "https://promptoria.vercel.app",
-    "https://promptoria-api.onrender.com",
-]
-
-print(f"DEBUG: CORS origins configured: {production_origins}")
+# Add CORS middleware
+print(f"DEBUG: CORS origins configured: {ALLOWED_ORIGINS}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=production_origins,
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    allow_credentials=False,
+    allow_credentials=True,
     max_age=86400,
 )
 
