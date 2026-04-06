@@ -4,7 +4,7 @@ Uses Ollama for local LLM-based analysis (zero configuration needed).
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -20,7 +20,10 @@ class SuggestionsRequest(BaseModel):
     """Request body for suggestions endpoint"""
     prompt_version_id: Optional[str] = None
     prompt: Optional[str] = None  # For direct prompt text
-    focus_areas: Optional[str] = None  # e.g., "effectiveness, clarity"
+    focus_areas: Optional[str] = Field(None, alias="focusAreas")  # Accept both snake_case and camelCase
+
+    class Config:
+        populate_by_name = True  # Allow both field name and alias
 
 
 class SuggestionsResponse(BaseModel):
