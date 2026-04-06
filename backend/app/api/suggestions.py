@@ -19,8 +19,8 @@ router = APIRouter()
 class SuggestionsRequest(BaseModel):
     """Request body for suggestions endpoint"""
     prompt_version_id: Optional[str] = None
-    prompt: Optional[str] = None  # For direct prompt text
-    focus_areas: Optional[str] = Field(None, alias="focusAreas")  # Accept both snake_case and camelCase
+    prompt: Optional[str] = Field(None, alias="promptContent")  # Accept promptContent from frontend
+    focus_areas: Optional[str] = Field(None, alias="focusAreas")  # Accept focusAreas from frontend
 
     class Config:
         populate_by_name = True  # Allow both field name and alias
