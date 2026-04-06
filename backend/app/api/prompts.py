@@ -124,8 +124,7 @@ async def update_prompt_metadata(
 
     # If template_body provided, create a new version
     if template_body:
-        from ..crud.prompt import create_prompt_version
-        create_prompt_version(db, prompt_id, template_body)
+        create_version(db, prompt_id, template_body)
 
     if not prompt:
         raise HTTPException(status_code=404, detail="Prompt not found")
