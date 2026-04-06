@@ -220,7 +220,7 @@ export default function LibraryPage() {
                           {category.prompts.map((prompt) => (
                             <div
                               key={prompt.id}
-                              onClick={() => router.push(`/prompts/${prompt.id}`)}
+                              onClick={() => router.push(`/prompts?load=${prompt.id}`)}
                               style={{
                                 padding: '0.75rem',
                                 backgroundColor: 'var(--color-background)',

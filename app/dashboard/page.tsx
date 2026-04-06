@@ -203,7 +203,7 @@ export default function DashboardPage() {
                   borderBottom: '1px solid var(--color-border)',
                   fontSize: '0.875rem',
                 }}>
-                  <Link href={`/prompts/${prompt.id}`} style={{
+                  <Link href={`/prompts?load=${prompt.id}`} style={{
                     color: 'var(--color-primary)',
                     textDecoration: 'none',
                     fontWeight: '500',

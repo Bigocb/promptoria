@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { API_ENDPOINTS } from '@/lib/api-config'
 import { useAuth } from '@/app/providers'
 
@@ -51,6 +52,7 @@ interface LoadablePrompt {
 
 export default function WorkbenchPage() {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
   const [snippets, setSnippets] = useState<Snippet[]>([])
   const [promptName, setPromptName] = useState('')
   const [promptContent, setPromptContent] = useState('')
@@ -108,6 +110,14 @@ export default function WorkbenchPage() {
     fetchInteractionTypes()
     // Lazy load prompts only when load selector is opened
   }, [user])
+
+  // Auto-load prompt from URL parameter
+  useEffect(() => {
+    const promptId = searchParams?.get('load')
+    if (promptId && user) {
+      loadPrompt(promptId)
+    }
+  }, [searchParams, user])
 
   const fetchSnippets = async () => {
     try {
