@@ -72,19 +72,32 @@ async def create_new_prompt(
     """Create new prompt"""
     workspace = get_user_workspace(user_id, db)
 
-    prompt = create_prompt(
-        db,
-        workspace.id,
-        data.name,
-        data.template_body,
-        description=data.description,
-        folder_id=data.folder_id,
-        category_id=data.category_id,
-        tags=data.tags,
-        model=data.model,
-    )
+    # Validate category if provided
+    if data.category_id:
+        from ..models import PromptCategory
+        category = db.query(PromptCategory).filter(
+            PromptCategory.id == data.category_id,
+            PromptCategory.workspace_id == workspace.id
+        ).first()
+        if not category:
+            raise HTTPException(status_code=400, detail="Category not found or does not belong to your workspace")
 
-    return prompt
+    try:
+        prompt = create_prompt(
+            db,
+            workspace.id,
+            data.name,
+            data.template_body,
+            description=data.description,
+            folder_id=data.folder_id,
+            category_id=data.category_id,
+            tags=data.tags,
+            model=data.model,
+        )
+        return prompt
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create prompt: {str(e)}")
 
 
 @router.put("/{prompt_id}", response_model=PromptResponse)

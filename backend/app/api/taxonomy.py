@@ -74,7 +74,7 @@ async def create_interaction_type(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    """Create interaction type"""
+    """Create interaction type with default category"""
     workspace = db.query(Workspace).filter(Workspace.user_id == user_id).first()
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
@@ -89,6 +89,17 @@ async def create_interaction_type(
     db.add(interaction_type)
     db.commit()
     db.refresh(interaction_type)
+
+    # Create default category for this interaction type
+    default_category = PromptCategory(
+        id=str(uuid4()),
+        name="General",
+        description="Default category",
+        workspace_id=workspace.id,
+        agent_interaction_type_id=interaction_type.id,
+    )
+    db.add(default_category)
+    db.commit()
 
     return {
         "id": interaction_type.id,
