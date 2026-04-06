@@ -37,31 +37,6 @@ async def list_interaction_types(
         AgentInteractionType.workspace_id == workspace.id
     ).all()
 
-    # Ensure each interaction type has at least one category
-    for t in types:
-        if not t.categories:
-            # Check if General category already exists for this type
-            existing = db.query(PromptCategory).filter(
-                PromptCategory.agent_interaction_type_id == t.id,
-                PromptCategory.name == "General"
-            ).first()
-
-            if not existing:
-                default_category = PromptCategory(
-                    id=str(uuid4()),
-                    name="General",
-                    description="Default category",
-                    workspace_id=workspace.id,
-                    agent_interaction_type_id=t.id,
-                )
-                db.add(default_category)
-
-    try:
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error creating categories: {str(e)}")
-
     # Fetch all prompts for workspace at once (avoid N+1)
     all_prompts = db.query(Prompt).filter(Prompt.workspace_id == workspace.id).all()
     prompts_by_category = {}
