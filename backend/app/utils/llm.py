@@ -149,19 +149,29 @@ Only return the JSON array, no other text."""
 
 # Global Ollama client instance
 _ollama_client: Optional[OllamaClient] = None
+_cached_endpoint: Optional[str] = None
+_cached_api_key: Optional[str] = None
 
 
 def get_ollama_client() -> OllamaClient:
     """Get or create the global Ollama client
     Uses settings from config.py for endpoint and API key
+    Recreates client if endpoint or API key changes
     """
-    global _ollama_client
-    if _ollama_client is None:
-        from ..core.config import settings
+    global _ollama_client, _cached_endpoint, _cached_api_key
+    from ..core.config import settings
+
+    # Recreate client if settings have changed
+    if (_ollama_client is None or
+        _cached_endpoint != settings.ollama_endpoint or
+        _cached_api_key != settings.ollama_api_key):
         _ollama_client = OllamaClient(
             base_url=settings.ollama_endpoint,
             api_key=settings.ollama_api_key
         )
+        _cached_endpoint = settings.ollama_endpoint
+        _cached_api_key = settings.ollama_api_key
+
     return _ollama_client
 
 

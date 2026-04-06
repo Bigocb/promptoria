@@ -2,7 +2,7 @@
 Pydantic schemas for user-related requests/responses.
 """
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 
@@ -63,11 +63,14 @@ class TokenResponse(BaseModel):
 class UpdateSettingsRequest(BaseModel):
     """Update user settings request"""
     theme: Optional[str] = None
-    suggestions_enabled: Optional[bool] = None
-    default_model: Optional[str] = None
-    default_temperature: Optional[float] = None
-    default_max_tokens: Optional[int] = None
+    suggestions_enabled: Optional[bool] = Field(None, alias="suggestionsEnabled")
+    default_model: Optional[str] = Field(None, alias="defaultModel")
+    default_temperature: Optional[float] = Field(None, alias="defaultTemperature")
+    default_max_tokens: Optional[int] = Field(None, alias="defaultMaxTokens")
     anthropic_api_key: Optional[str] = None
+
+    class Config:
+        populate_by_name = True  # Accept both field name and alias
 
 
 class SetApiKeyRequest(BaseModel):
