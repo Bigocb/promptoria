@@ -11,7 +11,7 @@ from typing import Optional, Dict
 
 from ..core.database import get_db
 from ..core.security import get_current_user
-from ..models import Workspace, PromptVersion, TestRun, Prompt
+from ..models import Workspace, PromptVersion, TestRun, Prompt, UserSettings
 from ..utils.llm import compile_prompt, execute_with_ollama
 
 router = APIRouter()
@@ -57,11 +57,15 @@ async def execute_prompt(
         raise HTTPException(status_code=403, detail="Access denied")
 
     try:
+        # Get user's default model from settings
+        user_settings = db.query(UserSettings).filter(UserSettings.user_id == user_id).first()
+        model = user_settings.default_model if user_settings else "mistral"
+
         # Compile prompt with snippets and variable substitution
         compiled_prompt = compile_prompt(db, data.prompt_version_id, variables)
 
-        # Execute via Ollama (uses llama3.2 transparently)
-        result = await execute_with_ollama(compiled_prompt, model="llama3.2")
+        # Execute via Ollama with user's selected model
+        result = await execute_with_ollama(compiled_prompt, model=model)
 
         # Create and store test run with results
         test_run = TestRun(
@@ -77,7 +81,7 @@ async def execute_prompt(
             total_tokens=result["total_tokens"],
             latency_ms=result["latency_ms"],
             cost_usd=result["cost_usd"],
-            model="llama3.2",  # Using llama3.2 as default
+            model=model,  # Store the model that was used
             status="success",
         )
         db.add(test_run)

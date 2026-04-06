@@ -10,7 +10,7 @@ from typing import Optional
 
 from ..core.database import get_db
 from ..core.security import get_current_user
-from ..models import Workspace, PromptVersion, Prompt
+from ..models import Workspace, PromptVersion, Prompt, UserSettings
 from ..utils.llm import get_ollama_client
 
 router = APIRouter()
@@ -40,6 +40,7 @@ async def _get_suggestions_impl(
     """
     Implementation of suggestions logic.
     Gets AI suggestions for a prompt using Ollama.
+    Uses user's default_model from settings.
     """
     workspace = db.query(Workspace).filter(Workspace.user_id == user_id).first()
     if not workspace:
@@ -49,9 +50,13 @@ async def _get_suggestions_impl(
         raise HTTPException(status_code=400, detail="Prompt text is required")
 
     try:
-        # Get suggestions from Ollama
+        # Get user's default model from settings
+        user_settings = db.query(UserSettings).filter(UserSettings.user_id == user_id).first()
+        model = user_settings.default_model if user_settings else "mistral"
+
+        # Get suggestions from Ollama using user's selected model
         client = get_ollama_client()
-        suggestion_list = await client.suggest_improvements(prompt_text)
+        suggestion_list = await client.suggest_improvements(prompt_text, model=model)
 
         # Format suggestions as readable text
         if suggestion_list:
@@ -138,6 +143,7 @@ async def get_tag_suggestions(
     """
     Get AI-powered tag suggestions based on prompt content.
     Uses Ollama to analyze the prompt and suggest relevant tags.
+    Uses user's default_model from settings.
     """
     workspace = db.query(Workspace).filter(Workspace.user_id == user_id).first()
     if not workspace:
@@ -147,6 +153,10 @@ async def get_tag_suggestions(
         raise HTTPException(status_code=400, detail="Prompt content is required")
 
     try:
+        # Get user's default model from settings
+        user_settings = db.query(UserSettings).filter(UserSettings.user_id == user_id).first()
+        model = user_settings.default_model if user_settings else "mistral"
+
         client = get_ollama_client()
 
         system_prompt = """You are an expert at tagging and categorizing prompts. Analyze the given prompt and suggest 5-8 relevant tags that describe its purpose, technique, and characteristics.
@@ -163,7 +173,7 @@ No other text."""
 
         tag_prompt = f"{system_prompt}\n\nPrompt to tag:\n{data.prompt_content}"
 
-        response_text = await client.generate("llama3.2", tag_prompt, num_predict=100)
+        response_text = await client.generate(model, tag_prompt, num_predict=100)
 
         # Parse JSON response
         import json
