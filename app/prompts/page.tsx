@@ -74,6 +74,11 @@ export default function WorkbenchPage() {
   const [testOutput, setTestOutput] = useState<string | null>(null)
   const [testLoading, setTestLoading] = useState(false)
   const [testResults, setTestResults] = useState<TestResult[]>([])
+  const [showVersionHistory, setShowVersionHistory] = useState(false)
+  const [versions, setVersions] = useState<PromptVersion[]>([])
+  const [selectedVersionForView, setSelectedVersionForView] = useState<PromptVersion | null>(null)
+  const [compareVersionForDiff, setCompareVersionForDiff] = useState<PromptVersion | null>(null)
+  const [showDiffView, setShowDiffView] = useState(false)
 
   useEffect(() => {
     fetchSnippets()
@@ -267,6 +272,33 @@ export default function WorkbenchPage() {
       compiled = compiled.replace(new RegExp(`\\{${key}\\}`, 'g'), value)
     })
     return compiled
+  }
+
+  const calculateDiff = (oldText: string, newText: string) => {
+    const oldLines = oldText.split('\n')
+    const newLines = newText.split('\n')
+    const maxLength = Math.max(oldLines.length, newLines.length)
+    const diffs: Array<{ type: 'add' | 'remove' | 'common'; line: string }> = []
+
+    for (let i = 0; i < maxLength; i++) {
+      const oldLine = oldLines[i]
+      const newLine = newLines[i]
+
+      if (oldLine === newLine) {
+        if (oldLine !== undefined) {
+          diffs.push({ type: 'common', line: oldLine })
+        }
+      } else {
+        if (oldLine !== undefined) {
+          diffs.push({ type: 'remove', line: oldLine })
+        }
+        if (newLine !== undefined) {
+          diffs.push({ type: 'add', line: newLine })
+        }
+      }
+    }
+
+    return diffs
   }
 
   const toggleSuggestionFocus = (focus: SuggestionFocus) => {
@@ -1024,6 +1056,206 @@ export default function WorkbenchPage() {
                   </div>
                 )}
               </>
+            )}
+          </div>
+
+          {/* Version History Panel */}
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <h3 style={{ fontWeight: '600', fontSize: '0.95rem', margin: 0 }}>
+                📜 Versions
+              </h3>
+              <button
+                onClick={() => setShowVersionHistory(!showVersionHistory)}
+                style={{
+                  padding: '0.25rem 0.5rem',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  color: 'var(--color-accent)',
+                }}
+              >
+                {showVersionHistory ? '▼' : '▶'}
+              </button>
+            </div>
+
+            {showVersionHistory && (
+              <div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', marginBottom: '0.75rem' }}>
+                  Save your prompt first to track version history and compare versions
+                </p>
+
+                {versions.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {/* Version List */}
+                    <div style={{ marginBottom: '0.75rem' }}>
+                      <p style={{ fontSize: '0.65rem', fontWeight: '600', color: 'var(--color-foregroundAlt)', marginBottom: '0.375rem' }}>
+                        Available Versions
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', maxHeight: '150px', overflowY: 'auto' }}>
+                        {versions.map((v) => (
+                          <button
+                            key={v.id}
+                            onClick={() => {
+                              setSelectedVersionForView(v)
+                              setCompareVersionForDiff(null)
+                              setShowDiffView(false)
+                            }}
+                            style={{
+                              padding: '0.375rem 0.5rem',
+                              backgroundColor: selectedVersionForView?.id === v.id ? 'var(--color-accent)' : 'var(--color-background)',
+                              border: `1px solid ${selectedVersionForView?.id === v.id ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                              borderRadius: '0.25rem',
+                              cursor: 'pointer',
+                              fontSize: '0.65rem',
+                              textAlign: 'left',
+                              color: selectedVersionForView?.id === v.id ? 'var(--color-background)' : 'var(--color-foreground)',
+                              fontWeight: selectedVersionForView?.id === v.id ? '600' : '400',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <div>v{v.version_number}</div>
+                            <div style={{ fontSize: '0.6rem', opacity: 0.8 }}>
+                              {new Date(v.created_at).toLocaleDateString()}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Diff Controls */}
+                    {selectedVersionForView && (
+                      <>
+                        <button
+                          onClick={() => setShowDiffView(!showDiffView)}
+                          style={{
+                            padding: '0.375rem 0.5rem',
+                            backgroundColor: showDiffView ? 'var(--color-accent)' : 'transparent',
+                            border: `1px solid ${showDiffView ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                            borderRadius: '0.25rem',
+                            cursor: 'pointer',
+                            fontSize: '0.65rem',
+                            color: showDiffView ? 'var(--color-background)' : 'var(--color-foreground)',
+                            fontWeight: '500',
+                            width: '100%',
+                          }}
+                        >
+                          {showDiffView ? '✓ Diff On' : 'Compare Versions'}
+                        </button>
+
+                        {showDiffView && (
+                          <div>
+                            <p style={{ fontSize: '0.65rem', fontWeight: '600', color: 'var(--color-foregroundAlt)', marginBottom: '0.375rem' }}>
+                              Compare to
+                            </p>
+                            <select
+                              value={compareVersionForDiff?.id || ''}
+                              onChange={(e) => {
+                                const v = versions.find(ver => ver.id === e.target.value)
+                                setCompareVersionForDiff(v || null)
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.375rem',
+                                fontSize: '0.65rem',
+                                borderRadius: '0.25rem',
+                                border: '1px solid var(--color-border)',
+                                backgroundColor: 'var(--color-background)',
+                                color: 'var(--color-foreground)',
+                              }}
+                            >
+                              <option value="">Select version...</option>
+                              {versions
+                                .filter(v => v.id !== selectedVersionForView?.id)
+                                .map((v) => (
+                                  <option key={v.id} value={v.id}>
+                                    v{v.version_number} - {new Date(v.created_at).toLocaleDateString()}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+                        )}
+
+                        {/* Diff View */}
+                        {showDiffView && compareVersionForDiff && selectedVersionForView && (
+                          <div style={{ marginTop: '0.75rem', maxHeight: '300px', overflowY: 'auto' }}>
+                            <p style={{ fontSize: '0.65rem', fontWeight: '600', color: 'var(--color-foregroundAlt)', marginBottom: '0.375rem' }}>
+                              Changes
+                            </p>
+                            <div
+                              style={{
+                                backgroundColor: 'var(--color-background)',
+                                border: '1px solid var(--color-border)',
+                                borderRadius: '0.25rem',
+                                padding: '0.5rem',
+                                fontSize: '0.6rem',
+                                fontFamily: 'monospace',
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-word',
+                              }}
+                            >
+                              {calculateDiff(compareVersionForDiff.template_body, selectedVersionForView.template_body).map((diff, idx) => (
+                                <div
+                                  key={idx}
+                                  style={{
+                                    backgroundColor:
+                                      diff.type === 'add'
+                                        ? 'rgba(142, 192, 124, 0.2)'
+                                        : diff.type === 'remove'
+                                          ? 'rgba(204, 36, 29, 0.2)'
+                                          : 'transparent',
+                                    padding: '0.125rem 0.25rem',
+                                    display: 'block',
+                                  }}
+                                >
+                                  <span style={{
+                                    color:
+                                      diff.type === 'add'
+                                        ? '#8ec07c'
+                                        : diff.type === 'remove'
+                                          ? '#cc241d'
+                                          : 'inherit',
+                                  }}>
+                                    {diff.type === 'add' && '+ '}
+                                    {diff.type === 'remove' && '- '}
+                                    {diff.line}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* View Version Button */}
+                        <button
+                          onClick={() => {
+                            setPromptContent(selectedVersionForView.template_body)
+                          }}
+                          style={{
+                            padding: '0.375rem 0.5rem',
+                            backgroundColor: 'var(--color-background)',
+                            border: '1px solid var(--color-accent)',
+                            borderRadius: '0.25rem',
+                            cursor: 'pointer',
+                            fontSize: '0.65rem',
+                            color: 'var(--color-accent)',
+                            fontWeight: '500',
+                            width: '100%',
+                            marginTop: '0.375rem',
+                          }}
+                        >
+                          Load into Editor
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '0.7rem', color: 'var(--color-foregroundAlt)' }}>
+                    No versions yet
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </aside>

@@ -18,6 +18,7 @@ export const API_ENDPOINTS = {
   prompts: {
     list: `${API_BASE_URL}/api/prompts`,
     get: (id: string) => `${API_BASE_URL}/api/prompts/${id}`,
+    detail: (id: string) => `${API_BASE_URL}/api/prompts/${id}`,
     create: `${API_BASE_URL}/api/prompts`,
     update: (id: string) => `${API_BASE_URL}/api/prompts/${id}`,
     delete: (id: string) => `${API_BASE_URL}/api/prompts/${id}`,

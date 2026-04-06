@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { API_ENDPOINTS } from '@/lib/api-config'
 import { useAuth } from '@/app/providers'
 
@@ -26,6 +27,7 @@ interface AgentInteractionType {
 }
 
 export default function LibraryPage() {
+  const router = useRouter()
   const { user } = useAuth()
   const [interactionTypes, setInteractionTypes] = useState<AgentInteractionType[]>([])
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
@@ -218,6 +220,7 @@ export default function LibraryPage() {
                           {category.prompts.map((prompt) => (
                             <div
                               key={prompt.id}
+                              onClick={() => router.push(`/prompts/${prompt.id}`)}
                               style={{
                                 padding: '0.75rem',
                                 backgroundColor: 'var(--color-background)',
