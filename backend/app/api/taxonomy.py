@@ -2,9 +2,10 @@
 Taxonomy endpoints: manage prompt categories and interaction types
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from uuid import uuid4
+from typing import Optional
 
 from ..core.database import get_db
 from ..core.security import get_current_user
@@ -96,17 +97,55 @@ async def create_interaction_type(
 # Categories endpoints
 @router.get("/categories")
 async def list_categories(
+    typeId: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    """List all categories"""
+    """List categories, optionally filtered by interaction type (auto-creates default if none exist)"""
     workspace = db.query(Workspace).filter(Workspace.user_id == user_id).first()
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
 
-    categories = db.query(PromptCategory).filter(
-        PromptCategory.workspace_id == workspace.id
-    ).all()
+    # Build query - filter by workspace and optionally by typeId
+    query = db.query(PromptCategory).filter(PromptCategory.workspace_id == workspace.id)
+    if typeId:
+        query = query.filter(PromptCategory.agent_interaction_type_id == typeId)
+
+    categories = query.all()
+
+    # Auto-create default category if none exist (only when not filtering by typeId)
+    if not categories and not typeId:
+        # Create default interaction type
+        default_type = db.query(AgentInteractionType).filter(
+            AgentInteractionType.workspace_id == workspace.id,
+            AgentInteractionType.name == "My Prompts"
+        ).first()
+
+        if not default_type:
+            default_type = AgentInteractionType(
+                id=str(uuid4()),
+                name="My Prompts",
+                description="Your personal prompts",
+                emoji="📝",
+                workspace_id=workspace.id,
+            )
+            db.add(default_type)
+            db.commit()
+            db.refresh(default_type)
+
+        # Create default category
+        default_category = PromptCategory(
+            id=str(uuid4()),
+            name="General",
+            description="Uncategorized prompts",
+            workspace_id=workspace.id,
+            agent_interaction_type_id=default_type.id,
+        )
+        db.add(default_category)
+        db.commit()
+        db.refresh(default_category)
+
+        categories = [default_category]
 
     return [
         {
