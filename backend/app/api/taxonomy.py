@@ -2,7 +2,8 @@
 Taxonomy endpoints: manage prompt categories and interaction types
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from uuid import uuid4
 from typing import Optional
@@ -12,6 +13,13 @@ from ..core.security import get_current_user
 from ..models import Workspace, AgentInteractionType, PromptCategory, Prompt
 
 router = APIRouter()
+
+
+class CategoryCreate(BaseModel):
+    """Request model for creating a category"""
+    name: str
+    description: Optional[str] = None
+    agent_interaction_type_id: str
 
 
 # Interaction types endpoints
@@ -229,7 +237,7 @@ async def list_categories(
 
 @router.post("/categories", status_code=201)
 async def create_category(
-    data: dict,
+    data: CategoryCreate = Body(...),
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
@@ -238,20 +246,33 @@ async def create_category(
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
 
-    category = PromptCategory(
-        id=str(uuid4()),
-        name=data.get("name"),
-        description=data.get("description"),
-        workspace_id=workspace.id,
-        agent_interaction_type_id=data.get("agent_interaction_type_id"),
-    )
-    db.add(category)
-    db.commit()
-    db.refresh(category)
+    # Validate that interaction type exists and belongs to user
+    interaction_type = db.query(AgentInteractionType).filter(
+        AgentInteractionType.id == data.agent_interaction_type_id,
+        AgentInteractionType.workspace_id == workspace.id
+    ).first()
 
-    return {
-        "id": category.id,
-        "name": category.name,
-        "description": category.description,
-        "agent_interaction_type_id": category.agent_interaction_type_id,
-    }
+    if not interaction_type:
+        raise HTTPException(status_code=400, detail="Interaction type not found or does not belong to your workspace")
+
+    try:
+        category = PromptCategory(
+            id=str(uuid4()),
+            name=data.name,
+            description=data.description,
+            workspace_id=workspace.id,
+            agent_interaction_type_id=data.agent_interaction_type_id,
+        )
+        db.add(category)
+        db.commit()
+        db.refresh(category)
+
+        return {
+            "id": category.id,
+            "name": category.name,
+            "description": category.description,
+            "agent_interaction_type_id": category.agent_interaction_type_id,
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Failed to create category: {str(e)}")

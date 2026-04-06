@@ -47,6 +47,12 @@ export default function WorkbenchPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
 
+  // Category management state
+  const [showAddCategory, setShowAddCategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryDesc, setNewCategoryDesc] = useState('')
+  const [creatingCategory, setCreatingCategory] = useState(false)
+
   // Tags state
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
@@ -136,6 +142,52 @@ export default function WorkbenchPage() {
   const handleInteractionTypeChange = (typeId: string) => {
     setSelectedInteractionTypeId(typeId)
     fetchCategories(typeId)
+  }
+
+  const createCategory = async () => {
+    if (!newCategoryName.trim()) {
+      alert('Please enter a category name')
+      return
+    }
+
+    if (!selectedInteractionTypeId) {
+      alert('Please select an interaction type first')
+      return
+    }
+
+    setCreatingCategory(true)
+    try {
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.taxonomy.categories(selectedInteractionTypeId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: newCategoryName,
+          description: newCategoryDesc,
+          agent_interaction_type_id: selectedInteractionTypeId,
+        }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        alert(`Error: ${error.detail || 'Failed to create category'}`)
+        return
+      }
+
+      // Refresh categories list
+      await fetchCategories(selectedInteractionTypeId)
+      setNewCategoryName('')
+      setNewCategoryDesc('')
+      setShowAddCategory(false)
+    } catch (error) {
+      console.error('Error creating category:', error)
+      alert('Failed to create category')
+    } finally {
+      setCreatingCategory(false)
+    }
   }
 
   const addTag = (tag: string) => {
@@ -430,24 +482,114 @@ export default function WorkbenchPage() {
               </select>
             </div>
 
-            {selectedInteractionTypeId && categories.length > 0 && (
+            {selectedInteractionTypeId && (
               <div>
-                <label style={{ display: 'block', marginBottom: '0.375rem', fontWeight: '500', fontSize: '0.875rem' }}>
-                  Category
-                </label>
-                <select
-                  value={selectedCategoryId}
-                  onChange={(e) => setSelectedCategoryId(e.target.value)}
-                  className="input"
-                  style={{ width: '100%', fontSize: '0.875rem' }}
-                >
-                  <option value="">Select a category...</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+                {categories.length > 0 && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.375rem', fontWeight: '500', fontSize: '0.875rem' }}>
+                      Category
+                    </label>
+                    <select
+                      value={selectedCategoryId}
+                      onChange={(e) => setSelectedCategoryId(e.target.value)}
+                      className="input"
+                      style={{ width: '100%', fontSize: '0.875rem' }}
+                    >
+                      <option value="">Select a category...</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {!showAddCategory ? (
+                  <button
+                    onClick={() => setShowAddCategory(true)}
+                    style={{
+                      padding: '0.5rem 0.75rem',
+                      backgroundColor: 'transparent',
+                      border: '1px solid var(--color-accent)',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      color: 'var(--color-accent)',
+                      width: '100%',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--color-accent)'
+                      e.currentTarget.style.color = 'var(--color-background)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent'
+                      e.currentTarget.style.color = 'var(--color-accent)'
+                    }}
+                  >
+                    + Add Category
+                  </button>
+                ) : (
+                  <div style={{
+                    padding: '0.75rem',
+                    backgroundColor: 'var(--color-backgroundAlt)',
+                    borderRadius: '0.375rem',
+                    border: '1px solid var(--color-border)',
+                  }}>
+                    <label style={{ display: 'block', marginBottom: '0.375rem', fontWeight: '500', fontSize: '0.875rem' }}>
+                      Category Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      placeholder="e.g., Advanced Research"
+                      className="input"
+                      style={{ width: '100%', fontSize: '0.875rem', marginBottom: '0.75rem' }}
+                    />
+                    <label style={{ display: 'block', marginBottom: '0.375rem', fontWeight: '500', fontSize: '0.875rem' }}>
+                      Description (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={newCategoryDesc}
+                      onChange={(e) => setNewCategoryDesc(e.target.value)}
+                      placeholder="Brief description"
+                      className="input"
+                      style={{ width: '100%', fontSize: '0.875rem', marginBottom: '0.75rem' }}
+                    />
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        onClick={createCategory}
+                        disabled={creatingCategory}
+                        className="btn btn-primary"
+                        style={{ flex: 1, fontSize: '0.875rem' }}
+                      >
+                        {creatingCategory ? 'Creating...' : 'Create'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowAddCategory(false)
+                          setNewCategoryName('')
+                          setNewCategoryDesc('')
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '0.5rem 0.75rem',
+                          backgroundColor: 'var(--color-background)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: '0.375rem',
+                          cursor: 'pointer',
+                          fontSize: '0.875rem',
+                          color: 'var(--color-foreground)',
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
