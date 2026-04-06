@@ -10,6 +10,15 @@ interface Snippet {
   content: string
 }
 
+interface PromptVersion {
+  id: string
+  version_number: number
+  template_body: string
+  config?: Record<string, any>
+  created_at: string
+  updated_at: string
+}
+
 interface TestResult {
   id: string
   timestamp: string
@@ -31,6 +40,13 @@ interface InteractionType {
 interface Category {
   id: string
   name: string
+}
+
+interface LoadablePrompt {
+  id: string
+  name: string
+  description?: string
+  created_at: string
 }
 
 export default function WorkbenchPage() {
@@ -80,9 +96,17 @@ export default function WorkbenchPage() {
   const [compareVersionForDiff, setCompareVersionForDiff] = useState<PromptVersion | null>(null)
   const [showDiffView, setShowDiffView] = useState(false)
 
+  // Load prompt state
+  const [availablePrompts, setAvailablePrompts] = useState<LoadablePrompt[]>([])
+  const [loadedPromptId, setLoadedPromptId] = useState<string | null>(null)
+  const [loadedPromptDescription, setLoadedPromptDescription] = useState('')
+  const [loadedPromptModel, setLoadedPromptModel] = useState('gpt-4')
+  const [promptsLoading, setPromptsLoading] = useState(false)
+
   useEffect(() => {
     fetchSnippets()
     fetchInteractionTypes()
+    fetchAvailablePrompts()
   }, [user])
 
   const fetchSnippets = async () => {
@@ -147,6 +171,79 @@ export default function WorkbenchPage() {
   const handleInteractionTypeChange = (typeId: string) => {
     setSelectedInteractionTypeId(typeId)
     fetchCategories(typeId)
+  }
+
+  const fetchAvailablePrompts = async () => {
+    try {
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.prompts.list, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setAvailablePrompts(Array.isArray(data) ? data : (data.prompts || []))
+      }
+    } catch (error) {
+      console.error('Failed to fetch available prompts:', error)
+    }
+  }
+
+  const loadPrompt = async (promptId: string) => {
+    try {
+      setPromptsLoading(true)
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.prompts.detail(promptId), {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!res.ok) {
+        alert('Failed to load prompt')
+        return
+      }
+
+      const data = await res.json()
+
+      // Load the latest version's content
+      const latestVersion = data.versions?.[0]
+
+      setLoadedPromptId(promptId)
+      setPromptName(data.name)
+      setPromptContent(latestVersion?.template_body || data.template_body || '')
+      setLoadedPromptDescription(data.description || '')
+      setLoadedPromptModel(data.model || 'gpt-4')
+      setTags(data.tags || [])
+      setSelectedInteractionTypeId(data.category_id ? '' : '') // Will need to fetch category details
+      setVersions(data.versions || [])
+      setSelectedVersionForView(latestVersion || null)
+
+      // Extract variables from loaded content
+      const matches = (latestVersion?.template_body || data.template_body || '').match(/\{([^}]+)\}/g)
+      if (matches) {
+        const vars = matches.map(m => m.slice(1, -1)).filter((v, i, a) => a.indexOf(v) === i)
+        setVariables(vars.join(', '))
+      }
+    } catch (error) {
+      console.error('Error loading prompt:', error)
+      alert('Failed to load prompt')
+    } finally {
+      setPromptsLoading(false)
+    }
+  }
+
+  const clearLoadedPrompt = () => {
+    setLoadedPromptId(null)
+    setPromptName('')
+    setPromptContent('')
+    setLoadedPromptDescription('')
+    setLoadedPromptModel('gpt-4')
+    setTags([])
+    setVariables('')
+    setVersions([])
+    setSelectedVersionForView(null)
   }
 
   const createCategory = async () => {
@@ -391,34 +488,62 @@ export default function WorkbenchPage() {
 
     try {
       const token = localStorage.getItem('auth-token')
-      const res = await fetch(API_ENDPOINTS.prompts.create, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: promptName,
-          template_body: promptContent,
-          tags,
-          ...(selectedCategoryId && { category_id: selectedCategoryId }),
-        }),
-      })
 
-      if (!res.ok) {
-        const error = await res.json()
-        const errorMsg = error.error || error.detail || 'Failed to save prompt'
-        alert(`Error: ${typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg)}`)
-        return
+      if (loadedPromptId) {
+        // Updating existing prompt
+        const updateRes = await fetch(API_ENDPOINTS.prompts.update(loadedPromptId), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: promptName,
+            description: loadedPromptDescription,
+            tags,
+            model: loadedPromptModel,
+            ...(selectedCategoryId && { category_id: selectedCategoryId }),
+          }),
+        })
+
+        if (!updateRes.ok) {
+          const error = await updateRes.json()
+          alert(`Error updating prompt: ${error.detail || 'Unknown error'}`)
+          return
+        }
+
+        alert('Prompt updated successfully!')
+        // Reload the prompt to get updated versions
+        await loadPrompt(loadedPromptId)
+      } else {
+        // Creating new prompt
+        const createRes = await fetch(API_ENDPOINTS.prompts.create, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: promptName,
+            template_body: promptContent,
+            tags,
+            ...(selectedCategoryId && { category_id: selectedCategoryId }),
+          }),
+        })
+
+        if (!createRes.ok) {
+          const error = await createRes.json()
+          const errorMsg = error.error || error.detail || 'Failed to save prompt'
+          alert(`Error: ${typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg)}`)
+          return
+        }
+
+        alert('Prompt saved successfully!')
+        // Refresh prompts list
+        await fetchAvailablePrompts()
+        // Clear form
+        clearLoadedPrompt()
       }
-
-      alert('Prompt saved successfully!')
-      setPromptName('')
-      setPromptContent('')
-      setVariables('')
-      setTags([])
-      setSelectedInteractionTypeId('')
-      setSelectedCategoryId('')
     } catch (error) {
       alert(`Failed to save prompt: ${error}`)
       console.error('Save error:', error)
@@ -437,6 +562,55 @@ export default function WorkbenchPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '2rem' }}>
         {/* Main Editor */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {/* Load Prompt Section */}
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600' }}>
+              {loadedPromptId ? '📂 Editing' : '📂 Load Prompt'}
+            </label>
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
+              <select
+                value={loadedPromptId || ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    loadPrompt(e.target.value)
+                  }
+                }}
+                disabled={promptsLoading}
+                className="input"
+                style={{ flex: 1, fontSize: '0.875rem' }}
+              >
+                <option value="">Select a prompt to edit...</option>
+                {availablePrompts.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              {loadedPromptId && (
+                <button
+                  onClick={clearLoadedPrompt}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: 'transparent',
+                    border: '2px solid var(--color-border)',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    color: 'var(--color-foreground)',
+                    fontWeight: '500',
+                  }}
+                >
+                  New
+                </button>
+              )}
+            </div>
+            {loadedPromptId && (
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', marginBottom: 0 }}>
+                You are editing an existing prompt. Save to create a new version.
+              </p>
+            )}
+          </div>
+
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600' }}>
               Prompt Name
