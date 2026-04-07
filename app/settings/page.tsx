@@ -236,24 +236,11 @@ export default function SettingsPage() {
                   style={{ marginTop: '0.25rem', cursor: saving ? 'not-allowed' : 'pointer' }}
                 />
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{
-                      fontWeight: '500',
-                      color: settings.defaultModel === model.id ? 'white' : 'var(--color-text)',
-                    }}>
-                      {model.name}
-                    </span>
-                    {model.parameter_size && (
-                      <span style={{
-                        fontSize: '0.7rem',
-                        padding: '0.1rem 0.4rem',
-                        borderRadius: '4px',
-                        backgroundColor: settings.defaultModel === model.id ? 'rgba(255,255,255,0.2)' : 'var(--color-border)',
-                        color: settings.defaultModel === model.id ? 'white' : 'var(--color-foregroundAlt)',
-                      }}>
-                        {model.parameter_size}
-                      </span>
-                    )}
+                  <div style={{
+                    fontWeight: '500',
+                    color: settings.defaultModel === model.id ? 'white' : 'var(--color-text)',
+                  }}>
+                    {model.name}
                   </div>
                   <div style={{
                     fontSize: '0.875rem',
