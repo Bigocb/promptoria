@@ -3,14 +3,19 @@
 import { useState, useEffect } from 'react'
 import { API_ENDPOINTS } from '@/lib/api-config'
 
+interface PromptVersion {
+  id: string
+  template_body: string
+  version_number?: number
+  created_at?: string
+}
+
 interface Prompt {
   id: string
   name: string
   description?: string
-  latest_version?: {
-    id: string
-    template_body: string
-  }
+  latest_version?: PromptVersion
+  versions?: PromptVersion[]
 }
 
 interface TestResult {
