@@ -121,11 +121,10 @@ export default function TestRunnerPage() {
     setError('')
 
     try {
-      console.log('Selected prompt:', selectedPrompt)
-      console.log('Latest version:', selectedPrompt.latest_version)
+      const latestVersion = selectedPrompt.latest_version || selectedPrompt.versions?.[0]
 
-      if (!selectedPrompt.latest_version) {
-        throw new Error('Prompt version not loaded. Please select a prompt again.')
+      if (!latestVersion) {
+        throw new Error('Prompt version not found. Please select a prompt again.')
       }
 
       const token = localStorage.getItem('auth-token')
@@ -136,7 +135,7 @@ export default function TestRunnerPage() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          prompt_version_id: selectedPrompt.latest_version.id,
+          prompt_version_id: latestVersion.id,
           variables,
         })
       })
