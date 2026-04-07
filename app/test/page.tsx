@@ -25,6 +25,7 @@ interface TestResult {
   output: string
   total_tokens: number
   latency_ms: number
+  request_duration_ms?: number
 }
 
 export default function TestRunnerPage() {
@@ -133,6 +134,8 @@ export default function TestRunnerPage() {
       }
 
       const token = localStorage.getItem('auth-token')
+      const requestStartTime = performance.now()
+
       const res = await fetch(API_ENDPOINTS.execute.run, {
         method: 'POST',
         headers: {
@@ -144,6 +147,9 @@ export default function TestRunnerPage() {
           variables,
         })
       })
+
+      const requestEndTime = performance.now()
+      const requestDuration = Math.round(requestEndTime - requestStartTime)
 
       if (!res.ok) {
         const errorData = await res.json()
@@ -160,6 +166,7 @@ export default function TestRunnerPage() {
         output: result.output,
         total_tokens: result.total_tokens,
         latency_ms: result.latency_ms,
+        request_duration_ms: requestDuration,
       }
 
       setResults([testResult, ...results])
@@ -339,10 +346,28 @@ export default function TestRunnerPage() {
                 </div>
                 <div>
                   <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--color-foregroundAlt)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
-                    Duration
+                    Total Request Time
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--color-foreground)' }}>
+                    {results[0]?.request_duration_ms ? `${results[0].request_duration_ms}ms` : 'N/A'}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--color-foregroundAlt)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                    Model Generation Time
                   </div>
                   <div style={{ fontSize: '0.875rem', color: 'var(--color-foreground)' }}>
                     {results[0]?.latency_ms ? `${results[0].latency_ms}ms` : 'N/A'}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--color-foregroundAlt)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                    Network + Processing Overhead
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--color-foreground)' }}>
+                    {results[0]?.request_duration_ms && results[0]?.latency_ms
+                      ? `${Math.max(0, results[0].request_duration_ms - results[0].latency_ms)}ms`
+                      : 'N/A'}
                   </div>
                 </div>
                 <div>
