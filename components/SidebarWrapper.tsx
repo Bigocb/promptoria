@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/app/providers'
 import { Sidebar } from './Sidebar'
+import { BottomNav } from './BottomNav'
 
 export default function SidebarWrapper() {
   const { user, loading } = useAuth()
@@ -30,7 +31,7 @@ export default function SidebarWrapper() {
         }
 
         @media (max-width: 767px) {
-          .sidebar-toggle { display: block !important; }
+          .sidebar-toggle { display: none !important; }
           .sidebar-overlay { display: block !important; }
           .sidebar.sidebar-closed { transform: translateX(-100%); }
           .sidebar.sidebar-open { transform: translateX(0); }
@@ -80,6 +81,7 @@ export default function SidebarWrapper() {
       )}
 
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <BottomNav />
     </>
   )
 }

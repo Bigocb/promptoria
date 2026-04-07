@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { API_ENDPOINTS } from '@/lib/api-config'
 
 interface PromptVersion {
@@ -78,6 +78,7 @@ function OutputActions({ output, promptName }: { output: string; promptName?: st
 }
 
 export default function TestRunnerPage() {
+  const router = useRouter()
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null)
   const [variables, setVariables] = useState<Record<string, string>>({})
@@ -257,40 +258,30 @@ export default function TestRunnerPage() {
   return (
     <div style={{ padding: '2rem' }}>
       <header style={{ marginBottom: '2rem' }}>
-        <div style={{ marginBottom: '1rem' }}>
-          <Link
-            href="/dashboard"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.375rem',
-              color: 'var(--color-foregroundAlt)',
-              textDecoration: 'none',
-              fontSize: '0.875rem',
-              padding: '0.375rem 0.75rem',
-              border: '1px solid var(--color-border)',
-              borderRadius: '0.375rem',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--color-foreground)'
-              e.currentTarget.style.borderColor = 'var(--color-accent)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--color-foregroundAlt)'
-              e.currentTarget.style.borderColor = 'var(--color-border)'
-            }}
-          >
-            ← Dashboard
-          </Link>
-        </div>
+        <button
+          onClick={() => router.push('/dashboard')}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--color-foregroundAlt)',
+            fontSize: '0.875rem',
+            padding: '0',
+            marginBottom: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
+          }}
+        >
+          ← Dashboard
+        </button>
         <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>▶️ Test Runner</h1>
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
           Select a prompt and test it against your configured LLM
         </p>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '2rem' }}>
+      <div className="panel-layout-grid">
         {/* Control Panel */}
         <div>
           {/* Prompt Selection */}
@@ -332,40 +323,10 @@ export default function TestRunnerPage() {
             <>
               {/* Variables */}
               <div className="card" style={{ marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                  <h3 style={{ fontWeight: '600', fontSize: '0.95rem', margin: 0 }}>
-                    📝 Variables
-                  </h3>
-                  <button
-                    onClick={handleAddVariable}
-                    style={{
-                      padding: '0.25rem 0.625rem',
-                      backgroundColor: 'transparent',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '0.375rem',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem',
-                      color: 'var(--color-foregroundAlt)',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--color-accent)'
-                      e.currentTarget.style.color = 'var(--color-accent)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--color-border)'
-                      e.currentTarget.style.color = 'var(--color-foregroundAlt)'
-                    }}
-                    title="Add a custom variable"
-                  >
-                    + Add
-                  </button>
-                </div>
-                {Object.keys(variables).length === 0 ? (
-                  <div style={{ fontSize: '0.8rem', color: 'var(--color-foregroundAlt)', lineHeight: '1.5' }}>
-                    No variables detected. Use <code style={{ backgroundColor: 'var(--color-background)', padding: '0.1rem 0.35rem', borderRadius: '0.25rem', fontFamily: 'monospace', fontSize: '0.75rem' }}>{'{{name}}'}</code> in your prompt, or click <strong>+ Add</strong> to set custom variables.
-                  </div>
-                ) : (
+                <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
+                  📝 Variables
+                </h3>
+                {Object.keys(variables).length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {Object.entries(variables).map(([key, value]) => (
                       <div key={key}>
@@ -417,6 +378,10 @@ export default function TestRunnerPage() {
                         />
                       </div>
                     ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-foregroundAlt)' }}>
+                    No <code style={{ fontFamily: 'monospace' }}>{'{{'+'variable}}'}</code> patterns detected in this prompt.
                   </div>
                 )}
               </div>
@@ -503,7 +468,7 @@ export default function TestRunnerPage() {
               <h3 style={{ fontWeight: '600', marginBottom: '0.75rem', fontSize: '0.95rem', color: 'var(--color-foreground)' }}>
                 📊 Run Statistics
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
                 <div>
                   <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--color-foregroundAlt)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
                     Model
@@ -579,7 +544,8 @@ export default function TestRunnerPage() {
               wordBreak: 'break-word',
               border: '1px solid var(--color-border)',
               overflowY: 'auto',
-              maxHeight: '600px',
+              maxHeight: '500px',
+              ...(isLoading ? { display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}),
             }}>
               {isLoading ? (
                 <div style={{ textAlign: 'center', paddingTop: '4rem' }}>

@@ -94,6 +94,7 @@ export default function WorkbenchPage() {
   const [testResults, setTestResults] = useState<TestResult[]>([])
   const [showVersionHistory, setShowVersionHistory] = useState(false)
   const [versions, setVersions] = useState<PromptVersion[]>([])
+  const [activeMobileSection, setActiveMobileSection] = useState<string>('refine')
   const [selectedVersionForView, setSelectedVersionForView] = useState<PromptVersion | null>(null)
   const [compareVersionForDiff, setCompareVersionForDiff] = useState<PromptVersion | null>(null)
   const [showDiffView, setShowDiffView] = useState(false)
@@ -622,7 +623,7 @@ export default function WorkbenchPage() {
   }
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div style={{ padding: '1.5rem' }}>
       <header style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>⚡ Prompt Workbench</h1>
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
@@ -630,7 +631,7 @@ export default function WorkbenchPage() {
         </p>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '2rem' }}>
+      <div className="workbench-grid">
         {/* Main Editor */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {/* Load Prompt Section */}
@@ -980,7 +981,7 @@ export default function WorkbenchPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div className="btn-group-mobile" style={{ display: 'flex', gap: '1rem' }}>
             <button
               className="btn btn-primary"
               onClick={extractVariables}
@@ -998,8 +999,38 @@ export default function WorkbenchPage() {
 
         {/* Right Sidebar */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Mobile Section Tabs */}
+          <div className="mobile-section-tabs">
+            {[
+              { id: 'refine', label: '💡 Refine' },
+              { id: 'snippets', label: '📚 Snippets' },
+              { id: 'test', label: '🧪 Test' },
+              { id: 'versions', label: '📜 Versions' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveMobileSection(tab.id)}
+                style={{
+                  padding: '8px 14px',
+                  minHeight: '40px',
+                  backgroundColor: activeMobileSection === tab.id ? 'var(--color-accent)' : 'var(--color-background)',
+                  color: activeMobileSection === tab.id ? 'var(--color-background)' : 'var(--color-foreground)',
+                  border: `2px solid ${activeMobileSection === tab.id ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
           {/* Combined Suggestions & Tags Panel */}
-          <div className="card">
+          <div className={`card${activeMobileSection !== 'refine' ? ' mobile-section-hidden' : ''}`}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
               <h3 style={{ fontWeight: '600', fontSize: '0.95rem', margin: 0 }}>
                 💡 Refine & Tag
@@ -1211,7 +1242,7 @@ export default function WorkbenchPage() {
           </div>
 
           {/* Snippets Panel */}
-          <div className="card">
+          <div className={`card${activeMobileSection !== 'snippets' ? ' mobile-section-hidden' : ''}`}>
             <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
               📚 Snippets
             </h3>
@@ -1257,7 +1288,7 @@ export default function WorkbenchPage() {
           </div>
 
           {/* Test Panel */}
-          <div className="card">
+          <div className={`card${activeMobileSection !== 'test' ? ' mobile-section-hidden' : ''}`}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
               <h3 style={{ fontWeight: '600', fontSize: '0.95rem', margin: 0 }}>
                 🧪 Test
@@ -1414,7 +1445,7 @@ export default function WorkbenchPage() {
           </div>
 
           {/* Version History Panel */}
-          <div className="card">
+          <div className={`card${activeMobileSection !== 'versions' ? ' mobile-section-hidden' : ''}`}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
               <h3 style={{ fontWeight: '600', fontSize: '0.95rem', margin: 0 }}>
                 📜 Versions

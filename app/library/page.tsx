@@ -99,7 +99,7 @@ export default function LibraryPage() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '2rem' }}>
+      <div className="sidebar-layout-grid">
         {/* Sidebar - Interaction Types */}
         <aside>
           <div className="card" style={{ position: 'sticky', top: '2rem' }}>
