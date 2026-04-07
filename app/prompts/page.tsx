@@ -234,6 +234,11 @@ export default function WorkbenchPage() {
       // Clear diff/comparison view when loading new prompt
       setCompareVersionForDiff(null)
       setShowDiffView(false)
+      // Clear suggestions and refinement panels
+      setShowSuggestionsPanel(false)
+      setSuggestions(null)
+      setSuggestedTags([])
+      setTagInput('')
 
       // Extract variables from loaded content
       const matches = (latestVersion?.template_body || data.template_body || '').match(/\{([^}]+)\}/g)
@@ -262,6 +267,10 @@ export default function WorkbenchPage() {
     setSelectedVersionForView(null)
     setCompareVersionForDiff(null)
     setShowDiffView(false)
+    setShowSuggestionsPanel(false)
+    setSuggestions(null)
+    setSuggestedTags([])
+    setTagInput('')
   }
 
   const createCategory = async () => {
