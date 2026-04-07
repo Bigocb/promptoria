@@ -186,6 +186,10 @@
   gap: 2rem;
 }
 
+.workbench-grid > * {
+  min-width: 0;
+}
+
 /* Library sidebar: 280px filter + main content */
 .sidebar-layout-grid {
   display: grid;
@@ -193,11 +197,19 @@
   gap: 2rem;
 }
 
+.sidebar-layout-grid > * {
+  min-width: 0;
+}
+
 /* Test/panel: 300px controls + main output */
 .panel-layout-grid {
   display: grid;
   grid-template-columns: 300px 1fr;
   gap: 2rem;
+}
+
+.panel-layout-grid > * {
+  min-width: 0;
 }
 
 /* Mobile: ≤639px */

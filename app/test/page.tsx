@@ -275,7 +275,7 @@ export default function TestRunnerPage() {
         >
           ← Dashboard
         </button>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>▶️ Test Runner</h1>
+        <h1 style={{ fontSize: 'clamp(1.25rem, 5vw, 2rem)', fontWeight: 'bold', marginBottom: '0.5rem' }}>▶️ Test Runner</h1>
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
           Select a prompt and test it against your configured LLM
         </p>

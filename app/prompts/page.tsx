@@ -631,7 +631,7 @@ export default function WorkbenchPage() {
             ← Dashboard
           </Link>
         </div>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>⚡ Prompt Workbench</h1>
+        <h1 style={{ fontSize: 'clamp(1.25rem, 5vw, 2rem)', fontWeight: 'bold', marginBottom: '0.5rem' }}>⚡ Workbench</h1>
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
           Craft and refine prompts with AI suggestions, compose snippets, and test execution
         </p>

@@ -93,7 +93,7 @@ export default function LibraryPage() {
             ← Dashboard
           </Link>
         </div>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>📚 Prompt Library</h1>
+        <h1 style={{ fontSize: 'clamp(1.25rem, 5vw, 2rem)', fontWeight: 'bold', marginBottom: '0.5rem' }}>📚 Prompt Library</h1>
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
           Browse and discover prompts organized by agent interaction types and categories
         </p>

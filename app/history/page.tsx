@@ -115,7 +115,7 @@ Target audience: {{target_audience}}`,
             ← Dashboard
           </Link>
         </div>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>📊 Version History</h1>
+        <h1 style={{ fontSize: 'clamp(1.25rem, 5vw, 2rem)', fontWeight: 'bold', marginBottom: '0.5rem' }}>📊 Version History</h1>
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
           Compare and track all versions of your prompts
         </p>
