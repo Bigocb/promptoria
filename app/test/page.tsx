@@ -145,6 +145,8 @@ export default function TestRunnerPage() {
         body: JSON.stringify({
           prompt_version_id: latestVersion.id,
           variables,
+          temperature: parseFloat(temperature),
+          max_tokens: parseInt(maxTokens),
         })
       })
 

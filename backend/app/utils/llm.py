@@ -50,11 +50,20 @@ class OllamaClient:
             # Build messages for chat API (more flexible than generate)
             messages = [{"role": "user", "content": prompt}]
 
+            # Build options from kwargs
+            options = {}
+            if "temperature" in kwargs:
+                options["temperature"] = kwargs["temperature"]
+            if "max_tokens" in kwargs:
+                # Ollama uses num_predict instead of max_tokens
+                options["num_predict"] = kwargs["max_tokens"]
+
             # Call the chat method
             response = self.client.chat(
                 model=model,
                 messages=messages,
                 stream=False,
+                options=options if options else None,
             )
 
             # Extract response content
@@ -272,7 +281,12 @@ async def execute_with_ollama(
     start_time = time.time()
 
     try:
-        output = await client.generate(model, prompt)
+        output = await client.generate(
+            model,
+            prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
         elapsed_ms = (time.time() - start_time) * 1000
 
         input_tokens = calculate_tokens(prompt)

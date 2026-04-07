@@ -21,6 +21,8 @@ class ExecuteRequest(BaseModel):
     """Execute prompt request"""
     prompt_version_id: str
     variables: Optional[Dict[str, str]] = None
+    temperature: Optional[float] = 0.7
+    max_tokens: Optional[int] = 500
 
 
 @router.post("", status_code=201)
@@ -64,8 +66,13 @@ async def execute_prompt(
         # Compile prompt with snippets and variable substitution
         compiled_prompt = compile_prompt(db, data.prompt_version_id, variables)
 
-        # Execute via Ollama with user's selected model
-        result = await execute_with_ollama(compiled_prompt, model=model)
+        # Execute via Ollama with user's selected model and parameters
+        result = await execute_with_ollama(
+            compiled_prompt,
+            model=model,
+            temperature=data.temperature,
+            max_tokens=data.max_tokens
+        )
 
         # Create and store test run with results
         test_run = TestRun(
