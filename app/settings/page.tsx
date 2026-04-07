@@ -2,6 +2,7 @@
 
 import { useSettings } from '@/app/providers'
 import { useState } from 'react'
+import Link from 'next/link'
 import { themes } from '@/lib/themes'
 import { ThemeName } from '@/lib/themes'
 
@@ -64,6 +65,11 @@ export default function SettingsPage() {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '900px' }}>
+      <div style={{ marginBottom: '1rem' }}>
+        <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', color: 'var(--color-foregroundAlt)', textDecoration: 'none', fontSize: '0.875rem', padding: '0.375rem 0.75rem', border: '1px solid var(--color-border)', borderRadius: '0.375rem' }}>
+          ← Dashboard
+        </Link>
+      </div>
       <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', color: 'var(--color-text)' }}>Settings</h1>
       <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>
         Manage your preferences and defaults

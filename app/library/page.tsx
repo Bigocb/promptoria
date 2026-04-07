@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { API_ENDPOINTS } from '@/lib/api-config'
 import { useAuth } from '@/app/providers'
@@ -87,6 +88,11 @@ export default function LibraryPage() {
   return (
     <div style={{ padding: '2rem', minHeight: '100vh' }}>
       <header style={{ marginBottom: '2rem' }}>
+        <div style={{ marginBottom: '1rem' }}>
+          <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', color: 'var(--color-foregroundAlt)', textDecoration: 'none', fontSize: '0.875rem', padding: '0.375rem 0.75rem', border: '1px solid var(--color-border)', borderRadius: '0.375rem' }}>
+            ← Dashboard
+          </Link>
+        </div>
         <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>📚 Prompt Library</h1>
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
           Browse and discover prompts organized by agent interaction types and categories
