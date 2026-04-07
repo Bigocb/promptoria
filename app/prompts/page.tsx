@@ -6,6 +6,16 @@ import { useSearchParams } from 'next/navigation'
 import { API_ENDPOINTS } from '@/lib/api-config'
 import { useAuth } from '@/app/providers'
 
+interface OllamaModel {
+  id: string
+  name: string
+  size: string | null
+  parameter_size: string | null
+  quantization_level: string | null
+  family: string | null
+  description: string
+}
+
 interface Snippet {
   id: string
   name: string
@@ -87,6 +97,8 @@ export default function WorkbenchPage() {
   // Test panel state
   const [showTestPanel, setShowTestPanel] = useState(false)
   const [testModel, setTestModel] = useState('llama3.2')
+  const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([])
+  const [testFamilyFilter, setTestFamilyFilter] = useState('all')
   const [testTemperature, setTestTemperature] = useState(0.7)
   const [testMaxTokens, setTestMaxTokens] = useState(500)
   const [testVariables, setTestVariables] = useState<Record<string, string>>({})
@@ -113,6 +125,25 @@ export default function WorkbenchPage() {
     fetchInteractionTypes()
     // Lazy load prompts only when load selector is opened
   }, [user])
+
+  // Fetch Ollama models for test panel
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.models)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.models?.length > 0) {
+            setOllamaModels(data.models)
+            setTestModel(data.models[0].id)
+          }
+        }
+      } catch {
+        // Silently fall back to static model list
+      }
+    }
+    fetchModels()
+  }, [])
 
   // Auto-load prompt from URL parameter
   useEffect(() => {
@@ -1322,16 +1353,50 @@ export default function WorkbenchPage() {
                   <label style={{ display: 'block', marginBottom: '0.375rem', fontWeight: '500', fontSize: '0.75rem' }}>
                     Model
                   </label>
+                  {ollamaModels.length > 0 && (() => {
+                    const families = Array.from(new Set(ollamaModels.map(m => m.family).filter(Boolean))) as string[]
+                    if (families.length === 0) return null
+                    return (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginBottom: '0.5rem' }}>
+                        <button
+                          onClick={() => setTestFamilyFilter('all')}
+                          style={{
+                            fontSize: '0.65rem', padding: '0.15rem 0.5rem', borderRadius: '9999px', cursor: 'pointer',
+                            backgroundColor: testFamilyFilter === 'all' ? 'var(--color-accent)' : 'var(--color-surface)',
+                            color: testFamilyFilter === 'all' ? '#1d2021' : 'var(--color-foregroundAlt)',
+                            border: '1px solid var(--color-border)',
+                          }}
+                        >all</button>
+                        {families.map(f => (
+                          <button key={f} onClick={() => setTestFamilyFilter(f)} style={{
+                            fontSize: '0.65rem', padding: '0.15rem 0.5rem', borderRadius: '9999px', cursor: 'pointer',
+                            backgroundColor: testFamilyFilter === f ? 'var(--color-accent)' : 'var(--color-surface)',
+                            color: testFamilyFilter === f ? '#1d2021' : 'var(--color-foregroundAlt)',
+                            border: '1px solid var(--color-border)',
+                          }}>{f}</button>
+                        ))}
+                      </div>
+                    )
+                  })()}
                   <select
                     value={testModel}
                     onChange={(e) => setTestModel(e.target.value)}
                     className="input"
                     style={{ width: '100%', fontSize: '0.75rem' }}
                   >
-                    <option value="llama3.2">Llama 3.2</option>
-                    <option value="gpt-oss:120b-cloud">GPT-OSS 120B (Cloud)</option>
-                    <option value="mistral">Mistral</option>
-                    <option value="neural-chat">Neural Chat</option>
+                    {ollamaModels.length > 0 ? (
+                      ollamaModels
+                        .filter(m => testFamilyFilter === 'all' || m.family === testFamilyFilter)
+                        .map(m => (
+                          <option key={m.id} value={m.id}>{m.name}{m.parameter_size ? ` (${m.parameter_size})` : ''}</option>
+                        ))
+                    ) : (
+                      <>
+                        <option value="llama3.2">Llama 3.2</option>
+                        <option value="mistral">Mistral</option>
+                        <option value="neural-chat">Neural Chat</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
