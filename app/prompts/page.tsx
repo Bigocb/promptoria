@@ -231,6 +231,9 @@ export default function WorkbenchPage() {
       setSelectedCategoryId(data.category_id || '')
       setVersions(data.versions || [])
       setSelectedVersionForView(latestVersion || null)
+      // Clear diff/comparison view when loading new prompt
+      setCompareVersionForDiff(null)
+      setShowDiffView(false)
 
       // Extract variables from loaded content
       const matches = (latestVersion?.template_body || data.template_body || '').match(/\{([^}]+)\}/g)
@@ -257,6 +260,8 @@ export default function WorkbenchPage() {
     setVariables('')
     setVersions([])
     setSelectedVersionForView(null)
+    setCompareVersionForDiff(null)
+    setShowDiffView(false)
   }
 
   const createCategory = async () => {
