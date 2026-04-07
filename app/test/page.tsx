@@ -338,9 +338,20 @@ export default function TestRunnerPage() {
               wordBreak: 'break-word',
               border: '1px solid var(--color-border)',
               overflowY: 'auto',
-              maxHeight: '500px'
+              maxHeight: '500px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: isLoading ? 'center' : 'flex-start'
             }}>
-              {output || (selectedPrompt ? 'Run the prompt to see the response here...' : 'Select a prompt to begin')}
+              {isLoading ? (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+                  <div style={{ color: 'var(--color-foreground)', fontWeight: '500', marginBottom: '0.5rem' }}>Executing prompt...</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>Please wait while the LLM processes your request</div>
+                </div>
+              ) : (
+                output || (selectedPrompt ? 'Run the prompt to see the response here...' : 'Select a prompt to begin')
+              )}
             </div>
           </div>
 
