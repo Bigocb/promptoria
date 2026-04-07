@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { API_ENDPOINTS } from '@/lib/api-config'
 
 interface PromptVersion {
@@ -29,6 +30,7 @@ interface TestResult {
 }
 
 export default function TestRunnerPage() {
+  const router = useRouter()
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null)
   const [variables, setVariables] = useState<Record<string, string>>({})
@@ -41,6 +43,7 @@ export default function TestRunnerPage() {
   const [selectedResult, setSelectedResult] = useState<TestResult | null>(null)
   const [error, setError] = useState('')
   const [fetchingPrompts, setFetchingPrompts] = useState(true)
+  const [copyFeedback, setCopyFeedback] = useState(false)
 
   // Fetch prompts on mount
   useEffect(() => {
@@ -181,9 +184,47 @@ export default function TestRunnerPage() {
     }
   }
 
+  const handleCopy = async () => {
+    if (!output) return
+    await navigator.clipboard.writeText(output)
+    setCopyFeedback(true)
+    setTimeout(() => setCopyFeedback(false), 2000)
+  }
+
+  const handleDownload = () => {
+    if (!output) return
+    const promptName = selectedPrompt?.name?.replace(/\s+/g, '-').toLowerCase() || 'output'
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const filename = `${promptName}-${timestamp}.md`
+    const blob = new Blob([output], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div style={{ padding: '2rem' }}>
       <header style={{ marginBottom: '2rem' }}>
+        <button
+          onClick={() => router.push('/dashboard')}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--color-foregroundAlt)',
+            fontSize: '0.875rem',
+            padding: '0',
+            marginBottom: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
+          }}
+        >
+          ← Dashboard
+        </button>
         <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>▶️ Test Runner</h1>
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
           Select a prompt and test it against your configured LLM
@@ -231,11 +272,11 @@ export default function TestRunnerPage() {
           {selectedPrompt && (
             <>
               {/* Variables */}
-              {Object.keys(variables).length > 0 && (
-                <div className="card" style={{ marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
-                    📝 Variables
-                  </h3>
+              <div className="card" style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
+                  📝 Variables
+                </h3>
+                {Object.keys(variables).length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {Object.entries(variables).map(([key, value]) => (
                       <div key={key}>
@@ -253,8 +294,12 @@ export default function TestRunnerPage() {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-foregroundAlt)' }}>
+                    No <code style={{ fontFamily: 'monospace' }}>{'{{'+'variable}}'}</code> patterns detected in this prompt.
+                  </div>
+                )}
+              </div>
 
               {/* Model Selection */}
               <div className="card" style={{ marginBottom: '1.5rem' }}>
@@ -394,9 +439,46 @@ export default function TestRunnerPage() {
           )}
 
           <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-foreground)' }}>
-              Output
-            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--color-foreground)', margin: 0 }}>
+                Output
+              </h2>
+              {output && (
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={handleCopy}
+                    style={{
+                      padding: '0.375rem 0.75rem',
+                      fontSize: '0.75rem',
+                      fontWeight: '500',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      backgroundColor: copyFeedback ? 'var(--color-accent)' : 'var(--color-backgroundAlt)',
+                      color: copyFeedback ? 'var(--color-background)' : 'var(--color-foreground)',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {copyFeedback ? '✓ Copied!' : '📋 Copy'}
+                  </button>
+                  <button
+                    onClick={handleDownload}
+                    style={{
+                      padding: '0.375rem 0.75rem',
+                      fontSize: '0.75rem',
+                      fontWeight: '500',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      backgroundColor: 'var(--color-backgroundAlt)',
+                      color: 'var(--color-foreground)',
+                    }}
+                  >
+                    ⬇ Download .md
+                  </button>
+                </div>
+              )}
+            </div>
             <div style={{
               backgroundColor: 'var(--color-background)',
               padding: '1rem',
@@ -410,9 +492,7 @@ export default function TestRunnerPage() {
               border: '1px solid var(--color-border)',
               overflowY: 'auto',
               maxHeight: '500px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: isLoading ? 'center' : 'flex-start'
+              ...(isLoading ? { display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}),
             }}>
               {isLoading ? (
                 <div style={{ textAlign: 'center' }}>
