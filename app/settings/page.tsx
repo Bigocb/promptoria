@@ -23,6 +23,7 @@ export default function SettingsPage() {
   const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([])
   const [ollamaAvailable, setOllamaAvailable] = useState<boolean | null>(null)
   const [ollamaError, setOllamaError] = useState<string | null>(null)
+  const [familyFilter, setFamilyFilter] = useState<string>('qwen')
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -94,7 +95,9 @@ export default function SettingsPage() {
     { id: 'mistral', name: 'Mistral', description: 'Balanced performance and speed', size: null, parameter_size: null, quantization_level: null, family: null },
     { id: 'neural-chat', name: 'Neural Chat', description: 'Optimized for chat interactions', size: null, parameter_size: null, quantization_level: null, family: null },
   ]
-  const models = ollamaModels.length > 0 ? ollamaModels : staticModels
+  const allModels = ollamaModels.length > 0 ? ollamaModels : staticModels
+  const modelFamilies = Array.from(new Set(allModels.map(m => m.family).filter(Boolean))) as string[]
+  const models = allModels.filter(m => familyFilter === 'all' || !m.family || m.family === familyFilter)
 
   return (
     <div style={{ padding: '2rem', maxWidth: '900px' }}>
@@ -215,6 +218,27 @@ export default function SettingsPage() {
               marginBottom: '1rem',
             }}>
               {ollamaError}
+            </div>
+          )}
+          {modelFamilies.length > 1 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.75rem' }}>
+              <button
+                onClick={() => setFamilyFilter('all')}
+                style={{
+                  fontSize: '0.7rem', padding: '0.2rem 0.6rem', borderRadius: '9999px', cursor: 'pointer',
+                  backgroundColor: familyFilter === 'all' ? 'var(--color-accent)' : 'var(--color-surface)',
+                  color: familyFilter === 'all' ? '#1d2021' : 'var(--color-foregroundAlt)',
+                  border: '1px solid var(--color-border)',
+                }}
+              >all</button>
+              {modelFamilies.map(f => (
+                <button key={f} onClick={() => setFamilyFilter(f)} style={{
+                  fontSize: '0.7rem', padding: '0.2rem 0.6rem', borderRadius: '9999px', cursor: 'pointer',
+                  backgroundColor: familyFilter === f ? 'var(--color-accent)' : 'var(--color-surface)',
+                  color: familyFilter === f ? '#1d2021' : 'var(--color-foregroundAlt)',
+                  border: '1px solid var(--color-border)',
+                }}>{f}</button>
+              ))}
             </div>
           )}
           <div style={{ display: 'grid', gap: '0.75rem' }}>

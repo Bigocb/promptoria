@@ -86,7 +86,6 @@ function OutputActions({ output, promptName }: { output: string; promptName?: st
     </div>
   )
 }
-
 export default function TestRunnerPage() {
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null)
@@ -103,6 +102,7 @@ export default function TestRunnerPage() {
   const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([])
   const [ollamaAvailable, setOllamaAvailable] = useState<boolean | null>(null)
   const [ollamaError, setOllamaError] = useState<string | null>(null)
+  const [familyFilter, setFamilyFilter] = useState<string>('qwen')
 
   // Fetch prompts on mount
   useEffect(() => {
@@ -429,6 +429,31 @@ export default function TestRunnerPage() {
                     {ollamaError || 'Ollama is not running. Start it with: ollama serve'}
                   </div>
                 ) : null}
+                {ollamaModels.length > 0 && (() => {
+                  const families = Array.from(new Set(ollamaModels.map(m => m.family).filter(Boolean))) as string[]
+                  if (families.length <= 1) return null
+                  return (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.75rem' }}>
+                      <button
+                        onClick={() => setFamilyFilter('all')}
+                        style={{
+                          fontSize: '0.7rem', padding: '0.2rem 0.6rem', borderRadius: '9999px', cursor: 'pointer',
+                          backgroundColor: familyFilter === 'all' ? 'var(--color-accent)' : 'var(--color-surface)',
+                          color: familyFilter === 'all' ? '#1d2021' : 'var(--color-foregroundAlt)',
+                          border: '1px solid var(--color-border)',
+                        }}
+                      >all</button>
+                      {families.map(f => (
+                        <button key={f} onClick={() => setFamilyFilter(f)} style={{
+                          fontSize: '0.7rem', padding: '0.2rem 0.6rem', borderRadius: '9999px', cursor: 'pointer',
+                          backgroundColor: familyFilter === f ? 'var(--color-accent)' : 'var(--color-surface)',
+                          color: familyFilter === f ? '#1d2021' : 'var(--color-foregroundAlt)',
+                          border: '1px solid var(--color-border)',
+                        }}>{f}</button>
+                      ))}
+                    </div>
+                  )
+                })()}
                 <select
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
@@ -437,11 +462,13 @@ export default function TestRunnerPage() {
                   disabled={ollamaAvailable === false && ollamaModels.length === 0}
                 >
                   {ollamaModels.length > 0 ? (
-                    ollamaModels.map((m) => (
-                      <option key={m.id} value={m.id} title={m.description}>
-                        {m.name}{m.parameter_size ? ` (${m.parameter_size})` : ''}
-                      </option>
-                    ))
+                    ollamaModels
+                      .filter(m => familyFilter === 'all' || !m.family || m.family === familyFilter)
+                      .map((m) => (
+                        <option key={m.id} value={m.id} title={m.description}>
+                          {m.name}{m.parameter_size ? ` (${m.parameter_size})` : ''}
+                        </option>
+                      ))
                   ) : (
                     <>
                       <option value="llama3.2">Llama 3.2</option>
