@@ -102,7 +102,7 @@ export default function TestRunnerPage() {
   const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([])
   const [ollamaAvailable, setOllamaAvailable] = useState<boolean | null>(null)
   const [ollamaError, setOllamaError] = useState<string | null>(null)
-  const [familyFilter, setFamilyFilter] = useState<string>('qwen')
+  const [familyFilter, setFamilyFilter] = useState<string>('all')
 
   // Fetch prompts on mount
   useEffect(() => {

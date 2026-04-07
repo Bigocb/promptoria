@@ -37,8 +37,26 @@ def _format_size(size_bytes: int) -> str:
     return f"{size_bytes} bytes"
 
 
+def _infer_family(model_id: str, details: dict) -> str:
+    """
+    Return a family name for grouping/filtering.
+    Uses details.family if present, otherwise derives from the model name.
+    E.g. 'deepseek-v3.1:671b' -> 'deepseek', 'gpt-oss:120b' -> 'gpt-oss'
+    """
+    family = details.get("family", "") or ""
+    if family:
+        return family.lower()
+    # Strip tag (everything after ':'), then take the first dash-delimited segment
+    base = model_id.split(":")[0]
+    # Keep compound names like 'gpt-oss' intact by only splitting on digits that
+    # signal a version number (e.g. 'llama3' -> 'llama', 'deepseek-v3' -> 'deepseek')
+    import re
+    segment = re.split(r"[\d]", base)[0].rstrip("-").rstrip(".")
+    return segment.lower() if segment else base.lower()
+
+
 def _build_description(model_data: dict) -> str:
-    """Build a human-readable description from Ollama model metadata"""
+    """Build a human-readable description from Ollama model metadata (no raw size)"""
     parts = []
     details = model_data.get("details", {})
 
@@ -49,10 +67,6 @@ def _build_description(model_data: dict) -> str:
     quant = details.get("quantization_level", "")
     if quant:
         parts.append(quant)
-
-    size_bytes = model_data.get("size", 0)
-    if size_bytes:
-        parts.append(_format_size(size_bytes))
 
     family = details.get("family", "")
     if family:
@@ -86,7 +100,7 @@ async def list_models():
                 size=_format_size(m.get("size", 0)) if m.get("size") else None,
                 parameter_size=details.get("parameter_size"),
                 quantization_level=details.get("quantization_level"),
-                family=details.get("family"),
+                family=_infer_family(model_id, details),
                 description=_build_description(m),
             ))
 
