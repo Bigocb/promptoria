@@ -204,7 +204,7 @@ export default function SnippetsPage() {
           <p style={{ color: 'var(--color-foregroundAlt)' }}>No snippets yet. Create one to get started!</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+        <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))' }}>
           {snippets.map((snippet) => (
             <div
               key={snippet.id}

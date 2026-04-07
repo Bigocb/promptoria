@@ -29,6 +29,7 @@ export default function RootLayout({
                 main.layout-main {
                   margin-left: 240px;
                   flex: 1;
+                  min-width: 0;
                 }
                 @media (max-width: 767px) {
                   main.layout-main {

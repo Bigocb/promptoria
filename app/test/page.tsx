@@ -190,7 +190,7 @@ export default function TestRunnerPage() {
         </p>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '2rem' }}>
+      <div className="panel-layout-grid">
         {/* Control Panel */}
         <div>
           {/* Prompt Selection */}
@@ -338,7 +338,7 @@ export default function TestRunnerPage() {
               <h3 style={{ fontWeight: '600', marginBottom: '0.75rem', fontSize: '0.95rem', color: 'var(--color-foreground)' }}>
                 📊 Run Statistics
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
                 <div>
                   <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--color-foregroundAlt)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
                     Model
