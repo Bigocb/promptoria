@@ -322,6 +322,49 @@ export default function TestRunnerPage() {
             </div>
           )}
 
+          {/* Run Statistics */}
+          {output && results.length > 0 && (
+            <div className="card" style={{ marginBottom: '1.5rem', backgroundColor: 'var(--color-backgroundAlt)', padding: '1rem' }}>
+              <h3 style={{ fontWeight: '600', marginBottom: '0.75rem', fontSize: '0.95rem', color: 'var(--color-foreground)' }}>
+                📊 Run Statistics
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--color-foregroundAlt)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                    Model
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--color-foreground)', fontFamily: 'monospace' }}>
+                    {results[0]?.model || 'Unknown'}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--color-foregroundAlt)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                    Duration
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--color-foreground)' }}>
+                    {results[0]?.latency_ms ? `${results[0].latency_ms}ms` : 'N/A'}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--color-foregroundAlt)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                    Total Tokens
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--color-foreground)' }}>
+                    {results[0]?.total_tokens || 'N/A'}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--color-foregroundAlt)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                    Timestamp
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--color-foreground)' }}>
+                    {results[0]?.created_at ? new Date(results[0].created_at).toLocaleTimeString() : 'N/A'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <h2 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-foreground)' }}>
               Output
