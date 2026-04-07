@@ -121,6 +121,13 @@ export default function TestRunnerPage() {
     setError('')
 
     try {
+      console.log('Selected prompt:', selectedPrompt)
+      console.log('Latest version:', selectedPrompt.latest_version)
+
+      if (!selectedPrompt.latest_version) {
+        throw new Error('Prompt version not loaded. Please select a prompt again.')
+      }
+
       const token = localStorage.getItem('auth-token')
       const res = await fetch(API_ENDPOINTS.execute.run, {
         method: 'POST',
