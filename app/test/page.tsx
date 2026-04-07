@@ -431,7 +431,7 @@ export default function TestRunnerPage() {
                 ) : null}
                 {ollamaModels.length > 0 && (() => {
                   const families = Array.from(new Set(ollamaModels.map(m => m.family).filter(Boolean))) as string[]
-                  if (families.length <= 1) return null
+                  if (families.length === 0) return null
                   return (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.75rem' }}>
                       <button

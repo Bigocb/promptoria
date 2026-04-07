@@ -220,7 +220,7 @@ export default function SettingsPage() {
               {ollamaError}
             </div>
           )}
-          {modelFamilies.length > 1 && (
+          {modelFamilies.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.75rem' }}>
               <button
                 onClick={() => setFamilyFilter('all')}
