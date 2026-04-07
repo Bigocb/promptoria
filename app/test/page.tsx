@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { API_ENDPOINTS } from '@/lib/api-config'
 
 interface PromptVersion {
@@ -78,7 +78,6 @@ function OutputActions({ output, promptName }: { output: string; promptName?: st
 }
 
 export default function TestRunnerPage() {
-  const router = useRouter()
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null)
   const [variables, setVariables] = useState<Record<string, string>>({})
@@ -258,23 +257,11 @@ export default function TestRunnerPage() {
   return (
     <div style={{ padding: '2rem' }}>
       <header style={{ marginBottom: '2rem' }}>
-        <button
-          onClick={() => router.push('/dashboard')}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: 'var(--color-foregroundAlt)',
-            fontSize: '0.875rem',
-            padding: '0',
-            marginBottom: '0.75rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.375rem',
-          }}
-        >
-          ← Dashboard
-        </button>
+        <div style={{ marginBottom: '1rem' }}>
+          <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', color: 'var(--color-foregroundAlt)', textDecoration: 'none', fontSize: '0.875rem', padding: '0.375rem 0.75rem', border: '1px solid var(--color-border)', borderRadius: '0.375rem' }}>
+            ← Dashboard
+          </Link>
+        </div>
         <h1 style={{ fontSize: 'clamp(1.25rem, 5vw, 2rem)', fontWeight: 'bold', marginBottom: '0.5rem' }}>▶️ Test Runner</h1>
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
           Select a prompt and test it against your configured LLM

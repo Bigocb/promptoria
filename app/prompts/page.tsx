@@ -674,18 +674,20 @@ export default function WorkbenchPage() {
               {loadedPromptId && (
                 <button
                   onClick={clearLoadedPrompt}
+                  title="New prompt"
                   style={{
-                    padding: '0.5rem 1rem',
+                    padding: '0.375rem 0.625rem',
                     backgroundColor: 'transparent',
-                    border: '2px solid var(--color-border)',
+                    border: '1px solid var(--color-border)',
                     borderRadius: '0.375rem',
                     cursor: 'pointer',
-                    fontSize: '0.875rem',
+                    fontSize: '1rem',
                     color: 'var(--color-foreground)',
-                    fontWeight: '500',
+                    lineHeight: 1,
+                    flexShrink: 0,
                   }}
                 >
-                  New
+                  +
                 </button>
               )}
             </div>
