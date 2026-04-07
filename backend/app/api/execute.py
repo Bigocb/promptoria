@@ -21,6 +21,7 @@ class ExecuteRequest(BaseModel):
     """Execute prompt request"""
     prompt_version_id: str
     variables: Optional[Dict[str, str]] = None
+    model: Optional[str] = None
     temperature: Optional[float] = 0.7
     max_tokens: Optional[int] = 500
 
@@ -59,9 +60,12 @@ async def execute_prompt(
         raise HTTPException(status_code=403, detail="Access denied")
 
     try:
-        # Get user's default model from settings
-        user_settings = db.query(UserSettings).filter(UserSettings.user_id == user_id).first()
-        model = user_settings.default_model if user_settings else "mistral"
+        # Use model from request if provided, otherwise use user's default
+        if data.model:
+            model = data.model
+        else:
+            user_settings = db.query(UserSettings).filter(UserSettings.user_id == user_id).first()
+            model = user_settings.default_model if user_settings else "mistral"
 
         # Compile prompt with snippets and variable substitution
         compiled_prompt = compile_prompt(db, data.prompt_version_id, variables)

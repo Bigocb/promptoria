@@ -1,1 +1,146 @@
-# 📚 60‑Day Junior QA Engineer Training Program *Comprehensive, hands‑on, and future‑ready* **Target audience** – Fresh graduates / new QA hires with little or no professional testing experience. **Goal** – By day 60 every participant should be able to: | Competency | What they can do | |------------|------------------| | **Fundamentals** | Explain the QA lifecycle, test types, and quality metrics. | | **Test Design** | Write clear, maintainable test cases & user‑stories. | | **Manual Testing** | Execute functional, regression, exploratory, and usability testing. | | **Automation** | Build, maintain, and run automated suites (UI, API, unit). | | **CI/CD & DevOps** | Integrate tests into pipelines (GitHub Actions, Jenkins, Azure DevOps). | | **Performance & Security** | Run load, stress, and basic security scans. | | **Modern Practices** | Apply AI‑assisted testing, contract testing, and shift‑left testing. | | **Soft Skills** | Communicate defects, collaborate with developers, and practice agile ceremonies. | | **Professionalism** | Write bug reports, test plans, and metrics dashboards. | --- ## 📅 Program Overview | Week | Focus | Main Topics | Deliverables | |------|-------|------------|---------------| | **1** | Foundations & Mindset | Software development basics, SDLC, QA role, testing principles, ISTQB‑style vocabulary. | Quiz 1 (multiple choice), Personal learning journal. | | **2** | Test Design & Documentation | Test levels, techniques (boundary, equivalence, state‑transition), writing test cases & checklists, test plans. | Test‑case repository (5 features). | | **3** | Manual Functional Testing | Exploratory testing, defect lifecycle, bug‑report writing, exploratory session reports. | Defect‑triage simulation, Bug‑report log. | | **4** | Tooling – Test Management & Version Control | JIRA/YouTrack, TestRail/Zephyr, Git/GitHub basics, branching strategies. | Populate test‑run in TestRail, Git repo with docs. | | **5** | Introduction to Automation – Selenium WebDriver (JavaScript) | Web fundamentals, DOM, locators, Page‑Object Model, test data handling. | Automated smoke suite (3 scenarios). | | **6** | API Testing – Postman & RestAssured (Java) | HTTP basics, REST/GraphQL, authentication, contract testing (OpenAPI). | API test collection + CI‑integrated run. | | **7** | CI/CD Integration | Jenkins, GitHub Actions, pipelines as code, publishing reports (Allure, JUnit). | End‑to‑end pipeline (build → unit → UI test). | | **8** | Performance Testing – JMeter & k6 | Load, stress, soak, metrics, analyzing results. | Simple load test script + performance report. | | **9** | Security Basics – OWASP Top 10, ZAP, Snyk | Threat modeling, static & dynamic scanning, reporting. | Security scan on sample app, findings doc. | | **10**| Modern QA – AI/ML Assisted Testing & Contract Testing | Test‑case generation with AI (ChatGPT, Gemini), visual‑AI validation, consumer‑driven contract testing (Pact). | AI‑generated test case set, Pact contract test. | | **11**| Mobile Testing – Appium + Real Devices | Android/iOS basics, device farms, gestures, performance profiling. | Mobile smoke suite (1 Android, 1 iOS). | | **12**| Capstone Project & Soft‑Skills | End‑to‑end testing of a micro‑service‑based web app, stakeholder demo, retrospectives. | Complete test‑automation framework, presentation, feedback. | > **Total:** 12 weeks × 5 working days = 60 days (plus optional weekend “office hours”). --- ## 📋 Detailed Daily Plan (Example – Week 5) | Day | Topic | Activities | Resources | |-----|-------|------------|-----------| | Mon | Selenium fundamentals | Lecture (30 min); Live demo of browser launch | Selenium docs, ChromeDriver | | Tue | Locators & Best Practices | Lab: identify elements with CSS/XPath; Pair‑programming | CSS‑Selector cheat‑sheet | | Wed | Page‑Object Model (POM) | Build POM for “Login” page; Code review session | Example repo | | Thu | Test data management | Data‑driven tests with CSV/JSON; Parameterization | Data‑driven tutorial | | Fri | Mini‑project | Create a **smoke suite** for 3 user‑flows; Commit to Git; Run locally | GitHub repo, CI script stub | *Each day ends with a 15‑minute “reflection” where participants write **What I learned**, **Blockers**, and **Next steps**.* --- ## 📚 Core Curriculum Modules (Content Summary) ### 1️⃣ Foundations of Quality Assurance - **Why QA matters** – cost of defects, customer impact, compliance. - **Software models** – Waterfall, V‑Model, Agile, DevOps. - **Testing quadrants** – Unit, Service, UI, Exploratory. - **Metrics** – Test coverage, defect density, MTTR, release confidence. ### 2️⃣ Test Design Techniques - **Equivalence Partitioning** – valid/invalid classes. - **Boundary Value Analysis** – edge cases. - **Decision Tables & State Machines** – complex business rules. - **Exploratory Charters** – session‑based testing. ### 3️⃣ Manual Testing Process - **Test Planning** – scope, entry/exit criteria. - **Test Execution** – logging steps, re‑testing, regression. - **Defect Lifecycle** – file, triage, verify, close. - **Reporting** – dashboards, trend analysis. ### 4️⃣ Test Management & Collaboration - **JIRA/YouTrack workflow** – Epics → Stories → Tasks → Bugs. - **TestRail/Zephyr** – test suites, runs, results. - **Agile ceremonies** – stand‑ups, sprint planning, demos, retros. ### 5️⃣ Automation Fundamentals | Layer | Tool | Language | |-------|------|----------| | UI | Selenium WebDriver | JavaScript (Node) | | API | RestAssured | Java | | Unit | Jest (JS) / JUnit (Java) | — | | Mobile | Appium | JavaScript | | Performance | k6 / JMeter | — | | Security | OWASP ZAP, Snyk | — | | CI/CD | GitHub Actions, Jenkins | YAML | - **Best‑practice patterns** – POM, data factories, custom reporters. - **Maintainability** – linting, code reviews, flaky‑test mitigation. ### 6️⃣ Continuous Integration & Delivery - **Pipeline concepts** – stages, artifacts, caching. - **Parallel execution** – matrix builds. - **Test impact analysis** – selecting affected tests. - **Reporting** – Allure, HTML‑report, Slack notifications. ### 7️⃣ Performance & Load Testing - **Key concepts** – throughput, latency, errors, scalability. - **Scenarios** – ramp‑up, constant load, spike, soak. - **Result analysis** – bottleneck identification, profiling. ### 8️⃣ Security Testing Basics - **OWASP Top 10** – broken authentication, XSS, etc. - **Static analysis** – Snyk, SonarQube. - **Dynamic scanning** – ZAP, Burp Suite (sandbox). ### 9️⃣ AI‑Assisted & Modern QA - **Prompt engineering** – generate test data, test steps. - **Visual AI validation** – Applitools Eyes, Percy. - **Contract testing** – Pact, OpenAPI generators. - **Shift‑left at design time** – early test case generation. ### 🔟 Soft Skills & Professional Growth - **Effective communication** – writing clear bug reports, using “facts not feelings”. - **Collaboration** – pair testing with developers. - **Time & priority management** – MoSCoW, risk‑based testing. - **Career roadmap** – certifications (ISTQB, CSTE), community involvement. --- ## 📦 Capstone Project – End‑to‑End Testing Challenge **Scenario** – A mock e‑commerce platform built with micro‑services (frontend React, backend Node/Express, payment gateway, catalog API, Docker‑compose). **Objectives** 1. **Test Planning** – Write a test‑plan covering functional, non‑functional, security, and regression scopes. 2. **Manual Test Cases** – Create test cases for the checkout flow, user registration, and admin panel. 3. **Automated UI Suite** – Implement Selenium (or Playwright) tests for critical paths. 4. **API Contract Tests** – Use Pact to verify consumer‑provider contracts for Catalog & Payment services. 5. **Performance Test** – Simulate 200 concurrent users on the checkout API using k6. 6. **Security Scan** – Run OWASP ZAP baseline scan; produce a risk mitigation report. 7. **CI Pipeline** – Build a GitHub Actions workflow that runs unit → API → UI → performance → security on every PR. 8. **Reporting Dashboard** – Publish Allure results + Grafana‑based performance metrics. 9. **Demo & Retrospective** – Present the complete testing framework to a panel of senior engineers and product owners. **Evaluation Criteria** | Category | Weight | |----------|--------| | Test‑Plan Quality | 15 % | | Manual Test Case Coverage | 10 % | | Automation Code Quality (readability, DRY, POM) | 20 % | | CI/CD Integration | 15 % | | Performance & Security Findings | 15 % | | Presentation & Communication | 10 % | | Teamwork & Documentation (Git history, wiki) | 15 % | --- ## 🛠️ Recommended Resources & Tools | Category | Free / Open‑Source | Paid (optional) | |----------|-------------------|-----------------| | **Learning** | *"Testing Computer Software"* – Kaner, *Test Automation University* (free courses) | Pluralsight, Udemy QA tracks | | **IDE** | VS Code, IntelliJ Community | – | | **Version Control** | Git, GitHub | GitHub Enterprise | | **Test Management** | TestRail (free trial), Zephyr for Jira | – | | **Automation** | Selenium WebDriver, Playwright, Cypress (JS), RestAssured (Java) | Katalon Studio, Tricentis Tosca | | **CI/CD** | GitHub Actions, Jenkins (Open) | CircleCI, Azure DevOps | | **Performance** | k6 (free tier), JMeter | BlazeMeter | | **Security** | OWASP ZAP, Snyk (free tier) | Burp Suite Professional | | **AI‑Assisted** | ChatGPT (free tier), Gemini API | — | | **Reporting** | Allure, HTML‑reports, Grafana (open) | TestNG Reports (paid add‑ons) | --- ## 👩‍🏫 Mentorship & Support Model | Role | Responsibilities | |------|------------------| | **Lead Instructor** | Weekly lecture prep, oversee assessments, final capstone grading. | | **Technical Mentor** (2 per cohort) | Daily office hours, code reviews, pair‑testing sessions. | | **QA Community Manager** | Organize Slack/Discord channels, share industry articles, host guest talks. | | **Product Owner (Simulated)** | Provide user stories, accept-demo feedback, simulate real‑world priorities. | - **Daily stand‑up (15 min)** – share progress, blockers, plan next steps. - **Weekly retro (30 min)** – what went well, improvement actions. - **Office Hours (2 hrs/weekday)** – open Q&A, debugging help. --- ## 📏 Assessment & Certification | Assessment | Timing | Format | |------------|--------|--------| | Quiz 1 – Fundamentals | End of Week 1 | 20 MCQs (online) | | Test‑Case Writing Assignment | End of Week 2 | Submit test‑case document + peer review | | Bug‑Report Exercise | End of Week 3 | Find defects in a seeded app, log in JIRA | | Automation Lab Review | End of Week 5/6 | Code quality checklist + PR approval | | CI/CD Pipeline Demo | End of Week 7 | Live run with pipeline logs | | Performance & Security Report | End of Week 8/9 | PDF report with analysis | | AI‑Assisted Test Generation | End of Week 10 | Compare AI‑generated vs manual cases | | Capstone Presentation | Day 60 | 20‑minute demo + Q&A (graded by panel) | **Certificate of Completion** – awarded to participants achieving ≥ 80 % overall and satisfactory capstone demo. --- ## 📅 Sample Calendar (High‑Level) ``` Week 1 Mon–Fri : Foundations & QA mindset Week 2 Mon–Fri : Test design & documentation Week 3 Mon–Fri : Manual functional testing Week 4 Mon–Fri : Tooling – Test management & Git Week 5 Mon–Fri : Selenium UI automation (JS) Week 6 Mon–Fri : API testing – Postman & RestAssured Week 7 Mon–Fri : CI/CD pipelines (GitHub Actions + Jenkins) Week 8 Mon–Fri : Performance testing (k6/JMeter) Week 9 Mon–Fri : Security basics (OWASP ZAP, Snyk) Week10 Mon–Fri : AI/ML assisted testing & contract testing Week11 Mon–Fri : Mobile testing (Appium) Week12 Mon–Fri : Capstone project – integration, demo, retro ``` *Weekends are optional “office‑hours” or self‑paced study.* --- ## 🚀 Getting Started – First‑Day Checklist 1. **Create accounts** – GitHub, JIRA, Slack, TestRail (demo). 2. **Clone the onboarding repo** – contains syllabus, sample code, and scripts. 3. **Set up local dev environment** – Node 20, Java 17, Docker Desktop, VS Code extensions. 4. **Attend the Welcome Session** – program overview, expectations, Q&A. 5. **Read Chapter 1** of *"Foundations of Software Testing"* (PDF provided). --- ### 🎉 Ready to launch! By following this 60‑day roadmap, junior QA engineers will graduate **confident**, **hands‑on**, and **future‑proof**, ready to partner with developers, own quality initiatives, and continuously elevate the product’s reliability. Happy testing! 🚀
+
+| Day | Topics | Theory | Lab / Activity | Homework |
+|-----|--------|--------|----------------|----------|
+| Mon | REST fundamentals, HTTP verbs, status codes, authentication (JWT, OAuth) | 45 | Use Postman to send GET/POST requests to a public API (e.g., JSONPlaceholder) | Document 5 endpoints with cURL examples |
+| Tue | Postman collections, environments, pre‑request & test scripts (JS) | 40 | Build a collection for the “Online Bookstore” API (CRUD) | Add a test that validates JSON schema |
+| Wed | Introduction to contract testing – **Pact** (consumer‑driven) | 45 | Create a consumer contract using Pact JVM (Java) or Pact JS | Run the contract verification against a mock provider |
+| Thu | Mock servers (WireMock, Mockoon) & service virtualization | 30 | Spin up a WireMock stub for a payment gateway API | Write a test that verifies failure handling when gateway returns 502 |
+| Fri | API test reporting (JUnit XML, Allure) & CI integration | 35 | Add API test stage to GitHub Actions pipeline; publish Allure report | Review the pipeline run and fix any flaky tests |
+| **Weekend Challenge** | *API Hackathon*: Design and document a **new** endpoint (e.g., “apply discount”) and create contract + Postman tests for it | — | — | Submit a PR with swagger/openapi spec, contract, and collection |
+
+### Week 6 – Performance & Security Basics
+
+| Day | Topics | Theory | Lab / Activity | Homework |
+|-----|--------|--------|----------------|----------|
+| Mon | Load vs. stress vs. soak testing, key metrics (TPS, latency, error %), JMeter architecture | 45 | Install JMeter, record a simple HTTP test plan (search) | Add a **Think Time** and run a 1‑minute test |
+| Tue | Building parameterised tests, CSV data set, assertions on response time | 35 | Add assertions for < 2 s response, run distributed test with 2 JMeter slaves (Docker) | Generate a basic HTML report |
+| Wed | Intro to **k6** (JavaScript) – scriptable load testing | 40 | Write k6 test for the same endpoint, run in cloud (k6.io) free tier | Compare JMeter vs. k6 resource usage |
+| Thu | Basics of web‑application security, OWASP Top 10, scanning tools | 45 | Run OWASP ZAP scan against the demo app, analyse findings | Mitigate at least one low‑severity issue (e.g., missing security headers) |
+| Fri | Performance test result analysis, bottleneck identification | 30 | Use JMeter Listener/ Grafana dashboard to visualise latency distribution | Write a short “Performance Findings” report (max 500 words) |
+| **Weekend Challenge** | *Performance Sprint*: Simulate 100 virtual users on the checkout flow, capture response times, and propose two optimisation recommendations | — | — | Submit the JMeter/k6 scripts and the recommendations in a markdown file |
+
+### Week 7 – CI/CD, Test Data Management & Cloud Labs
+
+| Day | Topics | Theory | Lab / Activity | Homework |
+|-----|--------|--------|----------------|----------|
+| Mon | CI fundamentals, GitHub Actions vs. Azure Pipelines vs. Jenkins | 35 | Create a simple CI workflow that lints, builds & runs unit tests | Add a badge to README showing CI status |
+| Tue | Adding UI & API test stages, artifact publishing, parallel jobs | 45 | Extend the pipeline from Week 5 to run Cypress + API tests | Introduce **flaky‑test detection** (e.g., retry on failure) |
+| Wed | Test data management – synthetic data, CSV/DB fixtures, masking | 40 | Use **Faker** library to generate 200 user records and load into an in‑memory H2 DB | Write a data‑setup script that runs before tests |
+| Thu | Cloud‑based cross‑browser labs (BrowserStack, Sauce Labs) | 30 | Configure a Selenium test to run on BrowserStack via remote WebDriver | Capture screenshots for 3 browsers and attach to a test report |
+| Fri | Versioning of test assets, branching strategy for QA (feature‑branch, release‑branch) | 30 | Simulate a PR that adds a new test case; run CI and observe effect on the release branch | Document the **QA branching model** in a markdown file |
+| **Weekend Challenge** | *CI/CD Marathon*: Build a full pipeline that includes **code lint → unit → UI → API → performance → security** and pushes results to a Slack channel (use webhook). | — | — | Record a short video (≤ 3 min) demonstrating the pipeline run end‑to‑end |
+
+### Week 8 – Emerging & “Bleeding‑Edge” Practices
+
+| Day | Topics | Theory | Lab / Activity | Homework |
+|-----|--------|--------|----------------|----------|
+| Mon | AI‑assisted test generation – **Testim.io**, **Mabl**, **ChatGPT‑based script writing** | 40 | Use Testim’s free tier to record a flow and let AI suggest assertions | Compare AI‑generated script size vs. hand‑written |
+| Tue | Visual regression testing – **Applitools Eyes**, **Playwright screenshot comparison** | 35 | Add visual checkpoints to the “Todo” app, run in CI | Generate a visual diff report and interpret failures |
+| Wed | Contract testing beyond HTTP – **GraphQL**, **gRPC** basics | 45 | Create a simple GraphQL query test using **Apollo** client | Write a contract test for a GraphQL schema |
+| Thu | Chaos Engineering – **Gremlin**, **Chaos Mesh**, **Simian Army** concepts | 30 | Introduce latency fault to the API with **Toxiproxy**, observe test resilience | Draft a **Chaos experiment** plan (max 300 words) |
+| Fri | Test strategy evolution – shift‑left, shift‑right, observability, SRE partnership | 30 | Group discussion: Building an **End‑to‑End observability‑driven testing** model | Write a one‑page “Future QA Roadmap” for your organization |
+| **Weekend Challenge** | *Innovation Sprint*: Pick **any** emerging tool covered this week, build a proof‑of‑concept test and present it (slide deck + demo) | — | — | Submit deck and video link (max 5 min) |
+
+---  
+
+## Capstone Project (Days 57‑60)
+
+**Scenario:** *A fictional e‑commerce platform (“ShopSphere”) is being released for a public beta.*
+
+**Goal:** Produce a **complete QA artefact set** and a **fully automated CI pipeline** that the product team can hand over to the next development cycle.
+
+| Artefact | Description | Required Tools |
+|----------|-------------|----------------|
+| **Test Strategy Document** | Scope, testing levels, risk analysis, resources, entry/exit criteria | Markdown/Word |
+| **Test Plan** | Schedule, environment matrix, responsibilities | TestRail (template) |
+| **Manual Test Cases** | 20‑30 test cases covering core flows (login, product search, checkout, order cancel) | TestRail |
+| **Automated UI Suite** | End‑to‑end Cypress (or Selenium) covering same flows, with visual checkpoints | Cypress + Allure |
+| **API Contract Tests** | Pact contract for “Payments” micro‑service, Postman collection for order API | Pact, Postman |
+| **Performance Test** | k6 script simulating 200 VUs on checkout endpoint | k6 |
+| **Security Scan** | OWASP ZAP baseline scan of the web app | ZAP |
+| **CI/CD Pipeline** | GitHub Actions workflow that runs all above, posts results to Slack & GitHub checks | GitHub Actions |
+| **Presentation** | 10‑minute live demo + Q&A | PowerPoint / Google Slides |
+
+**Assessment rubric** (total 100 pts)
+
+| Category | Weight |
+|----------|--------|
+| Completeness of artefacts | 30 |
+| Quality & readability of documentation | 15 |
+| Test coverage & reliability (no flaky tests) | 20 |
+| CI pipeline correctness & reporting | 15 |
+| Innovation (use of emerging tech) | 10 |
+| Presentation & communication | 10 |
+
+*Minimum passing score:* **80 pts**.
+
+---  
+
+## Evaluation & Certification
+
+| Evaluation Method | Timing | Weight |
+|-------------------|--------|--------|
+| Weekly quizzes (10 min each) | End of each week | 10 % |
+| Lab assignments (auto‑graded) | Ongoing | 30 % |
+| Peer code‑review score | Weekly | 10 % |
+| Mid‑program practical exam (Week 4) | Day 25 | 10 % |
+| Capstone project (artefacts + demo) | Days 57‑60 | 40 % |
+
+**Certificate of Completion** – Issued on successful fulfilment (≥ 80 % overall, no pending labs). The certificate includes a **digital badge** (Open Badges format) that can be added to LinkedIn/Resume.
+
+---  
+
+## Resources & Reference Material
+
+| Category | Resource | Link |
+|----------|----------|------|
+| **Books** | *Testing Computer Software* – Cem Kaner (2nd ed.) | https://www.goodreads.com/book/show/123692.Testing_Computer_Software |
+| | *Clean Code* – Robert C. Martin (for automation) | https://www.oreilly.com/library/view/clean-code/9780136083238/ |
+| | *Continuous Delivery* – Jez Humble & David Farley | https://www.goodreads.com/book/show/10127057-continuous-delivery |
+| **Online Courses** | “ISTQB Foundation Level” – Udemy (free trial) | https://www.udemy.com/course/istqb-foundation/ |
+| | “Selenium WebDriver with Java” – Test Automation University | https://testautomationu.applitools.com/selenium-webdriver-tutorial-java/ |
+| | “Cypress Basics” – Cypress.io Docs | https://docs.cypress.io/guides/overview/why-cypress |
+| | “API Testing with Postman” – Postman Learning Center | https://learning.postman.com/docs/getting-started/introduction/ |
+| **Tools (all free/community)** | Selenium, Cypress, Playwright, JMeter, k6, Postman, Pact, Allure, GitHub Actions, Docker, WireMock, Faker, Applitools (free tier), Testim (free tier), OWASP ZAP | N/A |
+| **Cheat‑Sheets** | “Selenium Locators” – Guru99 | https://www.guru99.com/selenium-tutorial.html |
+| | “Cypress Commands” – Cypress Docs | https://docs.cypress.io/api/table-of-contents |
+| **Communities** | Ministry of Testing (forums, webinars) | https://www.ministryoftesting.com/ |
+| | Reddit r/QualityAssurance | https://www.reddit.com/r/QualityAssurance/ |
+| | Stack Overflow – [qa] tag | https://stackoverflow.com/questions/tagged/qa |
+
+All links are pre‑populated in the repo's `resources.md` file.
+
+---  
+
+## Mentorship & Support
+
+| Support Channel | Frequency | Owner |
+|----------------|-----------|-------|
+| **Daily stand‑up (15 min)** – Quick sync on progress, blockers, plan for the day | Mon‑Fri | Lead QA Mentor |
+| **Office Hours** (1 h) – Open Q&A, code review, tool help | Tue & Thu | Senior QA Engineer |
+| **Slack Workspace** – #general, #qa‑questions, #automation‑help, #capstone‑review | 24/7 | All mentors + peers |
+| **Weekly Retrospective** (30 min) – What went well, what to improve | Friday afternoon | All participants |
+| **One‑on‑One Check‑in** (30 min) – Mid‑program & final review | Week 4 & Week 8 | Assigned Mentor |
+
+---  
+
+## Tips for Success
+
+1. **Read the test case before you code it.** Understanding the requirement fully eliminates re‑work.
+2. **Commit early, commit often.** Small PRs are easier to review and keep the CI pipeline green.
+3. **Write deterministic tests.** Use explicit waits, clean test data, and reset state between runs.
+4. **Treat failures as learning.** Capture logs/screenshots, add them to the defect, and ask *why* the test failed.
+5. **Leverage the community.** Search StackOverflow or the tool’s GitHub issues before raising a new question.
+6. **Document everything.** A well‑named test, clear comments, and a concise README save weeks of future debugging.
+7. **Experiment.** The weekend challenges are optional but are the fastest way to master a new tool.
+8. **Think like a developer.** Understand the code under test – read the API spec, look at the UI markup, run the app locally.
+
+---  
+
+### 🎉 Ready to start?
+
+1. Clone the repo: `git clone https://github.com/qa-bootcamp/60-day-program.git`
+2. Follow the **Day 1 checklist** in `week1/README.md`.
+3. Join the Slack workspace (invite sent to your email).
+
+*Happy testing!* 🚀  
