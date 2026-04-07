@@ -743,6 +743,74 @@ export default function WorkbenchPage() {
             </div>
           </div>
 
+          {/* Current Metadata Display */}
+          <div className="card" style={{ marginBottom: '1.5rem', backgroundColor: 'var(--color-backgroundAlt)' }}>
+            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600' }}>
+              📊 Current Metadata
+            </label>
+
+            {/* Tags Display */}
+            <div style={{ marginBottom: '0.75rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--color-foregroundAlt)', marginBottom: '0.375rem', textTransform: 'uppercase' }}>
+                Tags
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {tags.length > 0 ? (
+                  tags.map((tag) => (
+                    <span key={tag} style={{
+                      display: 'inline-block',
+                      padding: '0.25rem 0.75rem',
+                      backgroundColor: 'var(--color-accent)',
+                      color: 'var(--color-background)',
+                      borderRadius: '0.25rem',
+                      fontSize: '0.75rem',
+                      fontWeight: '500'
+                    }}>
+                      {tag}
+                    </span>
+                  ))
+                ) : (
+                  <span style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>None</span>
+                )}
+              </div>
+            </div>
+
+            {/* Interaction Type Display */}
+            {selectedInteractionTypeId && (
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--color-foregroundAlt)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                  Interaction Type
+                </div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--color-foreground)' }}>
+                  {interactionTypes.find(t => t.id === selectedInteractionTypeId)?.emoji} {interactionTypes.find(t => t.id === selectedInteractionTypeId)?.name}
+                </div>
+              </div>
+            )}
+
+            {/* Category Display */}
+            {selectedCategoryId && (
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--color-foregroundAlt)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                  Category
+                </div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--color-foreground)' }}>
+                  {categories.find(c => c.id === selectedCategoryId)?.name}
+                </div>
+              </div>
+            )}
+
+            {/* Model Display */}
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: '500', color: 'var(--color-foregroundAlt)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                Model
+              </div>
+              <div style={{ fontSize: '0.875rem', color: 'var(--color-foreground)', fontFamily: 'monospace' }}>
+                {loadedPromptModel || 'Not set'}
+              </div>
+            </div>
+          </div>
+
+          {/* Metadata Editor */}
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600' }}>
               📋 Metadata
