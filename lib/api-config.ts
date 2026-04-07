@@ -48,4 +48,5 @@ export const API_ENDPOINTS = {
     run: `${API_BASE_URL}/api/execute`,
     history: (promptVersionId: string) => `${API_BASE_URL}/api/execute/${promptVersionId}`,
   },
+  models: `${API_BASE_URL}/api/models`,
 }

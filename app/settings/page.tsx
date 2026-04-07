@@ -1,13 +1,45 @@
 'use client'
 
 import { useSettings } from '@/app/providers'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { themes } from '@/lib/themes'
 import { ThemeName } from '@/lib/themes'
+import { API_ENDPOINTS } from '@/lib/api-config'
+
+interface OllamaModel {
+  id: string
+  name: string
+  size: string | null
+  parameter_size: string | null
+  quantization_level: string | null
+  family: string | null
+  description: string
+}
 
 export default function SettingsPage() {
   const { settings, updateSetting } = useSettings()
   const [saving, setSaving] = useState(false)
+  const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([])
+  const [ollamaAvailable, setOllamaAvailable] = useState<boolean | null>(null)
+  const [ollamaError, setOllamaError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.models)
+        if (res.ok) {
+          const data = await res.json()
+          setOllamaAvailable(data.ollama_available)
+          setOllamaModels(data.models || [])
+          if (data.error) setOllamaError(data.error)
+        }
+      } catch {
+        setOllamaAvailable(false)
+        setOllamaError('Could not reach backend to check Ollama status')
+      }
+    }
+    fetchModels()
+  }, [])
 
   const handleThemeChange = async (theme: ThemeName) => {
     setSaving(true)
@@ -55,12 +87,13 @@ export default function SettingsPage() {
   }
 
 
-  const models = [
-    { id: 'llama3.2', name: 'Llama 3.2', description: 'Fast, capable, works locally or via Ollama Cloud' },
-    { id: 'gpt-oss:120b-cloud', name: 'GPT-OSS 120B (Cloud)', description: 'Larger model, best for complex tasks via Ollama Cloud' },
-    { id: 'mistral', name: 'Mistral', description: 'Balanced performance and speed' },
-    { id: 'neural-chat', name: 'Neural Chat', description: 'Optimized for chat interactions' },
+  // Use dynamic Ollama models, fall back to static list if unavailable
+  const staticModels: OllamaModel[] = [
+    { id: 'llama3.2', name: 'Llama 3.2', description: 'Fast, capable local model', size: null, parameter_size: null, quantization_level: null, family: null },
+    { id: 'mistral', name: 'Mistral', description: 'Balanced performance and speed', size: null, parameter_size: null, quantization_level: null, family: null },
+    { id: 'neural-chat', name: 'Neural Chat', description: 'Optimized for chat interactions', size: null, parameter_size: null, quantization_level: null, family: null },
   ]
+  const models = ollamaModels.length > 0 ? ollamaModels : staticModels
 
   return (
     <div style={{ padding: '2rem', maxWidth: '900px' }}>
@@ -151,9 +184,33 @@ export default function SettingsPage() {
           borderRadius: '8px',
           padding: '1.5rem',
         }}>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--color-text)' }}>
-            Default Model for Suggestions
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1.25rem', color: 'var(--color-text)', margin: 0 }}>
+              Default Model for Suggestions
+            </h2>
+            <span style={{
+              fontSize: '0.7rem',
+              padding: '0.15rem 0.5rem',
+              borderRadius: '9999px',
+              backgroundColor: ollamaAvailable === true ? 'rgba(34, 197, 94, 0.15)' : ollamaAvailable === false ? 'rgba(239, 68, 68, 0.15)' : 'rgba(156, 163, 175, 0.15)',
+              color: ollamaAvailable === true ? '#22c55e' : ollamaAvailable === false ? '#ef4444' : 'var(--color-foregroundAlt)',
+            }}>
+              {ollamaAvailable === true ? 'Ollama connected' : ollamaAvailable === false ? 'Ollama offline' : 'Checking...'}
+            </span>
+          </div>
+          {ollamaAvailable === false && ollamaError && (
+            <div style={{
+              padding: '0.75rem',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '4px',
+              fontSize: '0.8rem',
+              color: '#ef4444',
+              marginBottom: '1rem',
+            }}>
+              {ollamaError}
+            </div>
+          )}
           <div style={{ display: 'grid', gap: '0.75rem' }}>
             {models.map((model) => (
               <label
@@ -179,11 +236,24 @@ export default function SettingsPage() {
                   style={{ marginTop: '0.25rem', cursor: saving ? 'not-allowed' : 'pointer' }}
                 />
                 <div>
-                  <div style={{
-                    fontWeight: '500',
-                    color: settings.defaultModel === model.id ? 'white' : 'var(--color-text)',
-                  }}>
-                    {model.name}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{
+                      fontWeight: '500',
+                      color: settings.defaultModel === model.id ? 'white' : 'var(--color-text)',
+                    }}>
+                      {model.name}
+                    </span>
+                    {model.parameter_size && (
+                      <span style={{
+                        fontSize: '0.7rem',
+                        padding: '0.1rem 0.4rem',
+                        borderRadius: '4px',
+                        backgroundColor: settings.defaultModel === model.id ? 'rgba(255,255,255,0.2)' : 'var(--color-border)',
+                        color: settings.defaultModel === model.id ? 'white' : 'var(--color-foregroundAlt)',
+                      }}>
+                        {model.parameter_size}
+                      </span>
+                    )}
                   </div>
                   <div style={{
                     fontSize: '0.875rem',

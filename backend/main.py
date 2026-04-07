@@ -14,7 +14,7 @@ from starlette.middleware.cors import CORSMiddleware
 from .app.core.config import settings
 from .app.core.database import engine, Base
 from .app.api import auth, prompts, snippets, dashboard, settings as settings_routes
-from .app.api import execute, suggestions, taxonomy
+from .app.api import execute, suggestions, taxonomy, models as models_routes
 
 # CORS configuration - hardcoded to avoid environment variable issues
 ALLOWED_ORIGINS = [
@@ -49,6 +49,7 @@ app.include_router(settings_routes.router, prefix="/api/settings", tags=["settin
 app.include_router(execute.router, prefix="/api/execute", tags=["execute"])
 app.include_router(suggestions.router, prefix="/api/suggestions", tags=["suggestions"])
 app.include_router(taxonomy.router, prefix="/api/taxonomy", tags=["taxonomy"])
+app.include_router(models_routes.router, prefix="/api/models", tags=["models"])
 
 # Add CORS middleware
 print(f"DEBUG: CORS origins configured: {ALLOWED_ORIGINS}")
