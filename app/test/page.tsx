@@ -29,6 +29,16 @@ interface TestResult {
   request_duration_ms?: number
 }
 
+interface OllamaModel {
+  id: string
+  name: string
+  size: string | null
+  parameter_size: string | null
+  quantization_level: string | null
+  family: string | null
+  description: string
+}
+
 function OutputActions({ output, promptName }: { output: string; promptName?: string }) {
   const [copied, setCopied] = useState(false)
 
@@ -90,6 +100,9 @@ export default function TestRunnerPage() {
   const [selectedResult, setSelectedResult] = useState<TestResult | null>(null)
   const [error, setError] = useState('')
   const [fetchingPrompts, setFetchingPrompts] = useState(true)
+  const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([])
+  const [ollamaAvailable, setOllamaAvailable] = useState<boolean | null>(null)
+  const [ollamaError, setOllamaError] = useState<string | null>(null)
 
   // Fetch prompts on mount
   useEffect(() => {
@@ -119,6 +132,31 @@ export default function TestRunnerPage() {
       }
     }
     fetchPrompts()
+  }, [])
+
+  // Fetch available Ollama models on mount
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.models)
+        if (res.ok) {
+          const data = await res.json()
+          setOllamaAvailable(data.ollama_available)
+          setOllamaModels(data.models || [])
+          if (data.error) setOllamaError(data.error)
+          // Set default model to first available if current default isn't in list
+          if (data.models?.length > 0) {
+            const ids = data.models.map((m: OllamaModel) => m.id)
+            if (!ids.includes(model)) setModel(data.models[0].id)
+          }
+        }
+      } catch {
+        setOllamaAvailable(false)
+        setOllamaError('Could not reach backend to check Ollama status')
+      }
+    }
+    fetchModels()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Extract variables from selected prompt
@@ -378,17 +416,48 @@ export default function TestRunnerPage() {
                 <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
                   🤖 Model
                 </h3>
+                {ollamaAvailable === false ? (
+                  <div style={{
+                    padding: '0.75rem',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    borderRadius: '4px',
+                    fontSize: '0.8rem',
+                    color: 'var(--color-error, #ef4444)',
+                    marginBottom: '0.75rem',
+                  }}>
+                    {ollamaError || 'Ollama is not running. Start it with: ollama serve'}
+                  </div>
+                ) : null}
                 <select
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
                   className="input"
                   style={{ width: '100%' }}
+                  disabled={ollamaAvailable === false && ollamaModels.length === 0}
                 >
-                  <option value="llama3.2">Llama 3.2</option>
-                  <option value="gpt-oss:120b-cloud">GPT-OSS 120B (Cloud)</option>
-                  <option value="mistral">Mistral</option>
-                  <option value="neural-chat">Neural Chat</option>
+                  {ollamaModels.length > 0 ? (
+                    ollamaModels.map((m) => (
+                      <option key={m.id} value={m.id} title={m.description}>
+                        {m.name}{m.parameter_size ? ` (${m.parameter_size})` : ''}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="llama3.2">Llama 3.2</option>
+                      <option value="mistral">Mistral</option>
+                      <option value="neural-chat">Neural Chat</option>
+                    </>
+                  )}
                 </select>
+                {ollamaModels.length > 0 && model && (() => {
+                  const selected = ollamaModels.find(m => m.id === model)
+                  return selected ? (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', marginTop: '0.4rem' }}>
+                      {selected.description}
+                    </div>
+                  ) : null
+                })()}
               </div>
 
               {/* Parameters */}
