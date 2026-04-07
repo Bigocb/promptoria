@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { API_ENDPOINTS } from '@/lib/api-config'
 
 interface PromptVersion {
@@ -26,6 +27,54 @@ interface TestResult {
   total_tokens: number
   latency_ms: number
   request_duration_ms?: number
+}
+
+function OutputActions({ output, promptName }: { output: string; promptName?: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(output)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleDownload = () => {
+    const header = promptName ? `# ${promptName}\n\n` : ''
+    const content = `${header}${output}`
+    const blob = new Blob([content], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${promptName ?? 'output'}.md`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const btnStyle = (active?: boolean): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.35rem',
+    padding: '0.35rem 0.75rem',
+    fontSize: '0.75rem',
+    fontWeight: '500',
+    border: '1px solid var(--color-border)',
+    borderRadius: '0.375rem',
+    cursor: 'pointer',
+    backgroundColor: active ? 'var(--color-accent)' : 'var(--color-surface)',
+    color: active ? '#1d2021' : 'var(--color-foreground)',
+    transition: 'all 0.15s ease',
+  })
+
+  return (
+    <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <button onClick={handleCopy} style={btnStyle(copied)}>
+        {copied ? '✓ Copied' : '⎘ Copy'}
+      </button>
+      <button onClick={handleDownload} style={btnStyle()}>
+        ↓ Download .md
+      </button>
+    </div>
+  )
 }
 
 export default function TestRunnerPage() {
@@ -116,6 +165,30 @@ export default function TestRunnerPage() {
     setVariables((prev) => ({ ...prev, [key]: value }))
   }
 
+  const handleAddVariable = () => {
+    const key = `var${Object.keys(variables).length + 1}`
+    setVariables((prev) => ({ ...prev, [key]: '' }))
+  }
+
+  const handleRenameVariable = (oldKey: string, newKey: string) => {
+    if (!newKey || newKey === oldKey) return
+    setVariables((prev) => {
+      const updated: Record<string, string> = {}
+      for (const [k, v] of Object.entries(prev)) {
+        updated[k === oldKey ? newKey : k] = v
+      }
+      return updated
+    })
+  }
+
+  const handleRemoveVariable = (key: string) => {
+    setVariables((prev) => {
+      const updated = { ...prev }
+      delete updated[key]
+      return updated
+    })
+  }
+
   const handleExecute = async () => {
     if (!selectedPrompt) {
       setError('Please select a prompt to test')
@@ -184,6 +257,33 @@ export default function TestRunnerPage() {
   return (
     <div style={{ padding: '2rem' }}>
       <header style={{ marginBottom: '2rem' }}>
+        <div style={{ marginBottom: '1rem' }}>
+          <Link
+            href="/dashboard"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.375rem',
+              color: 'var(--color-foregroundAlt)',
+              textDecoration: 'none',
+              fontSize: '0.875rem',
+              padding: '0.375rem 0.75rem',
+              border: '1px solid var(--color-border)',
+              borderRadius: '0.375rem',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--color-foreground)'
+              e.currentTarget.style.borderColor = 'var(--color-accent)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--color-foregroundAlt)'
+              e.currentTarget.style.borderColor = 'var(--color-border)'
+            }}
+          >
+            ← Dashboard
+          </Link>
+        </div>
         <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>▶️ Test Runner</h1>
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
           Select a prompt and test it against your configured LLM
@@ -231,30 +331,95 @@ export default function TestRunnerPage() {
           {selectedPrompt && (
             <>
               {/* Variables */}
-              {Object.keys(variables).length > 0 && (
-                <div className="card" style={{ marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
+              <div className="card" style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                  <h3 style={{ fontWeight: '600', fontSize: '0.95rem', margin: 0 }}>
                     📝 Variables
                   </h3>
+                  <button
+                    onClick={handleAddVariable}
+                    style={{
+                      padding: '0.25rem 0.625rem',
+                      backgroundColor: 'transparent',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      color: 'var(--color-foregroundAlt)',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--color-accent)'
+                      e.currentTarget.style.color = 'var(--color-accent)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--color-border)'
+                      e.currentTarget.style.color = 'var(--color-foregroundAlt)'
+                    }}
+                    title="Add a custom variable"
+                  >
+                    + Add
+                  </button>
+                </div>
+                {Object.keys(variables).length === 0 ? (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-foregroundAlt)', lineHeight: '1.5' }}>
+                    No variables detected. Use <code style={{ backgroundColor: 'var(--color-background)', padding: '0.1rem 0.35rem', borderRadius: '0.25rem', fontFamily: 'monospace', fontSize: '0.75rem' }}>{'{{name}}'}</code> in your prompt, or click <strong>+ Add</strong> to set custom variables.
+                  </div>
+                ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {Object.entries(variables).map(([key, value]) => (
                       <div key={key}>
-                        <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-accent)', textTransform: 'uppercase' }}>
-                          {key}
-                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                          <input
+                            type="text"
+                            defaultValue={key}
+                            onBlur={(e) => handleRenameVariable(key, e.target.value.trim())}
+                            style={{
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              color: 'var(--color-accent)',
+                              textTransform: 'uppercase',
+                              background: 'transparent',
+                              border: 'none',
+                              outline: 'none',
+                              padding: 0,
+                              fontFamily: 'inherit',
+                              cursor: 'text',
+                              width: '80%',
+                            }}
+                          />
+                          <button
+                            onClick={() => handleRemoveVariable(key)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: 'var(--color-foregroundAlt)',
+                              fontSize: '0.85rem',
+                              padding: '0 0.25rem',
+                              lineHeight: 1,
+                              opacity: 0.6,
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = '#ff6b6b' }}
+                            onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.6'; e.currentTarget.style.color = 'var(--color-foregroundAlt)' }}
+                            title="Remove variable"
+                          >
+                            ✕
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={value}
                           onChange={(e) => handleVariableChange(key, e.target.value)}
                           className="input"
                           style={{ width: '100%' }}
-                          placeholder={`Enter ${key}`}
+                          placeholder={`Enter value for {{${key}}}`}
                         />
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Model Selection */}
               <div className="card" style={{ marginBottom: '1.5rem' }}>
@@ -394,9 +559,14 @@ export default function TestRunnerPage() {
           )}
 
           <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-foreground)' }}>
-              Output
-            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--color-foreground)', margin: 0 }}>
+                Output
+              </h2>
+              {output && !isLoading && (
+                <OutputActions output={output} promptName={selectedPrompt?.name} />
+              )}
+            </div>
             <div style={{
               backgroundColor: 'var(--color-background)',
               padding: '1rem',
@@ -409,13 +579,10 @@ export default function TestRunnerPage() {
               wordBreak: 'break-word',
               border: '1px solid var(--color-border)',
               overflowY: 'auto',
-              maxHeight: '500px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: isLoading ? 'center' : 'flex-start'
+              maxHeight: '600px',
             }}>
               {isLoading ? (
-                <div style={{ textAlign: 'center' }}>
+                <div style={{ textAlign: 'center', paddingTop: '4rem' }}>
                   <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
                   <div style={{ color: 'var(--color-foreground)', fontWeight: '500', marginBottom: '0.5rem' }}>Executing prompt...</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>Please wait while the LLM processes your request</div>

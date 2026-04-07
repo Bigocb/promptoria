@@ -22,6 +22,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const isActive = (path: string) => pathname === path
 
   const navItems = [
+    { label: '🏠 Dashboard', href: '/dashboard' },
     { label: '📚 Snippets', href: '/snippets' },
     { label: '⚡ Workbench', href: '/prompts' },
     { label: '🔍 Library', href: '/library' },
