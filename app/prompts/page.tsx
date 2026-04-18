@@ -99,6 +99,7 @@ export default function WorkbenchPage() {
   const [selectedVersionForView, setSelectedVersionForView] = useState<PromptVersion | null>(null)
   const [compareVersionForDiff, setCompareVersionForDiff] = useState<PromptVersion | null>(null)
   const [showDiffView, setShowDiffView] = useState(false)
+  const [fillCopied, setFillCopied] = useState(false)
 
   // Load prompt state
   const [availablePrompts, setAvailablePrompts] = useState<LoadablePrompt[]>([])
@@ -121,6 +122,23 @@ export default function WorkbenchPage() {
       loadPrompt(promptId)
     }
   }, [searchParams, user])
+
+  // Auto-detect variables as prompt content changes
+  useEffect(() => {
+    const matches = promptContent.match(/\{([^}]+)\}/g)
+    if (matches) {
+      const vars = matches.map(m => m.slice(1, -1)).filter((v, i, a) => a.indexOf(v) === i)
+      setVariables(vars.join(', '))
+      setTestVariables(prev => {
+        const next: Record<string, string> = {}
+        vars.forEach(v => { next[v] = prev[v] || '' })
+        return next
+      })
+    } else {
+      setVariables('')
+      setTestVariables({})
+    }
+  }, [promptContent])
 
   const fetchSnippets = async () => {
     try {
@@ -409,6 +427,13 @@ export default function WorkbenchPage() {
       compiled = compiled.replace(new RegExp(`\\{${key}\\}`, 'g'), value)
     })
     return compiled
+  }
+
+  const handleCopyFilled = async () => {
+    const filled = compilePrompt()
+    await navigator.clipboard.writeText(filled)
+    setFillCopied(true)
+    setTimeout(() => setFillCopied(false), 2000)
   }
 
   const calculateDiff = (oldText: string, newText: string) => {
@@ -735,21 +760,68 @@ export default function WorkbenchPage() {
             </p>
           </div>
 
+          {/* Fill Variables & Copy */}
           <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600' }}>
-              Variables Found
-            </label>
-            <div style={{ padding: '0.75rem', backgroundColor: 'var(--color-background)', borderRadius: '0.5rem', minHeight: '2rem' }}>
-              {variables ? (
-                <span style={{ fontFamily: 'monospace', fontSize: '0.875rem', color: 'var(--color-accent)' }}>
-                  {variables}
-                </span>
-              ) : (
-                <span style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>
-                  None yet
-                </span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <label style={{ fontWeight: '600' }}>
+                📋 Fill Variables
+              </label>
+              {promptContent.trim() && (
+                <button
+                  onClick={handleCopyFilled}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.375rem',
+                    padding: '0.375rem 0.875rem',
+                    backgroundColor: fillCopied ? 'var(--color-success)' : 'var(--color-accent)',
+                    color: '#1d2021',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: '700',
+                    transition: 'all 0.2s ease',
+                    fontFamily: '\'Fraunces\', serif',
+                  }}
+                >
+                  {fillCopied ? '✓ Copied!' : '⎘ Copy Filled Prompt'}
+                </button>
               )}
             </div>
+
+            {Object.keys(testVariables).length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {Object.entries(testVariables).map(([key]) => (
+                  <div key={key}>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '0.25rem',
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      color: 'var(--color-accent)',
+                      fontFamily: '\'JetBrains Mono\', monospace',
+                    }}>
+                      {'{' + key + '}'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={`Value for ${key}…`}
+                      value={testVariables[key]}
+                      onChange={(e) => setTestVariables({ ...testVariables, [key]: e.target.value })}
+                      className="input"
+                      style={{ width: '100%', fontSize: '0.875rem' }}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>
+                {promptContent.trim()
+                  ? 'No variables detected — use {variable_name} syntax in your prompt.'
+                  : 'Variables you add with {variable_name} syntax will appear here to fill in.'}
+              </p>
+            )}
           </div>
 
           {/* Current Metadata Display */}
@@ -990,12 +1062,6 @@ export default function WorkbenchPage() {
           </div>
 
           <div className="btn-group-mobile" style={{ display: 'flex', gap: '1rem' }}>
-            <button
-              className="btn btn-primary"
-              onClick={extractVariables}
-            >
-              Extract Variables
-            </button>
             <button
               className="btn btn-primary"
               onClick={savePrompt}
