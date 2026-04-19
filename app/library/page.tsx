@@ -53,7 +53,7 @@ export default function LibraryPage() {
       setLoading(true)
       setError(null)
       const token = localStorage.getItem('auth-token')
-      const res = await fetch(API_ENDPOINTS.taxonomy.interactionTypes, {
+      const res = await fetch(API_ENDPOINTS.categories.interactions.list, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -64,7 +64,9 @@ export default function LibraryPage() {
       }
 
       const data = await res.json()
-      setInteractionTypes(data.types || data || [])
+      // Handle both response formats
+      const types = Array.isArray(data) ? data : (data.interactions || data.types || data || [])
+      setInteractionTypes(types)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load library')
       console.error('Error fetching interaction types:', err)
