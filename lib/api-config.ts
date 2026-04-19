@@ -78,6 +78,10 @@ export const API_ENDPOINTS = {
     delete: (id: string) => `${API_BASE_URL}/test-runs/${id}`,
     execute: (id: string) => `${API_BASE_URL}/test-runs/${id}/execute`,
   },
+  execute: {
+    run: `${API_BASE_URL}/test-runs`,
+    history: (promptVersionId: string) => `${API_BASE_URL}/test-runs?prompt_version_id=${promptVersionId}`,
+  },
   dashboard: {
     stats: `${API_BASE_URL}/dashboard/stats`,
   },
