@@ -51,12 +51,53 @@ model Workspace {
   created_at DateTime @default(now()) @db.Timestamp(6)
   updated_at DateTime @default(now()) @updatedAt @db.Timestamp(6)
 
-  user      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  prompts   Prompt[]
-  snippets  Snippet[]
-  sync_logs SyncLog[]
+  user                  User                    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  prompts               Prompt[]
+  snippets              Snippet[]
+  interaction_types     AgentInteractionType[]
+  prompt_categories     PromptCategory[]
+  test_runs             TestRun[]
+  sync_logs             SyncLog[]
 
   @@map("workspaces")
+}
+
+// AgentInteractionType - top-level category
+model AgentInteractionType {
+  id            String   @id @default(cuid()) @db.VarChar(36)
+  name          String   @db.VarChar(255)
+  description   String?  @db.Text
+  emoji         String?  @db.VarChar(10)
+  workspace_id  String   @db.VarChar(36)
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  workspace   Workspace        @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  categories  PromptCategory[]
+
+  @@unique([workspace_id, name])
+  @@index([workspace_id])
+  @@map("agent_interaction_types")
+}
+
+// PromptCategory - subcategory under interaction type
+model PromptCategory {
+  id                           String   @id @default(cuid()) @db.VarChar(36)
+  name                         String   @db.VarChar(255)
+  description                  String?  @db.Text
+  workspace_id                 String   @db.VarChar(36)
+  agent_interaction_type_id    String   @db.VarChar(36)
+  created_at                   DateTime @default(now()) @db.Timestamp(6)
+  updated_at                   DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  workspace         Workspace              @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  interaction_type  AgentInteractionType   @relation(fields: [agent_interaction_type_id], references: [id], onDelete: Cascade)
+  prompts           Prompt[]
+
+  @@unique([workspace_id, name])
+  @@index([workspace_id])
+  @@index([agent_interaction_type_id])
+  @@map("prompt_categories")
 }
 
 // Prompt - prompt template
@@ -65,16 +106,19 @@ model Prompt {
   name          String   @db.VarChar(255)
   description   String?  @db.Text
   workspace_id  String   @db.VarChar(36)
+  category_id   String?  @db.VarChar(36)
   tags          Json?    @db.Json // Array of tags
   model         String   @default("claude-3-haiku") @db.VarChar(100)
   created_at    DateTime @default(now()) @db.Timestamp(6)
   updated_at    DateTime @default(now()) @updatedAt @db.Timestamp(6)
 
-  workspace Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  workspace Workspace        @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  category  PromptCategory?  @relation(fields: [category_id], references: [id], onDelete: SetNull)
   versions  PromptVersion[]
 
   @@unique([workspace_id, name])
   @@index([workspace_id])
+  @@index([category_id])
   @@map("prompts")
 }
 
@@ -92,6 +136,7 @@ model PromptVersion {
 
   prompt        Prompt              @relation(fields: [prompt_id], references: [id], onDelete: Cascade)
   compositions  PromptComposition[]
+  test_runs     TestRun[]
 
   @@unique([prompt_id, version_number])
   @@index([prompt_id])
@@ -131,6 +176,29 @@ model PromptComposition {
   @@index([prompt_version_id])
   @@index([snippet_id])
   @@map("prompt_compositions")
+}
+
+// TestRun - prompt evaluation/testing
+model TestRun {
+  id                String   @id @default(cuid()) @db.VarChar(36)
+  workspace_id      String   @db.VarChar(36)
+  prompt_version_id String   @db.VarChar(36)
+  test_case_input   String   @db.Text
+  output            String?  @db.Text
+  status            String   @default("pending") @db.VarChar(20) // pending, running, success, error
+  error_message     String?  @db.Text
+  started_at        DateTime?
+  completed_at      DateTime?
+  duration_ms       Int?     // milliseconds
+  created_at        DateTime @default(now()) @db.Timestamp(6)
+  updated_at        DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  workspace       Workspace      @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  prompt_version  PromptVersion  @relation(fields: [prompt_version_id], references: [id], onDelete: Cascade)
+
+  @@index([workspace_id])
+  @@index([prompt_version_id])
+  @@map("test_runs")
 }
 
 // SyncLog - change tracking for offline-first sync

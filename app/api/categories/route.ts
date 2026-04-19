@@ -1,0 +1,120 @@
+import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
+import { verifyAccessToken } from '@/lib/jwt'
+
+async function getWorkspaceForUser(userId: string) {
+  return prisma.workspace.findFirst({ where: { user_id: userId } })
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+    let userId: string
+    try {
+      const decoded = verifyAccessToken(token)
+      userId = decoded.userId
+    } catch (error) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const workspace = await getWorkspaceForUser(userId)
+    if (!workspace) {
+      return NextResponse.json({ error: 'Workspace not found' }, { status: 404 })
+    }
+
+    const body = await request.json()
+    const { name, description, agent_interaction_type_id } = body
+
+    if (!name) {
+      return NextResponse.json({ error: 'name is required' }, { status: 400 })
+    }
+
+    if (!agent_interaction_type_id) {
+      return NextResponse.json(
+        { error: 'agent_interaction_type_id is required' },
+        { status: 400 }
+      )
+    }
+
+    // Verify interaction type exists and belongs to workspace
+    const interactionType = await prisma.agentInteractionType.findUnique({
+      where: { id: agent_interaction_type_id },
+    })
+
+    if (!interactionType || interactionType.workspace_id !== workspace.id) {
+      return NextResponse.json(
+        { error: 'Interaction type not found or does not belong to your workspace' },
+        { status: 404 }
+      )
+    }
+
+    const category = await prisma.promptCategory.create({
+      data: {
+        name,
+        description: description || null,
+        workspace_id: workspace.id,
+        agent_interaction_type_id,
+      },
+    })
+
+    await prisma.syncLog.create({
+      data: {
+        workspace_id: workspace.id,
+        action: 'create',
+        entity_type: 'category',
+        entity_id: category.id,
+        data: { name },
+      },
+    })
+
+    return NextResponse.json(category, { status: 201 })
+  } catch (error: any) {
+    console.error('Create category error:', error)
+    return NextResponse.json(
+      { error: 'Server error: ' + error.message },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+    let userId: string
+    try {
+      const decoded = verifyAccessToken(token)
+      userId = decoded.userId
+    } catch (error) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const workspace = await getWorkspaceForUser(userId)
+    if (!workspace) {
+      return NextResponse.json({ error: 'Workspace not found' }, { status: 404 })
+    }
+
+    const categories = await prisma.promptCategory.findMany({
+      where: { workspace_id: workspace.id },
+      include: { interaction_type: true },
+      orderBy: { updated_at: 'desc' },
+    })
+
+    return NextResponse.json({ categories }, { status: 200 })
+  } catch (error: any) {
+    console.error('List categories error:', error)
+    return NextResponse.json(
+      { error: 'Server error: ' + error.message },
+      { status: 500 }
+    )
+  }
+}
