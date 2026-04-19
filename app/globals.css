@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,7 +6,6 @@
 
 @layer base {
   :root {
-    /* Gruvbox Dark Default */
     --color-background: #282828;
     --color-backgroundAlt: #1d2021;
     --color-foreground: #ebdbb2;
@@ -17,7 +16,6 @@
     --color-success: #b8bb26;
     --color-error: #fb4934;
     --color-warning: #fabd2f;
-
     --radius: 0.5rem;
   }
 
@@ -32,54 +30,34 @@
     height: 100%;
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-      sans-serif;
+    font-family: system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  code, pre, .monospace {
+  code, pre {
     font-family: 'JetBrains Mono', monospace;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Fraunces', serif;
   }
 }
 
 @layer components {
-  /* Groovy Buttons - Squircle Geometry */
   .btn {
     padding: 0.75rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    border-radius: 1rem;
-    border: 2px solid transparent;
+    border-radius: 0.5rem;
+    border: none;
     transition: all 0.2s ease;
-    box-shadow: 4px 4px 0px 0px #1d2021;
-    font-family: 'Fraunces', serif;
   }
 
   .btn:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 8px 8px 0px 0px #1d2021;
-  }
-
-  .btn:active {
-    transform: translate(0, 0);
-    box-shadow: 2px 2px 0px 0px #1d2021;
+    opacity: 0.9;
   }
 
   .btn-primary {
     background-color: var(--color-accent);
     color: #1d2021;
-    font-weight: 700;
-  }
-
-  .btn-primary:hover {
-    background-color: #fe9e3c;
   }
 
   .btn-secondary {
@@ -87,60 +65,30 @@
     color: var(--color-foreground);
   }
 
-  .btn-secondary:hover {
-    background-color: #5f5955;
-  }
-
-  /* Groovy Inputs - Squircle Geometry */
   .input {
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
-    border-radius: 1rem;
+    border-radius: 0.5rem;
     background-color: var(--color-backgroundAlt);
     color: var(--color-foreground);
     border: 2px solid #3c3836;
     transition: all 0.2s ease;
-    font-family: 'JetBrains Mono', monospace;
   }
 
   .input:focus {
     outline: none;
     border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px rgba(254, 128, 25, 0.1), 2px 2px 0px 0px #1d2021;
   }
 
-  /* Groovy Cards - Refined with Offset Shadows */
   .card {
     padding: 1.5rem;
-    border-radius: 1rem;
+    border-radius: 0.5rem;
     background-color: var(--color-backgroundAlt);
-    border: 3px solid #3c3836;
-    transition: all 0.2s ease;
-    box-shadow: 4px 4px 0px 0px #1d2021;
-  }
-
-  .card:hover {
-    border-color: var(--color-accent);
-    transform: translate(-2px, -2px);
-    box-shadow: 8px 8px 0px 0px #1d2021;
-  }
-
-  textarea {
-    border-radius: 0.75rem;
-    border: 2px solid var(--color-border);
-    transition: all 0.2s ease;
-  }
-
-  textarea:focus {
-    outline: none;
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px rgba(254, 128, 25, 0.1);
+    border: 1px solid #3c3836;
   }
 }
 
-/* ===== RESPONSIVE BREAKPOINTS & MOBILE OPTIMIZATION ===== */
-
-/* Bottom Navigation - hidden on desktop */
+/* Navigation */
 .bottom-nav {
   display: none;
 }
@@ -155,142 +103,16 @@
   text-decoration: none;
   color: var(--color-foregroundAlt);
   font-size: 0.65rem;
-  transition: color 0.2s;
   padding: 8px 4px;
-  -webkit-tap-highlight-color: transparent;
+  transition: color 0.2s;
 }
 
 .bottom-nav-active {
   color: var(--color-accent);
 }
 
-.bottom-nav-icon {
-  font-size: 1.35rem;
-  line-height: 1;
-}
-
-.bottom-nav-label {
-  font-size: 0.65rem;
-  font-weight: 500;
-}
-
-.bottom-nav-logout {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-foregroundAlt);
-}
-
-.bottom-nav-logout:active {
-  color: #ff6b6b;
-}
-
-/* Mobile section accordion tabs - hidden on desktop */
-.mobile-section-tabs {
-  display: none;
-}
-
-/* Workbench responsive grid */
-.workbench-grid {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 2rem;
-}
-
-.workbench-grid > * {
-  min-width: 0;
-}
-
-/* Library sidebar: 280px filter + main content */
-.sidebar-layout-grid {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 2rem;
-}
-
-.sidebar-layout-grid > * {
-  min-width: 0;
-}
-
-/* Test/panel: 300px controls + main output */
-.panel-layout-grid {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 2rem;
-}
-
-.panel-layout-grid > * {
-  min-width: 0;
-}
-
-/* Mobile: ≤639px */
-@media (max-width: 639px) {
-  /* Touch-friendly button sizes (48px min height) */
-  .btn {
-    padding: 12px 16px;
-    min-height: 48px;
-  }
-
-  /* Full-width button group on mobile */
-  .btn-group-mobile {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-  }
-
-  .btn-group-mobile .btn {
-    width: 100%;
-  }
-
-  /* Card hover transform disabled on touch */
-  .card:hover {
-    transform: none;
-    box-shadow: 4px 4px 0px 0px #1d2021;
-  }
-
-  /* Increase card padding and spacing for touch */
-  .card {
-    padding: 1.25rem;
-    margin-bottom: 16px;
-  }
-
-  /* Larger page padding */
-  div[style*="padding: '1.5rem'"] {
-    padding: 1rem !important;
-  }
-}
-
-/* Tablet: 640px–767px */
-@media (min-width: 640px) and (max-width: 767px) {
-  .btn {
-    padding: 12px 16px;
-    min-height: 48px;
-  }
-
-  .card:hover {
-    transform: none;
-    box-shadow: 4px 4px 0px 0px #1d2021;
-  }
-}
-
-/* Mobile + Tablet: <768px — bottom nav, stacked layout */
+/* Mobile styles */
 @media (max-width: 767px) {
-  /* Prevent card/button shadows from causing horizontal scroll */
-  main.layout-main {
-    overflow-x: hidden;
-  }
-
-  /* Reduce card shadow so it doesn't clip at viewport edge */
-  .card {
-    box-shadow: 2px 2px 0px 0px #1d2021;
-  }
-
-  .card:hover {
-    box-shadow: 2px 2px 0px 0px #1d2021;
-  }
-
-  /* Show bottom nav */
   .bottom-nav {
     display: flex;
     position: fixed;
@@ -299,48 +121,11 @@
     right: 0;
     height: 64px;
     background-color: var(--color-backgroundAlt);
-    border-top: 2px solid var(--color-border);
+    border-top: 1px solid var(--color-border);
     z-index: 900;
-    align-items: stretch;
   }
 
-  /* Bottom nav padding for main content */
-  main.layout-main {
+  main {
     padding-bottom: 72px;
   }
-
-  /* Workbench: stack to single column */
-  .workbench-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
-  /* Library sidebar + test panel: stack to single column */
-  .sidebar-layout-grid,
-  .panel-layout-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
-  /* Sticky sidebar becomes non-sticky when stacked */
-  .sidebar-layout-grid aside [style*="sticky"],
-  .sidebar-layout-grid aside {
-    position: static !important;
-  }
-
-  /* Show section accordion tabs */
-  .mobile-section-tabs {
-    display: flex;
-    gap: 0.5rem;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .mobile-section-tabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Hide inactive sections in accordion */
-  .mob
+}
