@@ -11,7 +11,7 @@ async function getWorkspaceForUser(userId: string) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { prompt_id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     // Verify JWT token
@@ -46,7 +46,7 @@ export async function GET(
 
     // Get prompt
     const prompt = await prisma.prompt.findUnique({
-      where: { id: params.prompt_id },
+      where: { id: params.id },
     })
 
     if (!prompt) {
@@ -66,7 +66,7 @@ export async function GET(
 
     // Get latest version's compositions
     const latestVersion = await prisma.promptVersion.findFirst({
-      where: { prompt_id: params.prompt_id },
+      where: { prompt_id: params.id },
       orderBy: { version_number: 'desc' },
       include: {
         compositions: {
@@ -85,7 +85,7 @@ export async function GET(
 
     return NextResponse.json(
       {
-        prompt_id: params.prompt_id,
+        prompt_id: params.id,
         version_id: latestVersion.id,
         version_number: latestVersion.version_number,
         compositions: latestVersion.compositions.map(c => ({
@@ -108,7 +108,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { prompt_id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     // Verify JWT token
@@ -143,7 +143,7 @@ export async function POST(
 
     // Get prompt
     const prompt = await prisma.prompt.findUnique({
-      where: { id: params.prompt_id },
+      where: { id: params.id },
     })
 
     if (!prompt) {
@@ -187,7 +187,7 @@ export async function POST(
 
     // Get latest version
     const latestVersion = await prisma.promptVersion.findFirst({
-      where: { prompt_id: params.prompt_id },
+      where: { prompt_id: params.id },
       orderBy: { version_number: 'desc' },
     })
 
@@ -220,7 +220,7 @@ export async function POST(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { prompt_id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     // Verify JWT token
@@ -255,7 +255,7 @@ export async function PUT(
 
     // Get prompt
     const prompt = await prisma.prompt.findUnique({
-      where: { id: params.prompt_id },
+      where: { id: params.id },
     })
 
     if (!prompt) {
@@ -286,7 +286,7 @@ export async function PUT(
 
     // Get latest version
     const latestVersion = await prisma.promptVersion.findFirst({
-      where: { prompt_id: params.prompt_id },
+      where: { prompt_id: params.id },
       orderBy: { version_number: 'desc' },
     })
 

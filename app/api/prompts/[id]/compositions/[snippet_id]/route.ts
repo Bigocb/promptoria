@@ -11,7 +11,7 @@ async function getWorkspaceForUser(userId: string) {
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { prompt_id: string; snippet_id: string } }
+  { params }: { params: { id: string; snippet_id: string } }
 ) {
   try {
     // Verify JWT token
@@ -46,7 +46,7 @@ export async function DELETE(
 
     // Get prompt
     const prompt = await prisma.prompt.findUnique({
-      where: { id: params.prompt_id },
+      where: { id: params.id },
     })
 
     if (!prompt) {
@@ -66,7 +66,7 @@ export async function DELETE(
 
     // Get latest version
     const latestVersion = await prisma.promptVersion.findFirst({
-      where: { prompt_id: params.prompt_id },
+      where: { prompt_id: params.id },
       orderBy: { version_number: 'desc' },
     })
 
