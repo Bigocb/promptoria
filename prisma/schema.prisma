@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -21,6 +21,7 @@ model User {
   // Relations
   workspace Workspace?
   settings  UserSettings?
+  device    Device?
 
   @@index([email])
 }
@@ -61,6 +62,7 @@ model Workspace {
   testRuns             TestRun[]
   agentInteractionTypes AgentInteractionType[]
   promptCategories     PromptCategory[]
+  syncLogs             SyncLog[]
 
   @@index([userId])
   @@unique([userId, slug])
@@ -234,4 +236,43 @@ model TestRun {
   @@index([promptVersionId])
   @@index([promptId])
   @@index([workspaceId])
+}
+
+// Device - tracks user devices for sync
+model Device {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  deviceType  String   // "ios", "android", or "web"
+  deviceName  String   // e.g., "iPhone 15 Pro", "Samsung Galaxy S24"
+  lastSyncAt  DateTime @default(now()) @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  syncLogs  SyncLog[]
+
+  @@index([userId])
+}
+
+// SyncLog - immutable change log for offline-first sync
+model SyncLog {
+  id            String   @id @default(cuid())
+  deviceId      String?  // Optional for Phase 1, required in Phase 3 when device sync is implemented
+  workspaceId   String
+  action        String   // "create", "update", "delete"
+  entityType    String   // "prompt", "snippet", "workspace"
+  entityId      String
+  changedAt     DateTime @default(now()) // server timestamp
+  data          Json     @default("{}") // snapshot of changes
+  createdAt     DateTime @default(now())
+
+  // Relations
+  device    Device?    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([workspaceId])
+  @@index([changedAt])
+  @@index([workspaceId, changedAt]) // Index for efficient sync queries
 }
