@@ -98,14 +98,24 @@ export async function GET(request: NextRequest) {
               },
             })
             if (prompt) {
+              const version = prompt.versions[0]
               fullData = {
                 id: prompt.id,
                 name: prompt.name,
                 description: prompt.description,
                 tags: prompt.tags,
                 model: prompt.model,
-                version: prompt.versions[0] || null,
-                updated_at: prompt.updated_at,
+                version: version ? {
+                  id: version.id,
+                  version_number: version.version_number,
+                  template_body: version.template_body,
+                  model_config: version.model_config,
+                  change_log: version.change_log,
+                  created_by: version.created_by,
+                  is_active: version.is_active,
+                  created_at: version.created_at.toISOString(),
+                } : null,
+                updated_at: prompt.updated_at.toISOString(),
               }
             }
           }
