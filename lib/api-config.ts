@@ -117,4 +117,5 @@ export const API_ENDPOINTS = {
   docs: {
     endpoints: `${API_BASE_URL}/docs/endpoints`,
   },
+  models: `${API_BASE_URL}/models`,
 }
