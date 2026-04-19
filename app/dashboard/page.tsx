@@ -7,14 +7,29 @@ import { useRouter } from 'next/navigation'
 import { API_ENDPOINTS } from '@/lib/api-config'
 
 interface DashboardStats {
-  stats: {
-    totalPrompts: number
-    totalSnippets: number
-    workspaceName: string
+  workspace: {
+    id: string
+    name: string
   }
-  recent: {
-    prompts: Array<{ id: string; name: string; createdAt: string; updatedAt: string }>
-    snippets: Array<{ id: string; name: string; createdAt: string }>
+  resources: {
+    prompts: number
+    prompt_versions: number
+    snippets: number
+    interaction_types: number
+    categories: number
+  }
+  testing: {
+    total_test_runs: number
+    successful_runs: number
+    failed_runs: number
+    success_rate: string | number
+    average_duration_ms: number
+    recent_runs: Array<{
+      id: string
+      status: string
+      created_at: string
+      duration_ms: number | null
+    }>
   }
 }
 
@@ -39,24 +54,8 @@ export default function DashboardPage() {
             headers: { 'Authorization': `Bearer ${token}` },
           })
           if (res.ok) {
-            const data = await res.json()
-            // Transform backend response to match frontend interface
-            setStats({
-              stats: {
-                totalPrompts: data.stats.prompts,
-                totalSnippets: data.stats.snippets,
-                workspaceName: data.workspace_name,
-              },
-              recent: {
-                prompts: data.recent_prompts.map((p: any) => ({
-                  id: p.id,
-                  name: p.name,
-                  createdAt: p.created_at,
-                  updatedAt: p.created_at,
-                })),
-                snippets: [],
-              },
-            })
+            const data: DashboardStats = await res.json()
+            setStats(data)
           }
         } catch (error) {
           console.error('Failed to fetch dashboard stats:', error)
@@ -92,7 +91,7 @@ export default function DashboardPage() {
             Total Prompts
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-primary)' }}>
-            {statsLoading ? '—' : stats?.stats.totalPrompts || 0}
+            {statsLoading ? '—' : stats?.resources.prompts || 0}
           </div>
         </div>
 
@@ -106,7 +105,7 @@ export default function DashboardPage() {
             Total Snippets
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-accent)' }}>
-            {statsLoading ? '—' : stats?.stats.totalSnippets || 0}
+            {statsLoading ? '—' : stats?.resources.snippets || 0}
           </div>
         </div>
 
@@ -120,7 +119,7 @@ export default function DashboardPage() {
             Workspace
           </div>
           <div style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--color-text)', wordBreak: 'break-word' }}>
-            {statsLoading ? '—' : stats?.stats.workspaceName || 'Loading...'}
+            {statsLoading ? '—' : stats?.workspace.name || 'Loading...'}
           </div>
         </div>
       </div>
@@ -177,13 +176,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Recent Items */}
+      {/* Testing Stats */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(min(400px, 100%), 1fr))',
         gap: '2rem',
       }}>
-        {/* Recent Prompts */}
+        {/* Test Results Summary */}
         <div style={{
           backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
@@ -191,37 +190,37 @@ export default function DashboardPage() {
           padding: '1.5rem',
         }}>
           <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: 'var(--color-text)', marginBottom: '1rem' }}>
-            Recent Prompts
+            Test Results
           </h3>
           {statsLoading ? (
             <p style={{ color: 'var(--color-text-secondary)' }}>Loading...</p>
-          ) : stats?.recent.prompts && stats.recent.prompts.length > 0 ? (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {stats.recent.prompts.map((prompt) => (
-                <li key={prompt.id} style={{
-                  padding: '0.75rem',
-                  borderBottom: '1px solid var(--color-border)',
-                  fontSize: '0.875rem',
-                }}>
-                  <Link href={`/prompts?load=${prompt.id}`} style={{
-                    color: 'var(--color-primary)',
-                    textDecoration: 'none',
-                    fontWeight: '500',
-                  }}>
-                    {prompt.name || 'Untitled'}
-                  </Link>
-                  <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                    Updated {new Date(prompt.updatedAt).toLocaleDateString()}
-                  </div>
-                </li>
-              ))}
-            </ul>
           ) : (
-            <p style={{ color: 'var(--color-text-secondary)' }}>No prompts yet. <Link href="/prompts" style={{ color: 'var(--color-primary)' }}>Create one</Link></p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Total Runs:</span>
+                <span style={{ fontWeight: '600', color: 'var(--color-text)' }}>{stats?.testing.total_test_runs || 0}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Successful:</span>
+                <span style={{ fontWeight: '600', color: '#10b981' }}>{stats?.testing.successful_runs || 0}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Failed:</span>
+                <span style={{ fontWeight: '600', color: '#ef4444' }}>{stats?.testing.failed_runs || 0}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Success Rate:</span>
+                <span style={{ fontWeight: '600', color: 'var(--color-primary)' }}>{stats?.testing.success_rate || 0}%</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Avg Duration:</span>
+                <span style={{ fontWeight: '600', color: 'var(--color-text)' }}>{Math.round((stats?.testing.average_duration_ms || 0) / 1000)}s</span>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Recent Snippets */}
+        {/* Recent Test Runs */}
         <div style={{
           backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
@@ -229,33 +228,42 @@ export default function DashboardPage() {
           padding: '1.5rem',
         }}>
           <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: 'var(--color-text)', marginBottom: '1rem' }}>
-            Recent Snippets
+            Recent Test Runs
           </h3>
           {statsLoading ? (
             <p style={{ color: 'var(--color-text-secondary)' }}>Loading...</p>
-          ) : stats?.recent.snippets && stats.recent.snippets.length > 0 ? (
+          ) : stats?.testing.recent_runs && stats.testing.recent_runs.length > 0 ? (
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {stats.recent.snippets.map((snippet) => (
-                <li key={snippet.id} style={{
+              {stats.testing.recent_runs.map((run) => (
+                <li key={run.id} style={{
                   padding: '0.75rem',
                   borderBottom: '1px solid var(--color-border)',
                   fontSize: '0.875rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                 }}>
-                  <Link href={`/snippets/${snippet.id}`} style={{
-                    color: 'var(--color-primary)',
-                    textDecoration: 'none',
-                    fontWeight: '500',
-                  }}>
-                    {snippet.name || 'Untitled'}
-                  </Link>
-                  <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                    Created {new Date(snippet.createdAt).toLocaleDateString()}
+                  <div>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      backgroundColor: run.status === 'success' ? '#dbeafe' : '#fee2e2',
+                      color: run.status === 'success' ? '#0369a1' : '#991b1b',
+                    }}>
+                      {run.status}
+                    </span>
+                  </div>
+                  <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.75rem' }}>
+                    {new Date(run.created_at).toLocaleDateString()}
                   </div>
                 </li>
               ))}
             </ul>
           ) : (
-            <p style={{ color: 'var(--color-text-secondary)' }}>No snippets yet. <Link href="/snippets" style={{ color: 'var(--color-primary)' }}>Create one</Link></p>
+            <p style={{ color: 'var(--color-text-secondary)' }}>No test runs yet. <Link href="/test" style={{ color: 'var(--color-primary)' }}>Run tests</Link></p>
           )}
         </div>
       </div>
