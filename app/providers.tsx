@@ -233,15 +233,17 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (user) {
           const token = localStorage.getItem('auth-token')
           if (token) {
-            const res = await fetch(API_ENDPOINTS.settings.get, {
+            const res = await fetch(API_ENDPOINTS.user.settings, {
               headers: {
                 'Authorization': `Bearer ${token}`,
               },
             })
             if (res.ok) {
               const data = await res.json()
-              setSettings(data)
-              localStorage.setItem('user-settings', JSON.stringify(data))
+              // Handle both direct settings object and settings within a wrapper
+              const settingsData = data.settings || data
+              setSettings(settingsData)
+              localStorage.setItem('user-settings', JSON.stringify(settingsData))
             }
           }
         }
@@ -272,8 +274,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       try {
         const token = localStorage.getItem('auth-token')
         if (token) {
-          await fetch(API_ENDPOINTS.settings.update, {
-            method: 'POST',
+          await fetch(API_ENDPOINTS.user.settings, {
+            method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`,
