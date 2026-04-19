@@ -118,7 +118,6 @@ export async function GET(request: NextRequest) {
       where: {
         workspace_id: workspace.id,
         entity_type: 'note',
-        ...(entity_type ? { data: { path: ['entity_type'] } } : {}),
       },
       orderBy: { created_at: 'desc' },
     })
