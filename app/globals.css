@@ -343,14 +343,4 @@
   }
 
   /* Hide inactive sections in accordion */
-  .mobile-section-hidden {
-    display: none;
-  }
-}
-
-/* Desktop: ≥1024px */
-@media (min-width: 1024px) {
-  .workbench-grid {
-    grid-template-columns: 1fr 360px;
-  }
-}
+  .mob

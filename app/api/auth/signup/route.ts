@@ -50,29 +50,32 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hashPassword(password)
 
-    // Create user with settings and workspace (atomic transaction)
+    // Create user first
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
-        settings: {
-          create: {
-            theme: 'gruvbox-dark',
-            suggestionsEnabled: true,
-            defaultModel: 'claude-3-haiku',
-            defaultTemperature: 0.7,
-            defaultMaxTokens: 500,
-          },
-        },
-        workspace: {
-          create: {
-            name: 'Default Workspace',
-            slug: 'default',
-          },
-        },
       },
-      include: {
-        settings: true,
+    })
+
+    // Create settings
+    const settings = await prisma.userSettings.create({
+      data: {
+        user_id: user.id,
+        theme: 'gruvbox-dark',
+        suggestions_enabled: true,
+        default_model: 'claude-3-haiku',
+        default_temperature: 0.7,
+        default_max_tokens: 500,
+      },
+    })
+
+    // Create workspace
+    const workspace = await prisma.workspace.create({
+      data: {
+        name: 'Default Workspace',
+        slug: 'default',
+        user_id: user.id,
       },
     })
 
@@ -87,18 +90,18 @@ export async function POST(request: NextRequest) {
         user: {
           id: user.id,
           email: user.email,
-          created_at: user.createdAt,
-          updated_at: user.updatedAt,
+          created_at: user.created_at,
+          updated_at: user.updated_at,
           settings: {
-            id: user.settings.id,
-            user_id: user.settings.userId,
-            theme: user.settings.theme,
-            suggestions_enabled: user.settings.suggestionsEnabled,
-            default_model: user.settings.defaultModel,
-            default_temperature: user.settings.defaultTemperature,
-            default_max_tokens: user.settings.defaultMaxTokens,
-            created_at: user.settings.createdAt,
-            updated_at: user.settings.updatedAt,
+            id: settings.id,
+            user_id: settings.user_id,
+            theme: settings.theme,
+            suggestions_enabled: settings.suggestions_enabled,
+            default_model: settings.default_model,
+            default_temperature: settings.default_temperature,
+            default_max_tokens: settings.default_max_tokens,
+            created_at: settings.created_at,
+            updated_at: settings.updated_at,
           },
         },
       },

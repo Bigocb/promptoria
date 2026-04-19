@@ -209,17 +209,4 @@ model TestRun {
   latency_ms        Int?
   status            String?       @db.VarChar(20)
   error_message     String?
-  created_at        DateTime      @default(now()) @db.Timestamp(6)
-  updated_at        DateTime      @default(now()) @db.Timestamp(6)
-  prompts           Prompt        @relation(fields: [prompt_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  prompt_versions   PromptVersion @relation(fields: [prompt_version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  workspaces        Workspace     @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([prompt_id], map: "idx_testrun_prompt")
-  @@index([prompt_version_id], map: "idx_testrun_version")
-  @@index([workspace_id], map: "idx_testrun_workspace")
-  @@index([prompt_id], map: "ix_test_runs_prompt_id")
-  @@index([prompt_version_id], map: "ix_test_runs_prompt_version_id")
-  @@index([workspace_id], map: "ix_test_runs_workspace_id")
-  @@map("test_runs")
-}
+  created_at        DateTime      @default(now()) @db.Timesta

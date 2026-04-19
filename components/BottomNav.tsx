@@ -29,13 +29,13 @@ export function BottomNav() {
           href={item.href}
           className={`bottom-nav-item${pathname === item.href ? ' bottom-nav-active' : ''}`}
         >
-          <span className="bottom-nav-icon">{item.icon}</span>
-          <span className="bottom-nav-label">{item.label}</span>
+          <span className="icon">{item.icon}</span>
+          <span className="label">{item.label}</span>
         </Link>
       ))}
-      <button onClick={handleLogout} className="bottom-nav-item bottom-nav-logout">
-        <span className="bottom-nav-icon">⏻</span>
-        <span className="bottom-nav-label">Logout</span>
+      <button onClick={handleLogout} className="bottom-nav-item logout-btn">
+        <span className="icon">🚪</span>
+        <span className="label">Logout</span>
       </button>
     </nav>
   )

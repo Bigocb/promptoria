@@ -24,7 +24,7 @@ export async function authenticateUser(
   const user = await db.user.findUnique({
     where: { email },
     include: {
-      settings: true,  // Include user settings
+      user_settings: true,  // Include user settings
     },
   })
 

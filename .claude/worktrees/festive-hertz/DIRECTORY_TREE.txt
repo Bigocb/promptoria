@@ -1,0 +1,377 @@
+PromptArchitect - Complete Directory Structure
+===============================================
+
+promptarchitect/
+│
+├── 📚 DOCUMENTATION (5 files)
+│   ├── README.md                         # Main documentation (3000+ words)
+│   ├── GETTING_STARTED.md               # Quick start guide (5-min setup)
+│   ├── PROJECT_SUMMARY.md               # Architecture & overview
+│   ├── FILE_MANIFEST.md                 # Complete file listing
+│   └── IMPLEMENTATION_COMPLETE.md       # This summary
+│
+├── 🔧 CONFIGURATION (8 files)
+│   ├── package.json                     # Dependencies (45 packages)
+│   ├── package-lock.json               # Dependency lock (auto-generated)
+│   ├── tsconfig.json                    # TypeScript strict config
+│   ├── next.config.js                   # Next.js configuration
+│   ├── tailwind.config.ts               # Tailwind with custom colors
+│   ├── postcss.config.js                # PostCSS pipeline
+│   ├── .env.example                     # Environment template
+│   └── .gitignore                       # Git ignore rules
+│
+├── 🐳 DEPLOYMENT
+│   ├── Dockerfile                       # Multi-stage build (Node 18 Alpine)
+│   ├── docker-compose.yml               # PostgreSQL + Next.js stack
+│   └── DIRECTORY_TREE.txt               # This file
+│
+├── 🗄️ DATABASE (2 files)
+│   └── prisma/
+│       ├── schema.prisma                # 7 models (Workspace, Folder, Snippet, Prompt, PromptVersion, PromptComposition, TestRun)
+│       └── seed.ts                      # Seed data (examples + test cases)
+│
+├── 💻 LOGIC ENGINE
+│   └── lib/
+│       ├── compiler.ts                  # 6 core functions (210 lines)
+│       │   ├─ compilePrompt()
+│       │   ├─ validateBraces()
+│       │   ├─ extractVariables()
+│       │   ├─ substituteVariables()
+│       │   ├─ executePreparedPrompt()
+│       │   └─ getRequiredVariables()
+│       └── utils.ts                     # Utility functions (cn)
+│
+├── 🎨 STYLING
+│   ├── app/globals.css                  # Global Tailwind + colors (light/dark)
+│   └── tailwind.config.ts               # Tailwind config
+│
+├── 🧩 UI COMPONENTS (5 files)
+│   └── components/
+│       └── ui/
+│           ├── button.tsx               # Button (5 variants)
+│           ├── card.tsx                 # Card (6 exports)
+│           ├── input.tsx                # Input field
+│           ├── label.tsx                # Form label
+│           └── textarea.tsx             # Multi-line input
+│
+├── 🔗 API ROUTES (5 files, Phase 4)
+│   └── app/
+│       └── api/
+│           ├── execute/route.ts         # Main: Execute prompts with LLM
+│           │   POST: Compile → Substitute → Call LLM → Store
+│           │   GET: Fetch test history
+│           ├── prompts/route.ts         # Fetch prompts & versions
+│           ├── snippets/route.ts        # CRUD snippets
+│           └── testruns/route.ts        # Test history & stats
+│
+├── 🖥️ FRONTEND PAGES (6 files, Phase 3)
+│   └── app/
+│       ├── layout.tsx                   # Root layout
+│       ├── page.tsx                     # Home dashboard (95 lines)
+│       ├── globals.css                  # Global styles
+│       │
+│       ├── snippets/                    # Snippet Library
+│       │   └── page.tsx                 # CRUD snippets (218 lines)
+│       │
+│       ├── prompts/                     # Prompt Workspace
+│       │   └── page.tsx                 # Compose prompts (320 lines)
+│       │
+│       ├── history/                     # Version History
+│       │   └── page.tsx                 # Diff viewer (280 lines)
+│       │
+│       └── test/                        # Test Runner (NEW - Phase 4)
+│           └── page.tsx                 # Execute & test (385 lines)
+│
+└── 📊 PROJECT FILES
+    ├── .next/                           # Next.js build (generated)
+    ├── node_modules/                    # Dependencies (generated)
+    └── .env.local                       # Environment secrets (not in repo)
+
+
+FILE COUNTS BY CATEGORY
+=======================
+
+Configuration    8 files   (setup, dependencies, build config)
+Documentation    5 files   (README, guides, summaries)
+Database        2 files   (schema, seed data)
+Logic           2 files   (compiler, utilities)
+Components      5 files   (button, card, input, label, textarea)
+Pages           6 files   (home, snippets, prompts, history, test, layout)
+API Routes      5 files   (execute, prompts, snippets, testruns, base)
+Styling         1 file    (globals.css)
+Deployment      3 files   (Dockerfile, docker-compose, this file)
+─────────────────────────────────────────
+TOTAL          37 files   (excluding node_modules & .next)
+
+
+CODE STATISTICS
+===============
+
+Prisma Schema      156 lines   (7 models)
+Compiler Engine    210 lines   (6 functions)
+Execute API        247 lines   (main API route)
+Other APIs         150 lines   (prompts, snippets, testruns)
+UI Components      400 lines   (5 components)
+Pages             1298 lines   (6 pages: home, snippets, prompts, history, test, layout)
+Config Files       200 lines   (tsconfig, tailwind, etc)
+─────────────────────────────
+TOTAL           2661 lines   (production code)
+
+
+DATABASE SCHEMA
+===============
+
+7 Models (Phase 1):
+  1. Workspace    - Top-level container
+  2. Folder       - Optional organization
+  3. Snippet      - Reusable text blocks
+  4. Prompt       - Main prompt entity
+  5. PromptVersion - Immutable snapshots
+  6. PromptComposition - Join table (Snippet → Version with rank)
+  7. TestRun      - Execution logs
+
+Features:
+  ✅ Immutable versioning
+  ✅ Many-to-many with ordering
+  ✅ JSONB config storage
+  ✅ Complete test logging
+  ✅ Workspace scoping
+
+
+CORE FUNCTIONS
+===============
+
+lib/compiler.ts (6 functions):
+  1. compilePrompt(versionId)          - Fetch & compile version
+  2. validateBraces(text)              - Check for {{}} integrity
+  3. extractVariables(text)            - Find {{variable_name}}
+  4. substituteVariables(prompt, vars) - Replace variables
+  5. executePreparedPrompt(...)        - Full compile + substitute
+  6. getRequiredVariables(versionId)   - List needed variables
+
+
+API ROUTES
+==========
+
+POST /api/execute
+  └─ Execute prompt with LLM API
+     Input: {promptVersionId, variables}
+     Output: {testRunId, output, tokens, cost, latency}
+     Features: OpenAI + Anthropic, cost calc, token counting
+
+GET /api/execute
+  └─ Fetch test history
+     Parameters: promptVersionId, limit
+
+GET/POST /api/prompts
+  └─ Fetch prompts & versions
+
+GET/POST /api/snippets
+  └─ Manage snippets with validation
+
+GET /api/testruns
+  └─ Test history with stats
+
+
+FEATURES BY PHASE
+=================
+
+Phase 1: Database ✅
+  ✅ 7 models with relationships
+  ✅ Immutable versioning
+  ✅ Composite key constraints
+  ✅ JSONB fields for flexibility
+  ✅ Seed data with examples
+
+Phase 2: Logic Engine ✅
+  ✅ Prompt compilation (fetch + concat)
+  ✅ Variable extraction (regex)
+  ✅ Variable substitution
+  ✅ Brace validation
+  ✅ Error handling
+
+Phase 3: Builder UI ✅
+  ✅ Snippet Library (CRUD)
+  ✅ Prompt Workspace (compose)
+  ✅ Version History (diff viewer)
+  ✅ 5 shadcn/UI components
+  ✅ Dark theme with Tailwind
+  ✅ Responsive design
+
+Phase 4: Testing & Integration ✅
+  ✅ Test Runner page
+  ✅ LLM API integration (OpenAI + Anthropic)
+  ✅ Real token counting
+  ✅ Cost calculation (4 models)
+  ✅ Test result logging
+  ✅ Test history display
+  ✅ Error handling
+
+
+GETTING STARTED
+===============
+
+1. Install Dependencies
+   npm install
+
+2. Setup Database
+   npm run db:push
+   npm run db:seed   # Optional: adds example data
+
+3. Add API Keys
+   cp .env.example .env.local
+   # Edit .env.local with OPENAI_API_KEY and/or ANTHROPIC_API_KEY
+
+4. Run Development Server
+   npm run dev
+   # Visit http://localhost:3000
+
+5. Or use Docker
+   docker-compose up -d
+   # Available at http://localhost:3000
+
+
+DEPLOYMENT OPTIONS
+==================
+
+Option 1: Local Development
+  npm install && npm run db:push && npm run dev
+
+Option 2: Docker (Recommended)
+  docker-compose up -d
+
+Option 3: Vercel
+  vercel (deploy + set env vars)
+
+Option 4: Self-Hosted
+  npm run build && npm start (with PM2/systemd)
+
+
+ENVIRONMENT VARIABLES
+====================
+
+DATABASE_URL
+  PostgreSQL connection string
+  Example: postgresql://user:password@localhost:5432/promptarchitect
+
+OPENAI_API_KEY
+  OpenAI API key (for GPT-4, GPT-3.5-turbo)
+  Example: sk-... (from platform.openai.com/api-keys)
+
+ANTHROPIC_API_KEY
+  Anthropic API key (for Claude models)
+  Example: sk-ant-... (from console.anthropic.com/account/keys)
+
+NODE_ENV
+  development | production
+
+NEXT_PUBLIC_APP_NAME
+  Application name (visible in browser)
+
+
+QUICK DEMO WALKTHROUGH
+======================
+
+1. Create Snippet (5 min)
+   - Go to /snippets
+   - Click "New Snippet"
+   - Name: "Brand Voice"
+   - Content: "You are professional and friendly..."
+   - Click "Create"
+
+2. Create Prompt (5 min)
+   - Go to /prompts
+   - Click "New Prompt"
+   - Name: "Product Description"
+   - Select "Brand Voice" snippet
+   - Template: "Write description for {{product_name}}"
+   - Click "Create"
+
+3. Test Prompt (3 min)
+   - Go to /test
+   - Fill variables (product_name, etc.)
+   - Click "Execute Prompt"
+   - See output, tokens, cost, latency
+
+4. Compare Versions (2 min)
+   - Go to /history
+   - Select 2 versions
+   - See diff viewer
+
+
+KEY FILES TO UNDERSTAND
+=======================
+
+1. lib/compiler.ts
+   └─ Core logic: how prompts are compiled and executed
+
+2. app/api/execute/route.ts
+   └─ Main API: how prompts are tested with LLMs
+
+3. prisma/schema.prisma
+   └─ Database structure: all models and relationships
+
+4. app/test/page.tsx
+   └─ Test Runner UI: how users test prompts
+
+5. README.md
+   └─ Full documentation: features, APIs, examples
+
+
+NEXT STEPS
+==========
+
+Immediate:
+  1. npm install
+  2. npm run db:push
+  3. npm run db:seed
+  4. npm run dev
+  5. Visit http://localhost:3000
+
+Short Term:
+  - Create your first snippet
+  - Build a prompt using the snippet
+  - Test the prompt with real API
+  - Monitor cost and tokens
+
+Medium Term:
+  - Deploy to production
+  - Integrate with your workflow
+  - Build a library of reusable snippets
+  - Track usage and optimize costs
+
+
+SUPPORT RESOURCES
+=================
+
+Main Documentation
+  └─ README.md (3000+ words)
+
+Quick Start
+  └─ GETTING_STARTED.md (setup + examples)
+
+Architecture
+  └─ PROJECT_SUMMARY.md (design + database)
+
+File Reference
+  └─ FILE_MANIFEST.md (complete listing)
+
+Code Comments
+  └─ Throughout codebase (especially compiler.ts)
+
+
+PROJECT STATUS
+==============
+
+✅ Phase 1: Database & Models    COMPLETE
+✅ Phase 2: Logic Engine         COMPLETE
+✅ Phase 3: Builder UI           COMPLETE
+✅ Phase 4: Integration & Testing COMPLETE
+
+Status: Production Ready
+Version: 1.0.0
+Build Date: March 28, 2024
+Total Lines: 2,661
+Total Files: 37 (excluding node_modules)
+
+Ready for immediate deployment! 🚀

@@ -1,0 +1,141 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Gruvbox Dark Default */
+    --color-background: #282828;
+    --color-backgroundAlt: #1d2021;
+    --color-foreground: #ebdbb2;
+    --color-foregroundAlt: #d5c4a1;
+    --color-border: #504945;
+    --color-accent: #fe8019;
+    --color-accentAlt: #d65d0e;
+    --color-success: #b8bb26;
+    --color-error: #fb4934;
+    --color-warning: #fabd2f;
+
+    --radius: 0.5rem;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    max-width: 100vw;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  code, pre, .monospace {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Fraunces', serif;
+  }
+}
+
+@layer components {
+  /* Groovy Buttons - Squircle Geometry */
+  .btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 1rem;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    box-shadow: 4px 4px 0px 0px #1d2021;
+    font-family: 'Fraunces', serif;
+  }
+
+  .btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0px 0px #1d2021;
+  }
+
+  .btn:active {
+    transform: translate(0, 0);
+    box-shadow: 2px 2px 0px 0px #1d2021;
+  }
+
+  .btn-primary {
+    background-color: var(--color-accent);
+    color: #1d2021;
+    font-weight: 700;
+  }
+
+  .btn-primary:hover {
+    background-color: #fe9e3c;
+  }
+
+  .btn-secondary {
+    background-color: var(--color-border);
+    color: var(--color-foreground);
+  }
+
+  .btn-secondary:hover {
+    background-color: #5f5955;
+  }
+
+  /* Groovy Inputs - Squircle Geometry */
+  .input {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    border-radius: 1rem;
+    background-color: var(--color-backgroundAlt);
+    color: var(--color-foreground);
+    border: 2px solid #3c3836;
+    transition: all 0.2s ease;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(254, 128, 25, 0.1), 2px 2px 0px 0px #1d2021;
+  }
+
+  /* Groovy Cards - Refined with Offset Shadows */
+  .card {
+    padding: 1.5rem;
+    border-radius: 1rem;
+    background-color: var(--color-backgroundAlt);
+    border: 3px solid #3c3836;
+    transition: all 0.2s ease;
+    box-shadow: 4px 4px 0px 0px #1d2021;
+  }
+
+  .card:hover {
+    border-color: var(--color-accent);
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0px 0px #1d2021;
+  }
+
+  textarea {
+    border-radius: 0.75rem;
+    border: 2px solid var(--color-border);
+    transition: all 0.2s ease;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(254, 128, 25, 0.1);
+  }
+}

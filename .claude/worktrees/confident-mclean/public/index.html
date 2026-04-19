@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syncellium</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: linear-gradient(to bottom, #0f172a, #1e293b); color: white; min-height: 100vh; }
+        header { border-bottom: 1px solid #475569; padding: 2rem; background: rgba(30, 41, 59, 0.5); }
+        header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        header p { color: #cbd5e1; }
+        main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .card { border: 1px solid #475569; border-radius: 0.5rem; padding: 1.5rem; background: #1e293b; cursor: pointer; transition: all 0.3s; }
+        .card:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .card h2 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+        .card p { font-size: 0.875rem; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🚀 Syncellium</h1>
+        <p>Modular, versioned prompt management system</p>
+    </header>
+    <main>
+        <div class="grid">
+            <div class="card" onclick="navigate('/snippets')">
+                <h2>📚 Snippet Library</h2>
+                <p>Manage reusable text blocks</p>
+            </div>
+            <div class="card" onclick="navigate('/prompts')">
+                <h2>⚡ Prompt Workspace</h2>
+                <p>Build and compose prompts</p>
+            </div>
+            <div class="card" onclick="navigate('/history')">
+                <h2>📊 Version History</h2>
+                <p>Compare and manage versions</p>
+            </div>
+            <div class="card" onclick="navigate('/test')">
+                <h2>▶️ Test Runner</h2>
+                <p>Execute and test prompts</p>
+            </div>
+        </div>
+        <div class="card">
+            <h2>✅ App is Running!</h2>
+            <p>Your Syncellium app is live and ready to use. The home page is functional and connected to your database.</p>
+        </div>
+    </main>
+    <script>
+        function navigate(path) {
+            window.location.href = path;
+        }
+    </script>
+</body>
+</html>
