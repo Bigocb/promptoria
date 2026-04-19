@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,206 +10,66 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User - authentication
 model User {
-  id            String        @id @default(cuid()) @db.VarChar(36)
-  email         String        @unique(map: "ix_users_email") @db.VarChar(255)
-  password      String        @db.VarChar(255)
+  id        String   @id @db.VarChar(36)
+  email     String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
   created_at    DateTime      @default(now()) @db.Timestamp(6)
-  updated_at    DateTime      @default(now()) @db.Timestamp(6)
+  updated_at    DateTime      @default(now()) @updatedAt @db.Timestamp(6)
+
   user_settings UserSettings?
   workspaces    Workspace?
 
   @@map("users")
 }
 
+// UserSettings - user preferences
 model UserSettings {
-  id                  String   @id @default(cuid()) @db.VarChar(36)
-  user_id             String   @unique(map: "ix_user_settings_user_id") @db.VarChar(36)
+  id                  String   @id @db.VarChar(36)
+  user_id             String   @unique @db.VarChar(36)
   theme               String?  @db.VarChar(50)
   suggestions_enabled Boolean?
   default_model       String?  @db.VarChar(100)
   default_temperature Float?
   default_max_tokens  Int?
-  anthropic_api_key   String?  @db.VarChar(1000)
+  anthropic_api_key   String?  @db.Text
   created_at          DateTime @default(now()) @db.Timestamp(6)
-  updated_at          DateTime @default(now()) @db.Timestamp(6)
-  users               User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  updated_at          DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("user_settings")
 }
 
+// Workspace
 model Workspace {
-  id                      String                 @id @default(cuid()) @db.VarChar(36)
-  name                    String                 @db.VarChar(255)
-  slug                    String                 @unique(map: "ix_workspaces_slug") @db.VarChar(255)
-  user_id                 String                 @unique(map: "ix_workspaces_user_id") @db.VarChar(36)
-  created_at              DateTime               @default(now()) @db.Timestamp(6)
-  updated_at              DateTime               @default(now()) @db.Timestamp(6)
-  agent_interaction_types AgentInteractionType[]
-  folders                 Folder[]
-  prompt_categories       PromptCategory[]
-  prompts                 Prompt[]
-  snippets                Snippet[]
-  test_runs               TestRun[]
-  users                   User                   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id        String   @id @db.VarChar(36)
+  name      String   @db.VarChar(255)
+  slug      String   @db.VarChar(255)
+  user_id   String   @unique @db.VarChar(36)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp(6)
 
-  @@index([user_id], map: "idx_workspace_user_id")
+  user      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  sync_logs SyncLog[]
+
   @@map("workspaces")
 }
 
-model Folder {
-  id           String    @id @default(cuid()) @db.VarChar(36)
-  name         String    @db.VarChar(255)
-  description  String?
-  workspace_id String    @db.VarChar(36)
-  created_at   DateTime  @default(now()) @db.Timestamp(6)
-  updated_at   DateTime  @default(now()) @db.Timestamp(6)
-  workspaces   Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  prompts      Prompt[]
-  snippets     Snippet[]
+// SyncLog - change tracking for offline-first sync
+model SyncLog {
+  id            String   @id @db.VarChar(36)
+  device_id     String?  @db.VarChar(36)
+  workspace_id  String   @db.VarChar(36)
+  action        String   @db.VarChar(20)
+  entity_type   String   @db.VarChar(50)
+  entity_id     String   @db.VarChar(36)
+  changed_at    DateTime @default(now()) @db.Timestamp(6)
+  data          Json?    @db.Json
+  created_at    DateTime @default(now()) @db.Timestamp(6)
 
-  @@index([workspace_id], map: "idx_folder_workspace_id")
-  @@index([workspace_id], map: "ix_folders_workspace_id")
-  @@map("folders")
+  workspace Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+
+  @@map("sync_logs")
 }
-
-model Snippet {
-  id                  String              @id @default(cuid()) @db.VarChar(36)
-  name                String              @db.VarChar(255)
-  description         String?
-  content             String
-  workspace_id        String              @db.VarChar(36)
-  folder_id           String?             @db.VarChar(36)
-  version             Int?
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @default(now()) @db.Timestamp(6)
-  prompt_compositions PromptComposition[]
-  folders             Folder?             @relation(fields: [folder_id], references: [id], onUpdate: NoAction)
-  workspaces          Workspace           @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([workspace_id, name], map: "idx_snippet_name_workspace")
-  @@index([folder_id], map: "idx_snippet_folder_id")
-  @@index([workspace_id], map: "idx_snippet_workspace_id")
-  @@index([folder_id], map: "ix_snippets_folder_id")
-  @@index([workspace_id], map: "ix_snippets_workspace_id")
-  @@map("snippets")
-}
-
-model AgentInteractionType {
-  id                String           @id @default(cuid()) @db.VarChar(36)
-  name              String           @db.VarChar(255)
-  description       String?
-  emoji             String?          @db.VarChar(10)
-  workspace_id      String           @db.VarChar(36)
-  created_at        DateTime         @default(now()) @db.Timestamp(6)
-  updated_at        DateTime         @default(now()) @db.Timestamp(6)
-  workspaces        Workspace        @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  prompt_categories PromptCategory[]
-
-  @@unique([workspace_id, name], map: "idx_interaction_type_name_unique")
-  @@index([workspace_id], map: "idx_interaction_type_workspace")
-  @@index([workspace_id], map: "ix_agent_interaction_types_workspace_id")
-  @@map("agent_interaction_types")
-}
-
-model PromptCategory {
-  id                        String               @id @default(cuid()) @db.VarChar(36)
-  name                      String               @db.VarChar(255)
-  description               String?
-  workspace_id              String               @db.VarChar(36)
-  agent_interaction_type_id String               @db.VarChar(36)
-  created_at                DateTime             @default(now()) @db.Timestamp(6)
-  updated_at                DateTime             @default(now()) @db.Timestamp(6)
-  agent_interaction_types   AgentInteractionType @relation(fields: [agent_interaction_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  workspaces                Workspace            @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  prompts                   Prompt[]
-
-  @@unique([workspace_id, name], map: "idx_category_name_unique")
-  @@index([agent_interaction_type_id], map: "idx_category_interaction_type")
-  @@index([workspace_id], map: "idx_category_workspace")
-  @@index([agent_interaction_type_id], map: "ix_prompt_categories_agent_interaction_type_id")
-  @@index([workspace_id], map: "ix_prompt_categories_workspace_id")
-  @@map("prompt_categories")
-}
-
-model Prompt {
-  id                String          @id @default(cuid()) @db.VarChar(36)
-  name              String          @db.VarChar(255)
-  description       String?
-  workspace_id      String          @db.VarChar(36)
-  folder_id         String?         @db.VarChar(36)
-  category_id       String?         @db.VarChar(36)
-  tags              Json?           @db.Json
-  model             String?         @db.VarChar(100)
-  created_at        DateTime        @default(now()) @db.Timestamp(6)
-  updated_at        DateTime        @default(now()) @db.Timestamp(6)
-  prompt_versions   PromptVersion[]
-  prompt_categories PromptCategory? @relation(fields: [category_id], references: [id], onUpdate: NoAction)
-  folders           Folder?         @relation(fields: [folder_id], references: [id], onUpdate: NoAction)
-  workspaces        Workspace       @relation(fields: [workspace_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  test_runs         TestRun[]
-
-  @@unique([workspace_id, name], map: "idx_prompt_name_workspace")
-  @@index([workspace_id], map: "idx_prompt_workspace_id")
-  @@index([category_id], map: "ix_prompts_category_id")
-  @@index([folder_id], map: "ix_prompts_folder_id")
-  @@index([workspace_id], map: "ix_prompts_workspace_id")
-  @@map("prompts")
-}
-
-model PromptVersion {
-  id                  String              @id @default(cuid()) @db.VarChar(36)
-  version_number      Int
-  prompt_id           String              @db.VarChar(36)
-  template_body       String
-  model_config        Json?               @db.Json
-  change_log          String?
-  created_by          String?             @db.VarChar(255)
-  is_active           Boolean?
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @default(now()) @db.Timestamp(6)
-  prompt_compositions PromptComposition[]
-  prompts             Prompt              @relation(fields: [prompt_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  test_runs           TestRun[]
-
-  @@unique([prompt_id, version_number], map: "idx_version_unique")
-  @@index([prompt_id], map: "idx_version_prompt_id")
-  @@index([prompt_id], map: "ix_prompt_versions_prompt_id")
-  @@map("prompt_versions")
-}
-
-model PromptComposition {
-  id                String        @id @default(cuid()) @db.VarChar(36)
-  prompt_version_id String        @db.VarChar(36)
-  snippet_id        String        @db.VarChar(36)
-  rank              Int
-  created_at        DateTime      @default(now()) @db.Timestamp(6)
-  updated_at        DateTime      @default(now()) @db.Timestamp(6)
-  prompt_versions   PromptVersion @relation(fields: [prompt_version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  snippets          Snippet       @relation(fields: [snippet_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([prompt_version_id, snippet_id], map: "idx_composition_unique")
-  @@index([snippet_id], map: "idx_composition_snippet")
-  @@index([prompt_version_id], map: "idx_composition_version")
-  @@index([prompt_version_id], map: "ix_prompt_compositions_prompt_version_id")
-  @@index([snippet_id], map: "ix_prompt_compositions_snippet_id")
-  @@map("prompt_compositions")
-}
-
-model TestRun {
-  id                String        @id @default(cuid()) @db.VarChar(36)
-  prompt_version_id String        @db.VarChar(36)
-  prompt_id         String        @db.VarChar(36)
-  workspace_id      String        @db.VarChar(36)
-  variables         Json?         @db.Json
-  compiled_prompt   String
-  output            String?
-  model             String?       @db.VarChar(100)
-  input_tokens      Int?
-  output_tokens     Int?
-  total_tokens      Int?
-  cost_usd          Float?
-  latency_ms        Int?
-  status            String?       @db.VarChar(20)
-  error_message     String?
-  created_at        DateTime      @default(now()) @db.Timesta
