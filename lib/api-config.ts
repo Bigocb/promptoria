@@ -1,52 +1,120 @@
 /**
  * API Configuration
- * Points to Python FastAPI backend on Render
+ * Points to Next.js backend on Vercel
  */
 
 const isDevelopment = process.env.NODE_ENV === 'development'
 
-export const API_BASE_URL = isDevelopment
-  ? 'http://localhost:3100'  // Local dev: Python FastAPI backend
-  : 'https://promptoria-api.onrender.com'  // Production: Python FastAPI on Render
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ||
+  (isDevelopment
+    ? 'http://localhost:3000/api'  // Local dev: Next.js backend
+    : 'https://promptoria-dev.vercel.app/api')  // Production: Next.js on Vercel
 
 export const API_ENDPOINTS = {
   auth: {
-    login: `${API_BASE_URL}/api/auth/login`,
-    signup: `${API_BASE_URL}/api/auth/signup`,
-    logout: `${API_BASE_URL}/api/auth/logout`,
+    login: `${API_BASE_URL}/auth/login`,
+    signup: `${API_BASE_URL}/auth/signup`,
   },
-  prompts: {
-    list: `${API_BASE_URL}/api/prompts`,
-    get: (id: string) => `${API_BASE_URL}/api/prompts/${id}`,
-    detail: (id: string) => `${API_BASE_URL}/api/prompts/${id}`,
-    create: `${API_BASE_URL}/api/prompts`,
-    update: (id: string) => `${API_BASE_URL}/api/prompts/${id}`,
-    delete: (id: string) => `${API_BASE_URL}/api/prompts/${id}`,
-  },
-  snippets: {
-    list: `${API_BASE_URL}/api/snippets`,
-    get: (id: string) => `${API_BASE_URL}/api/snippets/${id}`,
-    create: `${API_BASE_URL}/api/snippets`,
-    update: (id: string) => `${API_BASE_URL}/api/snippets/${id}`,
-    delete: (id: string) => `${API_BASE_URL}/api/snippets/${id}`,
-  },
-  dashboard: {
-    stats: `${API_BASE_URL}/api/dashboard/stats`,
+  user: {
+    profile: `${API_BASE_URL}/user/profile`,
+    settings: `${API_BASE_URL}/user/settings`,
   },
   settings: {
-    get: `${API_BASE_URL}/api/settings`,
-    update: `${API_BASE_URL}/api/settings`,
-    setApiKey: `${API_BASE_URL}/api/settings/api-key`,
+    apiKeys: {
+      get: `${API_BASE_URL}/settings/api-keys`,
+      set: `${API_BASE_URL}/settings/api-keys`,
+      delete: `${API_BASE_URL}/settings/api-keys`,
+    },
   },
-  taxonomy: {
-    interactionTypes: `${API_BASE_URL}/api/taxonomy/interaction-types`,
-    categories: (typeId: string) => `${API_BASE_URL}/api/taxonomy/categories?typeId=${typeId}`,
+  prompts: {
+    list: `${API_BASE_URL}/prompts`,
+    create: `${API_BASE_URL}/prompts`,
+    detail: (id: string) => `${API_BASE_URL}/prompts/${id}`,
+    get: (id: string) => `${API_BASE_URL}/prompts/${id}`,
+    update: (id: string) => `${API_BASE_URL}/prompts/${id}`,
+    delete: (id: string) => `${API_BASE_URL}/prompts/${id}`,
+    clone: (id: string) => `${API_BASE_URL}/prompts/${id}/clone`,
+    favorite: (id: string) => `${API_BASE_URL}/prompts/${id}/favorite`,
+    rollback: (id: string) => `${API_BASE_URL}/prompts/${id}/rollback`,
+    suggestions: (id: string) => `${API_BASE_URL}/prompts/${id}/suggestions`,
+    validate: `${API_BASE_URL}/prompts/validate`,
+    executeBatch: `${API_BASE_URL}/prompts/execute-batch`,
+    versions: {
+      compare: (id: string, v1: number, v2: number) => `${API_BASE_URL}/prompts/${id}/versions/compare?v1=${v1}&v2=${v2}`,
+    },
+    compositions: {
+      list: (id: string) => `${API_BASE_URL}/prompts/${id}/compositions`,
+      add: (id: string) => `${API_BASE_URL}/prompts/${id}/compositions`,
+      reorder: (id: string) => `${API_BASE_URL}/prompts/${id}/compositions`,
+      remove: (id: string, snippetId: string) => `${API_BASE_URL}/prompts/${id}/compositions/${snippetId}`,
+    },
   },
-  suggestions: `${API_BASE_URL}/api/suggestions`,
-  tags: `${API_BASE_URL}/api/suggestions/tags`,
-  execute: {
-    run: `${API_BASE_URL}/api/execute`,
-    history: (promptVersionId: string) => `${API_BASE_URL}/api/execute/${promptVersionId}`,
+  snippets: {
+    list: `${API_BASE_URL}/snippets`,
+    create: `${API_BASE_URL}/snippets`,
+    get: (id: string) => `${API_BASE_URL}/snippets/${id}`,
+    update: (id: string) => `${API_BASE_URL}/snippets/${id}`,
+    delete: (id: string) => `${API_BASE_URL}/snippets/${id}`,
+    compare: `${API_BASE_URL}/snippets/compare`,
   },
-  models: `${API_BASE_URL}/api/models`,
+  categories: {
+    list: `${API_BASE_URL}/categories`,
+    create: `${API_BASE_URL}/categories`,
+    get: (id: string) => `${API_BASE_URL}/categories/${id}`,
+    update: (id: string) => `${API_BASE_URL}/categories/${id}`,
+    delete: (id: string) => `${API_BASE_URL}/categories/${id}`,
+    interactions: {
+      list: `${API_BASE_URL}/categories/interactions`,
+      create: `${API_BASE_URL}/categories/interactions`,
+      get: (id: string) => `${API_BASE_URL}/categories/interactions/${id}`,
+      update: (id: string) => `${API_BASE_URL}/categories/interactions/${id}`,
+      delete: (id: string) => `${API_BASE_URL}/categories/interactions/${id}`,
+    },
+  },
+  testRuns: {
+    list: `${API_BASE_URL}/test-runs`,
+    create: `${API_BASE_URL}/test-runs`,
+    get: (id: string) => `${API_BASE_URL}/test-runs/${id}`,
+    delete: (id: string) => `${API_BASE_URL}/test-runs/${id}`,
+    execute: (id: string) => `${API_BASE_URL}/test-runs/${id}/execute`,
+  },
+  dashboard: {
+    stats: `${API_BASE_URL}/dashboard/stats`,
+  },
+  analytics: {
+    usage: `${API_BASE_URL}/analytics/usage`,
+  },
+  stats: {
+    comprehensive: `${API_BASE_URL}/stats/comprehensive`,
+  },
+  activity: `${API_BASE_URL}/activity`,
+  search: `${API_BASE_URL}/search`,
+  export: `${API_BASE_URL}/export`,
+  import: `${API_BASE_URL}/import`,
+  batch: {
+    operations: `${API_BASE_URL}/batch/operations`,
+  },
+  sync: {
+    changes: `${API_BASE_URL}/sync`,
+    logs: `${API_BASE_URL}/sync-logs`,
+  },
+  health: `${API_BASE_URL}/health`,
+  templates: `${API_BASE_URL}/templates`,
+  quotas: {
+    usage: `${API_BASE_URL}/quotas/usage`,
+  },
+  notes: {
+    list: `${API_BASE_URL}/notes`,
+    create: `${API_BASE_URL}/notes`,
+  },
+  modelPresets: {
+    list: `${API_BASE_URL}/model-presets`,
+    create: `${API_BASE_URL}/model-presets`,
+  },
+  maintenance: {
+    cleanup: `${API_BASE_URL}/maintenance/cleanup`,
+  },
+  docs: {
+    endpoints: `${API_BASE_URL}/docs/endpoints`,
+  },
 }
