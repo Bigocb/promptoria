@@ -63,16 +63,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Query changes from SyncLog since lastSync
-    // Order by changedAt, limit to 100 per request
+    // Order by changed_at, limit to 100 per request
     const changes = await prisma.syncLog.findMany({
       where: {
-        workspaceId: userWorkspace.id,
-        changedAt: {
+        workspace_id: userWorkspace.id,
+        changed_at: {
           gt: lastSyncTime,
         },
       },
       orderBy: {
-        changedAt: 'asc',
+        changed_at: 'asc',
       },
       take: 100,  // Pagination: max 100 changes per request
     })
@@ -84,8 +84,8 @@ export async function GET(request: NextRequest) {
         synced_at: now.toISOString(),
         changes: changes.map(change => ({
           action: change.action,  // "create", "update", "delete"
-          entityType: change.entityType,  // "prompt", "snippet", etc.
-          entityId: change.entityId,
+          entity_type: change.entity_type,  // "prompt", "snippet", etc.
+          entity_id: change.entity_id,
           data: change.data,  // Snapshot of changes
         })),
         conflicts: [],  // Future: detect conflicts here
