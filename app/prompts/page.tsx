@@ -61,6 +61,14 @@ interface LoadablePrompt {
   created_at: string
 }
 
+interface VariableSet {
+  id: string
+  name: string
+  values: Record<string, string>
+  createdAt: string
+  updatedAt: string
+}
+
 export default function WorkbenchPage() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
@@ -111,6 +119,14 @@ export default function WorkbenchPage() {
   const [selectedVersionForView, setSelectedVersionForView] = useState<PromptVersion | null>(null)
   const [compareVersionForDiff, setCompareVersionForDiff] = useState<PromptVersion | null>(null)
   const [showDiffView, setShowDiffView] = useState(false)
+  const [fillCopied, setFillCopied] = useState(false)
+
+  // Variable sets state
+  const [variableSets, setVariableSets] = useState<VariableSet[]>([])
+  const [activeSetId, setActiveSetId] = useState<string | null>(null)
+  const [showSaveSetInput, setShowSaveSetInput] = useState(false)
+  const [newSetName, setNewSetName] = useState('')
+  const [setUpdateFeedback, setSetUpdateFeedback] = useState(false)
 
   // Load prompt state
   const [availablePrompts, setAvailablePrompts] = useState<LoadablePrompt[]>([])
@@ -152,6 +168,35 @@ export default function WorkbenchPage() {
       loadPrompt(promptId)
     }
   }, [searchParams, user])
+
+  // Load saved variable sets whenever the active prompt changes
+  useEffect(() => {
+    const key = `variable-sets-${loadedPromptId || 'draft'}`
+    try {
+      const raw = localStorage.getItem(key)
+      setVariableSets(raw ? JSON.parse(raw) : [])
+    } catch {
+      setVariableSets([])
+    }
+    setActiveSetId(null)
+  }, [loadedPromptId])
+
+  // Auto-detect variables as prompt content changes
+  useEffect(() => {
+    const matches = promptContent.match(/\{([^}]+)\}/g)
+    if (matches) {
+      const vars = matches.map(m => m.slice(1, -1)).filter((v, i, a) => a.indexOf(v) === i)
+      setVariables(vars.join(', '))
+      setTestVariables(prev => {
+        const next: Record<string, string> = {}
+        vars.forEach(v => { next[v] = prev[v] || '' })
+        return next
+      })
+    } else {
+      setVariables('')
+      setTestVariables({})
+    }
+  }, [promptContent])
 
   const fetchSnippets = async () => {
     try {
@@ -440,6 +485,62 @@ export default function WorkbenchPage() {
       compiled = compiled.replace(new RegExp(`\\{${key}\\}`, 'g'), value)
     })
     return compiled
+  }
+
+  const handleCopyFilled = async () => {
+    const filled = compilePrompt()
+    await navigator.clipboard.writeText(filled)
+    setFillCopied(true)
+    setTimeout(() => setFillCopied(false), 2000)
+  }
+
+  // Variable sets — localStorage helpers
+  const varSetsKey = () => `variable-sets-${loadedPromptId || 'draft'}`
+
+  const persistSets = (sets: VariableSet[]) => {
+    try { localStorage.setItem(varSetsKey(), JSON.stringify(sets)) } catch {}
+  }
+
+  const handleSaveSet = () => {
+    if (!newSetName.trim()) return
+    const newSet: VariableSet = {
+      id: Date.now().toString(),
+      name: newSetName.trim(),
+      values: { ...testVariables },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    const updated = [...variableSets, newSet]
+    setVariableSets(updated)
+    persistSets(updated)
+    setActiveSetId(newSet.id)
+    setNewSetName('')
+    setShowSaveSetInput(false)
+  }
+
+  const handleLoadSet = (set: VariableSet) => {
+    setTestVariables({ ...set.values })
+    setActiveSetId(set.id)
+  }
+
+  const handleUpdateSet = () => {
+    if (!activeSetId) return
+    const updated = variableSets.map(s =>
+      s.id === activeSetId
+        ? { ...s, values: { ...testVariables }, updatedAt: new Date().toISOString() }
+        : s
+    )
+    setVariableSets(updated)
+    persistSets(updated)
+    setSetUpdateFeedback(true)
+    setTimeout(() => setSetUpdateFeedback(false), 1500)
+  }
+
+  const handleDeleteSet = (setId: string) => {
+    const updated = variableSets.filter(s => s.id !== setId)
+    setVariableSets(updated)
+    persistSets(updated)
+    if (activeSetId === setId) setActiveSetId(null)
   }
 
   const calculateDiff = (oldText: string, newText: string) => {
@@ -766,19 +867,201 @@ export default function WorkbenchPage() {
             </p>
           </div>
 
+          {/* Fill Variables & Copy */}
           <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600' }}>
-              Variables Found
-            </label>
-            <div style={{ padding: '0.75rem', backgroundColor: 'var(--color-background)', borderRadius: '0.5rem', minHeight: '2rem' }}>
-              {variables ? (
-                <span style={{ fontFamily: 'monospace', fontSize: '0.875rem', color: 'var(--color-accent)' }}>
-                  {variables}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <label style={{ fontWeight: '600' }}>
+                📋 Fill Variables
+              </label>
+              {promptContent.trim() && (
+                <button
+                  onClick={handleCopyFilled}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.375rem',
+                    padding: '0.375rem 0.875rem',
+                    backgroundColor: fillCopied ? 'var(--color-success)' : 'var(--color-accent)',
+                    color: '#1d2021',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: '700',
+                    transition: 'all 0.2s ease',
+                    fontFamily: '\'Fraunces\', serif',
+                  }}
+                >
+                  {fillCopied ? '✓ Copied!' : '⎘ Copy Filled Prompt'}
+                </button>
+              )}
+            </div>
+
+            {Object.keys(testVariables).length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {Object.entries(testVariables).map(([key]) => (
+                  <div key={key}>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '0.25rem',
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      color: 'var(--color-accent)',
+                      fontFamily: '\'JetBrains Mono\', monospace',
+                    }}>
+                      {'{' + key + '}'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={`Value for ${key}…`}
+                      value={testVariables[key]}
+                      onChange={(e) => {
+                        setTestVariables({ ...testVariables, [key]: e.target.value })
+                        setActiveSetId(null)
+                      }}
+                      className="input"
+                      style={{ width: '100%', fontSize: '0.875rem' }}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>
+                {promptContent.trim()
+                  ? 'No variables detected — use {variable_name} syntax in your prompt.'
+                  : 'Variables you add with {variable_name} syntax will appear here to fill in.'}
+              </p>
+            )}
+
+            {/* Saved Sets */}
+            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.625rem' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--color-foregroundAlt)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Saved Sets
                 </span>
+                <div style={{ display: 'flex', gap: '0.375rem' }}>
+                  {activeSetId && (
+                    <button
+                      onClick={handleUpdateSet}
+                      style={{
+                        padding: '0.25rem 0.625rem',
+                        backgroundColor: setUpdateFeedback ? 'var(--color-success)' : 'transparent',
+                        border: `1px solid ${setUpdateFeedback ? 'var(--color-success)' : 'var(--color-accent)'}`,
+                        borderRadius: '0.375rem',
+                        cursor: 'pointer',
+                        fontSize: '0.72rem',
+                        fontWeight: '600',
+                        color: setUpdateFeedback ? '#1d2021' : 'var(--color-accent)',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      {setUpdateFeedback ? '✓ Saved' : '↑ Update'}
+                    </button>
+                  )}
+                  {!showSaveSetInput && (
+                    <button
+                      onClick={() => setShowSaveSetInput(true)}
+                      style={{
+                        padding: '0.25rem 0.625rem',
+                        backgroundColor: 'var(--color-accent)',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        cursor: 'pointer',
+                        fontSize: '0.72rem',
+                        fontWeight: '700',
+                        color: '#1d2021',
+                      }}
+                    >
+                      + Save Set
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {showSaveSetInput && (
+                <div style={{ display: 'flex', gap: '0.375rem', marginBottom: '0.625rem' }}>
+                  <input
+                    type="text"
+                    placeholder="Set name…"
+                    value={newSetName}
+                    onChange={(e) => setNewSetName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveSet()
+                      if (e.key === 'Escape') { setShowSaveSetInput(false); setNewSetName('') }
+                    }}
+                    autoFocus
+                    className="input"
+                    style={{ flex: 1, fontSize: '0.8rem' }}
+                  />
+                  <button
+                    onClick={handleSaveSet}
+                    style={{ padding: '0.25rem 0.625rem', backgroundColor: 'var(--color-accent)', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '700', color: '#1d2021' }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => { setShowSaveSetInput(false); setNewSetName('') }}
+                    style={{ padding: '0.25rem 0.5rem', backgroundColor: 'transparent', border: '1px solid var(--color-border)', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {variableSets.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                  {variableSets.map((set) => {
+                    const isActive = activeSetId === set.id
+                    return (
+                      <div
+                        key={set.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.375rem',
+                          padding: '0.375rem 0.625rem',
+                          backgroundColor: isActive ? 'rgba(254,128,25,0.08)' : 'var(--color-background)',
+                          border: `1px solid ${isActive ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                          borderRadius: '0.375rem',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <button
+                          onClick={() => handleLoadSet(set)}
+                          style={{
+                            flex: 1,
+                            textAlign: 'left',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            fontWeight: isActive ? '600' : '400',
+                            color: isActive ? 'var(--color-accent)' : 'var(--color-foreground)',
+                            padding: 0,
+                          }}
+                        >
+                          {isActive && '▸ '}{set.name}
+                        </button>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--color-foregroundAlt)' }}>
+                          {Object.keys(set.values).length}v
+                        </span>
+                        <button
+                          onClick={() => handleDeleteSet(set.id)}
+                          title="Delete set"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', color: 'var(--color-foregroundAlt)', padding: '0 0.125rem', lineHeight: 1, opacity: 0.7 }}
+                          onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--color-error)' }}
+                          onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; e.currentTarget.style.color = 'var(--color-foregroundAlt)' }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
               ) : (
-                <span style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>
-                  None yet
-                </span>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', fontStyle: 'italic' }}>
+                  No saved sets yet
+                </p>
               )}
             </div>
           </div>
@@ -1021,12 +1304,6 @@ export default function WorkbenchPage() {
           </div>
 
           <div className="btn-group-mobile" style={{ display: 'flex', gap: '1rem' }}>
-            <button
-              className="btn btn-primary"
-              onClick={extractVariables}
-            >
-              Extract Variables
-            </button>
             <button
               className="btn btn-primary"
               onClick={savePrompt}

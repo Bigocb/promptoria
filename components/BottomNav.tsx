@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useAuth } from '@/app/providers'
 
 const navItems = [
   { label: 'Workbench', href: '/prompts', icon: '⚡' },
@@ -12,6 +13,13 @@ const navItems = [
 
 export function BottomNav() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { logout } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+    router.push('/auth/login')
+  }
 
   return (
     <nav className="bottom-nav">
@@ -25,6 +33,10 @@ export function BottomNav() {
           <span className="bottom-nav-label">{item.label}</span>
         </Link>
       ))}
+      <button onClick={handleLogout} className="bottom-nav-item bottom-nav-logout">
+        <span className="bottom-nav-icon">⏻</span>
+        <span className="bottom-nav-label">Logout</span>
+      </button>
     </nav>
   )
 }
