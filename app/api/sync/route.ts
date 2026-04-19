@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
     // Get user's workspace to filter changes
     const userWorkspace = await prisma.workspace.findFirst({
-      where: { userId },
+      where: { user_id: userId },
     })
 
     if (!userWorkspace) {
