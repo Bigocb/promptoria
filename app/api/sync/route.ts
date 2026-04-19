@@ -77,17 +77,56 @@ export async function GET(request: NextRequest) {
       take: 100,  // Pagination: max 100 changes per request
     })
 
+    // Fetch full data for each change (for client sync)
+    const changesWithData = await Promise.all(
+      changes.map(async (change) => {
+        let fullData = change.data
+
+        // Fetch full entity data for the client
+        if (change.entity_type === 'prompt') {
+          if (change.action === 'delete') {
+            // For deletes, we already have the snapshot in data
+          } else {
+            const prompt = await prisma.prompt.findUnique({
+              where: { id: change.entity_id },
+              include: {
+                versions: {
+                  where: { is_active: true },
+                  orderBy: { version_number: 'desc' },
+                  take: 1,
+                },
+              },
+            })
+            if (prompt) {
+              fullData = {
+                id: prompt.id,
+                name: prompt.name,
+                description: prompt.description,
+                tags: prompt.tags,
+                model: prompt.model,
+                version: prompt.versions[0] || null,
+                updated_at: prompt.updated_at,
+              }
+            }
+          }
+        }
+
+        return {
+          action: change.action,
+          entity_type: change.entity_type,
+          entity_id: change.entity_id,
+          changed_at: change.changed_at.toISOString(),
+          data: fullData,
+        }
+      })
+    )
+
     // Build response
     const now = new Date()
     return NextResponse.json(
       {
         synced_at: now.toISOString(),
-        changes: changes.map(change => ({
-          action: change.action,  // "create", "update", "delete"
-          entity_type: change.entity_type,  // "prompt", "snippet", etc.
-          entity_id: change.entity_id,
-          data: change.data,  // Snapshot of changes
-        })),
+        changes: changesWithData,
         conflicts: [],  // Future: detect conflicts here
       },
       { status: 200 }

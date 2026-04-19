@@ -52,9 +52,48 @@ model Workspace {
   updated_at DateTime @default(now()) @updatedAt @db.Timestamp(6)
 
   user      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  prompts   Prompt[]
   sync_logs SyncLog[]
 
   @@map("workspaces")
+}
+
+// Prompt - prompt template
+model Prompt {
+  id            String   @id @default(cuid()) @db.VarChar(36)
+  name          String   @db.VarChar(255)
+  description   String?  @db.Text
+  workspace_id  String   @db.VarChar(36)
+  tags          Json?    @db.Json // Array of tags
+  model         String   @default("claude-3-haiku") @db.VarChar(100)
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  workspace Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  versions  PromptVersion[]
+
+  @@unique([workspace_id, name])
+  @@index([workspace_id])
+  @@map("prompts")
+}
+
+// PromptVersion - immutable snapshot of a prompt
+model PromptVersion {
+  id              String   @id @default(cuid()) @db.VarChar(36)
+  version_number  Int
+  prompt_id       String   @db.VarChar(36)
+  template_body   String   @db.Text
+  model_config    Json?    @db.Json // {temperature, maxTokens, topP, etc}
+  change_log      String?  @db.Text
+  created_by      String?  @db.VarChar(255)
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+
+  prompt Prompt @relation(fields: [prompt_id], references: [id], onDelete: Cascade)
+
+  @@unique([prompt_id, version_number])
+  @@index([prompt_id])
+  @@map("prompt_versions")
 }
 
 // SyncLog - change tracking for offline-first sync
