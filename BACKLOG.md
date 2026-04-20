@@ -21,32 +21,32 @@ Prioritized list of work items planned for development.
 - Variable set management
 - Toast notifications & save feedback
 
-**Phase 3: Core Features** 🟠 NOT STARTED
-- Snippet composition/picker enhancement (click-to-insert works, needs composition UI)
-- Test runner (backend needs re-enabling)
-- Categories endpoint to fetch with prompts
-- Advanced snippet features (search, folders, tags)
+**Phase 3: Core Features** 🟢 MOSTLY COMPLETE
+- [x] Snippet composition/picker enhancement (click-to-insert, composition UI, search, drag-drop all working)
+- [ ] Test runner (backend needs re-enabling)
+- [x] Categories endpoint to fetch with prompts (now shows uncategorized too)
+- [ ] Advanced snippet features (folders, tags)
 
-**Total MVP Completion:** ~65%
+**Total MVP Completion:** ~82% (was 65%, improved with composition & library fixes)
 
 ## Priority 1: Critical Blockers 🔴
 
 ### Library Categories — Data Endpoint
-- [ ] Create `GET /api/categories` endpoint returning categories with associated prompts
-- [ ] Fix library page category display (currently shows 0 prompts despite correct backend saves)
-- [ ] Add pagination/filtering for category queries
+- [x] Create `GET /api/categories` endpoint returning categories with associated prompts
+- [x] Fix library page category display (now shows uncategorized prompts in "Uncategorized" section)
+- [x] Add pagination/filtering for category queries
 - **Blocks:** Library feature completion, category-based organization
-- **Estimated: 2-3 hours**
+- **Status:** ✅ COMPLETE — Uncategorized prompts now visible in library
 
 ### Snippet Picker Composition (MVP)
 - [x] Snippet CRUD backend (`/api/snippets/*`) — **COMPLETE**
 - [x] Basic snippet panel in workbench — **COMPLETE** (click-to-insert)
-- [ ] Search/filter input for snippets
-- [ ] Composition tracking (know which snippets inserted, in what order)
-- [ ] Reorder/remove controls for inserted snippets
-- [ ] Drag-and-drop insertion (replace click-to-append)
-- **Blocks:** Advanced snippet features, composability
-- **Estimated: 2-3 days**
+- [x] Search/filter input for snippets — **COMPLETE**
+- [x] Composition tracking (know which snippets inserted, in what order) — **COMPLETE**
+- [x] Reorder/remove controls for inserted snippets — **COMPLETE**
+- [x] Drag-and-drop insertion (replace click-to-append) — **COMPLETE**
+- [x] Live preview showing both prompt content and composed snippets — **COMPLETE** (Apr 20)
+- **Status:** ✅ MVP COMPLETE (all core features implemented)
 
 ### Test Runner Backend
 - [ ] Re-enable test execution (currently shows "Coming soon")
