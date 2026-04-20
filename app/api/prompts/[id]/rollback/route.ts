@@ -31,11 +31,11 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { target_version_number } = body
+    const { version_id } = body
 
-    if (!target_version_number) {
+    if (!version_id) {
       return NextResponse.json(
-        { error: 'target_version_number is required' },
+        { error: 'version_id is required' },
         { status: 400 }
       )
     }
@@ -52,15 +52,14 @@ export async function POST(
       )
     }
 
-    // Get the target version
-    const targetVersion = await prisma.promptVersion.findFirst({
+    // Get the target version by id
+    const targetVersion = await prisma.promptVersion.findUnique({
       where: {
-        prompt_id: params.id,
-        version_number: target_version_number,
+        id: version_id,
       },
     })
 
-    if (!targetVersion) {
+    if (!targetVersion || targetVersion.prompt_id !== params.id) {
       return NextResponse.json(
         { error: 'Target version not found' },
         { status: 404 }
@@ -87,7 +86,7 @@ export async function POST(
         version_number: latestVersion.version_number + 1,
         template_body: targetVersion.template_body,
         model_config: targetVersion.model_config,
-        change_log: `Rolled back to version ${target_version_number}`,
+        change_log: `Rolled back to version ${targetVersion.version_number}`,
         created_by: userId,
       },
     })
@@ -101,14 +100,14 @@ export async function POST(
         entity_id: newVersion.id,
         data: {
           from_version: latestVersion.version_number,
-          to_version: target_version_number,
+          to_version: targetVersion.version_number,
         },
       },
     })
 
     return NextResponse.json(
       {
-        message: `Rolled back to version ${target_version_number}`,
+        message: `Rolled back to version ${targetVersion.version_number}`,
         new_version: newVersion,
       },
       { status: 201 }

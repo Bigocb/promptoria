@@ -24,7 +24,7 @@ interface AgentInteractionType {
   name: string
   description?: string
   emoji?: string
-  categories: PromptCategory[]
+  categories?: PromptCategory[]
 }
 
 export default function LibraryPage() {
@@ -181,7 +181,7 @@ export default function LibraryPage() {
                 )}
               </div>
 
-              {selectedType.categories.length === 0 ? (
+              {!selectedType.categories || selectedType.categories.length === 0 ? (
                 <div className="card">
                   <p style={{ color: 'var(--color-foregroundAlt)' }}>
                     No categories in this agent type yet
@@ -189,7 +189,7 @@ export default function LibraryPage() {
                 </div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
-                  {selectedType.categories.map((category) => (
+                  {(selectedType.categories || []).map((category) => (
                     <div key={category.id} className="card">
                       <button
                         onClick={() => toggleCategoryExpansion(category.id)}
@@ -221,9 +221,9 @@ export default function LibraryPage() {
                         </span>
                       </button>
 
-                      {expandedCategories.has(category.id) && category.prompts.length > 0 && (
+                      {expandedCategories.has(category.id) && (category.prompts?.length ?? 0) > 0 && (
                         <div style={{ borderTop: '2px solid var(--color-border)', paddingTop: '0.75rem' }}>
-                          {category.prompts.map((prompt) => (
+                          {(category.prompts || []).map((prompt) => (
                             <div
                               key={prompt.id}
                               onClick={() => router.push(`/prompts?load=${prompt.id}`)}
@@ -259,14 +259,14 @@ export default function LibraryPage() {
                         </div>
                       )}
 
-                      {expandedCategories.has(category.id) && category.prompts.length === 0 && (
+                      {expandedCategories.has(category.id) && (category.prompts?.length ?? 0) === 0 && (
                         <div style={{ padding: '0.75rem', color: 'var(--color-foregroundAlt)', fontSize: '0.875rem' }}>
                           No prompts in this category yet
                         </div>
                       )}
 
                       <div style={{ padding: '0.5rem 1rem 0', fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>
-                        {category.prompts.length} prompt{category.prompts.length !== 1 ? 's' : ''}
+                        {(category.prompts?.length ?? 0)} prompt{(category.prompts?.length ?? 0) !== 1 ? 's' : ''}
                       </div>
                     </div>
                   ))}

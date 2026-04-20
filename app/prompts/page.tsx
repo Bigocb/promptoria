@@ -548,11 +548,12 @@ export default function WorkbenchPage() {
     if (activeSetId === setId) setActiveSetId(null)
   }
 
-  const calculateDiff = (oldText: string, newText: string) => {
+  // Fine-grained diff: character-level changes within lines
+  const calculateFineDiff = (oldText: string, newText: string) => {
     const oldLines = oldText.split('\n')
     const newLines = newText.split('\n')
     const maxLength = Math.max(oldLines.length, newLines.length)
-    const diffs: Array<{ type: 'add' | 'remove' | 'common'; line: string }> = []
+    const diffs: Array<{ type: 'add' | 'remove' | 'common' | 'modified'; line: string; chunks?: Array<{ type: string; text: string }> }> = []
 
     for (let i = 0; i < maxLength; i++) {
       const oldLine = oldLines[i]
@@ -562,7 +563,11 @@ export default function WorkbenchPage() {
         if (oldLine !== undefined) {
           diffs.push({ type: 'common', line: oldLine })
         }
+      } else if (oldLine !== undefined && newLine !== undefined) {
+        // Both exist but differ - show character-level diff within the line
+        diffs.push({ type: 'modified', line: newLine, chunks: getCharDiffs(oldLine, newLine) })
       } else {
+        // One is added, one is removed
         if (oldLine !== undefined) {
           diffs.push({ type: 'remove', line: oldLine })
         }
@@ -573,6 +578,94 @@ export default function WorkbenchPage() {
     }
 
     return diffs
+  }
+
+  // Character-level diff helper
+  const getCharDiffs = (oldStr: string, newStr: string): Array<{ type: string; text: string }> => {
+    const chunks: Array<{ type: string; text: string }> = []
+    let oldIdx = 0, newIdx = 0
+
+    while (oldIdx < oldStr.length || newIdx < newStr.length) {
+      if (oldStr[oldIdx] === newStr[newIdx]) {
+        chunks.push({ type: 'common', text: oldStr[oldIdx] || '' })
+        oldIdx++
+        newIdx++
+      } else {
+        let removed = '', added = ''
+        while (oldIdx < oldStr.length && oldStr[oldIdx] !== newStr[newIdx]) {
+          removed += oldStr[oldIdx]
+          oldIdx++
+        }
+        while (newIdx < newStr.length && oldStr[oldIdx] !== newStr[newIdx]) {
+          added += newStr[newIdx]
+          newIdx++
+        }
+        if (removed) chunks.push({ type: 'remove', text: removed })
+        if (added) chunks.push({ type: 'add', text: added })
+      }
+    }
+    return chunks
+  }
+
+  const calculateDiff = calculateFineDiff
+
+  // Rollback to a previous version
+  const handleRollback = async (version: PromptVersion) => {
+    if (!confirm(`Restore this prompt to v${version.version_number}?`)) return
+
+    if (!loadedPromptId) {
+      alert('Prompt ID not found')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.prompts.rollback(loadedPromptId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          version_id: version.id,
+        }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        alert(`Rollback failed: ${error.error || 'Unknown error'}`)
+        return
+      }
+
+      // Load the restored version
+      setPromptContent(version.template_body)
+      setSelectedVersionForView(version)
+      alert(`Restored to v${version.version_number}`)
+
+      // Reload prompt to get updated versions list
+      if (loadedPromptId) loadPrompt(loadedPromptId)
+    } catch (error) {
+      alert(`Error rolling back: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // Export version as file
+  const handleExportVersion = (version: PromptVersion) => {
+    const data = {
+      name: promptName,
+      version_number: version.version_number,
+      created_at: version.created_at,
+      template_body: version.template_body,
+      config: version.config,
+    }
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${promptName}-v${version.version_number}.json`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const toggleSuggestionFocus = (focus: SuggestionFocus) => {
@@ -1944,23 +2037,56 @@ export default function WorkbenchPage() {
                                         ? 'rgba(142, 192, 124, 0.2)'
                                         : diff.type === 'remove'
                                           ? 'rgba(204, 36, 29, 0.2)'
-                                          : 'transparent',
+                                          : diff.type === 'modified'
+                                            ? 'rgba(184, 187, 38, 0.1)'
+                                            : 'transparent',
                                     padding: '0.125rem 0.25rem',
                                     display: 'block',
                                   }}
                                 >
-                                  <span style={{
-                                    color:
-                                      diff.type === 'add'
-                                        ? '#8ec07c'
-                                        : diff.type === 'remove'
-                                          ? '#cc241d'
-                                          : 'inherit',
-                                  }}>
-                                    {diff.type === 'add' && '+ '}
-                                    {diff.type === 'remove' && '- '}
-                                    {diff.line}
-                                  </span>
+                                  {diff.type === 'modified' && diff.chunks ? (
+                                    <span>
+                                      ~ {' '}
+                                      {diff.chunks.map((chunk, chunkIdx) => (
+                                        <span
+                                          key={chunkIdx}
+                                          style={{
+                                            backgroundColor:
+                                              chunk.type === 'add'
+                                                ? 'rgba(142, 192, 124, 0.4)'
+                                                : chunk.type === 'remove'
+                                                  ? 'rgba(204, 36, 29, 0.4)'
+                                                  : 'transparent',
+                                            color:
+                                              chunk.type === 'add'
+                                                ? '#8ec07c'
+                                                : chunk.type === 'remove'
+                                                  ? '#cc241d'
+                                                  : 'inherit',
+                                            textDecoration:
+                                              chunk.type === 'remove'
+                                                ? 'line-through'
+                                                : 'none',
+                                          }}
+                                        >
+                                          {chunk.text}
+                                        </span>
+                                      ))}
+                                    </span>
+                                  ) : (
+                                    <span style={{
+                                      color:
+                                        diff.type === 'add'
+                                          ? '#8ec07c'
+                                          : diff.type === 'remove'
+                                            ? '#cc241d'
+                                            : 'inherit',
+                                    }}>
+                                      {diff.type === 'add' && '+ '}
+                                      {diff.type === 'remove' && '- '}
+                                      {diff.line}
+                                    </span>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -1986,6 +2112,44 @@ export default function WorkbenchPage() {
                           }}
                         >
                           Load into Editor
+                        </button>
+
+                        {/* Rollback Button */}
+                        <button
+                          onClick={() => handleRollback(selectedVersionForView)}
+                          style={{
+                            padding: '0.375rem 0.5rem',
+                            backgroundColor: 'var(--color-background)',
+                            border: '1px solid rgba(204, 36, 29, 0.5)',
+                            borderRadius: '0.25rem',
+                            cursor: 'pointer',
+                            fontSize: '0.65rem',
+                            color: '#cc241d',
+                            fontWeight: '500',
+                            width: '100%',
+                            marginTop: '0.375rem',
+                          }}
+                        >
+                          ↺ Rollback to v{selectedVersionForView.version_number}
+                        </button>
+
+                        {/* Export Button */}
+                        <button
+                          onClick={() => handleExportVersion(selectedVersionForView)}
+                          style={{
+                            padding: '0.375rem 0.5rem',
+                            backgroundColor: 'var(--color-background)',
+                            border: '1px solid rgba(142, 192, 124, 0.5)',
+                            borderRadius: '0.25rem',
+                            cursor: 'pointer',
+                            fontSize: '0.65rem',
+                            color: '#8ec07c',
+                            fontWeight: '500',
+                            width: '100%',
+                            marginTop: '0.375rem',
+                          }}
+                        >
+                          ↓ Export as JSON
                         </button>
                       </>
                     )}
