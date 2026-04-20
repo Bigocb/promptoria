@@ -136,6 +136,11 @@ export default function WorkbenchPage() {
   const [testLoading, setTestLoading] = useState(false)
   const [testResults, setTestResults] = useState<TestResult[]>([])
   const [lastTestRunId, setLastTestRunId] = useState<string | null>(null)
+  const [compareMode, setCompareMode] = useState(false)
+  const [compareTestId, setCompareTestId] = useState<string | null>(null)
+  const [bulkTestInput, setBulkTestInput] = useState('')
+  const [bulkResults, setBulkResults] = useState<Array<{ input: string; output: string; tokens: number; cost: number }>>([])
+  const [showBulkPanel, setShowBulkPanel] = useState(false)
   const [showVersionHistory, setShowVersionHistory] = useState(false)
   const [versions, setVersions] = useState<PromptVersion[]>([])
   const [activeMobileSection, setActiveMobileSection] = useState<string>('refine')
@@ -984,6 +989,28 @@ export default function WorkbenchPage() {
     } finally {
       setTestLoading(false)
     }
+  }
+
+  // Simple diff function to highlight differences
+  const highlightDiff = (text1: string, text2: string) => {
+    const lines1 = text1.split('\n')
+    const lines2 = text2.split('\n')
+    const maxLines = Math.max(lines1.length, lines2.length)
+    const diffs: Array<{ type: 'add' | 'remove' | 'same'; text: string }> = []
+
+    for (let i = 0; i < maxLines; i++) {
+      const line1 = lines1[i] || ''
+      const line2 = lines2[i] || ''
+
+      if (line1 === line2) {
+        diffs.push({ type: 'same', text: line1 })
+      } else {
+        if (line1) diffs.push({ type: 'remove', text: line1 })
+        if (line2) diffs.push({ type: 'add', text: line2 })
+      }
+    }
+
+    return diffs
   }
 
   const deleteTestRun = async (testRunId: string) => {
@@ -2289,14 +2316,174 @@ export default function WorkbenchPage() {
                   </div>
                 )}
 
-                <button
-                  className="btn btn-primary"
-                  onClick={runTest}
-                  disabled={testLoading}
-                  style={{ width: '100%', marginBottom: '0.75rem', fontSize: '0.75rem' }}
-                >
-                  {testLoading ? '⏳ Running...' : '▶ Run Test'}
-                </button>
+                <div style={{ display: 'flex', gap: '0.375rem', marginBottom: '0.75rem' }}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={runTest}
+                    disabled={testLoading}
+                    style={{ flex: 1, fontSize: '0.75rem' }}
+                  >
+                    {testLoading ? '⏳ Running...' : '▶ Run Test'}
+                  </button>
+                  <button
+                    onClick={() => setShowBulkPanel(!showBulkPanel)}
+                    style={{
+                      padding: '0.375rem 0.625rem',
+                      backgroundColor: showBulkPanel ? 'var(--color-accent)' : 'var(--color-surface)',
+                      border: `1px solid ${showBulkPanel ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      color: showBulkPanel ? '#1d2021' : 'var(--color-foreground)',
+                      fontWeight: showBulkPanel ? '500' : '400',
+                    }}
+                    title="Bulk test with multiple inputs"
+                  >
+                    {showBulkPanel ? '✓' : '📊'} Bulk
+                  </button>
+                </div>
+
+                {showBulkPanel && (
+                  <div style={{ marginBottom: '0.75rem', padding: '0.5rem', backgroundColor: 'var(--color-backgroundAlt)', borderRadius: '0.375rem', border: '1px solid var(--color-border)' }}>
+                    <label style={{ display: 'block', marginBottom: '0.375rem', fontWeight: '500', fontSize: '0.75rem' }}>
+                      Bulk Test Inputs
+                    </label>
+                    <p style={{ fontSize: '0.65rem', color: 'var(--color-foregroundAlt)', marginBottom: '0.375rem' }}>
+                      One input per line. Variables will be substituted.
+                    </p>
+                    <textarea
+                      value={bulkTestInput}
+                      onChange={(e) => setBulkTestInput(e.target.value)}
+                      placeholder="Input 1&#10;Input 2&#10;Input 3"
+                      className="input"
+                      style={{
+                        width: '100%',
+                        minHeight: '100px',
+                        fontSize: '0.7rem',
+                        fontFamily: 'monospace',
+                        marginBottom: '0.375rem',
+                      }}
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!bulkTestInput.trim()) {
+                          alert('Please enter at least one input')
+                          return
+                        }
+
+                        const inputs = bulkTestInput.split('\n').filter(line => line.trim())
+                        setTestLoading(true)
+                        const results: typeof bulkResults = []
+
+                        for (const input of inputs) {
+                          try {
+                            const token = localStorage.getItem('auth-token')
+                            const res = await fetch(API_ENDPOINTS.execute.run, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`,
+                              },
+                              body: JSON.stringify({
+                                prompt_version_id: currentPromptVersionId,
+                                test_case_input: input,
+                                model: testModel,
+                                temperature: testTemperature,
+                                max_tokens: testMaxTokens,
+                              })
+                            })
+
+                            if (res.ok) {
+                              const result = await res.json()
+                              const selectedModelInfo = ollamaModels.find(m => m.id === testModel)
+                              const inputPrice = selectedModelInfo?.inputPrice || 0
+                              const outputPrice = selectedModelInfo?.outputPrice || 0
+                              const estimatedInputTokens = Math.ceil(input.length / 4)
+                              const estimatedOutputTokens = Math.ceil((result.output?.length || 0) / 4)
+                              const totalTokens = result.total_tokens || (estimatedInputTokens + estimatedOutputTokens)
+                              const inputCost = (estimatedInputTokens / 1000000) * inputPrice
+                              const outputCost = (estimatedOutputTokens / 1000000) * outputPrice
+
+                              results.push({
+                                input: input.substring(0, 50) + (input.length > 50 ? '...' : ''),
+                                output: result.output,
+                                tokens: totalTokens,
+                                cost: inputCost + outputCost,
+                              })
+                            }
+                          } catch (error) {
+                            console.error('Bulk test error:', error)
+                          }
+                        }
+
+                        setBulkResults(results)
+                        setTestLoading(false)
+                      }}
+                      disabled={testLoading || !bulkTestInput.trim()}
+                      className="btn btn-primary"
+                      style={{ width: '100%', fontSize: '0.7rem' }}
+                    >
+                      {testLoading ? '⏳ Running...' : `▶ Run ${bulkTestInput.split('\n').filter(l => l.trim()).length} Tests`}
+                    </button>
+                  </div>
+                )}
+
+                {bulkResults.length > 0 && (
+                  <div style={{ marginBottom: '0.75rem', padding: '0.5rem', backgroundColor: 'var(--color-backgroundAlt)', borderRadius: '0.375rem', border: '1px solid var(--color-border)' }}>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--color-foregroundAlt)', marginBottom: '0.375rem', fontWeight: '500' }}>
+                      Results ({bulkResults.length})
+                    </p>
+                    <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                      <table style={{
+                        width: '100%',
+                        borderCollapse: 'collapse',
+                        fontSize: '0.65rem',
+                      }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            <th style={{ textAlign: 'left', padding: '0.25rem', color: 'var(--color-foregroundAlt)' }}>Input</th>
+                            <th style={{ textAlign: 'right', padding: '0.25rem', color: 'var(--color-foregroundAlt)' }}>Tokens</th>
+                            <th style={{ textAlign: 'right', padding: '0.25rem', color: 'var(--color-foregroundAlt)' }}>Cost</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bulkResults.map((result, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                              <td style={{ padding: '0.25rem', color: 'var(--color-foreground)' }}>{result.input}</td>
+                              <td style={{ textAlign: 'right', padding: '0.25rem', color: 'var(--color-foreground)' }}>{result.tokens}</td>
+                              <td style={{ textAlign: 'right', padding: '0.25rem', color: 'var(--color-accent)' }}>${result.cost.toFixed(6)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const csv = ['Input,Tokens,Cost', ...bulkResults.map(r => `"${r.input}",${r.tokens},${r.cost.toFixed(6)}`)].join('\n')
+                        const blob = new Blob([csv], { type: 'text/csv' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = `bulk-test-results-${new Date().toISOString().split('T')[0]}.csv`
+                        a.click()
+                        URL.revokeObjectURL(url)
+                      }}
+                      style={{
+                        marginTop: '0.375rem',
+                        width: '100%',
+                        padding: '0.375rem',
+                        fontSize: '0.65rem',
+                        backgroundColor: 'var(--color-surface)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '0.25rem',
+                        cursor: 'pointer',
+                        color: 'var(--color-foreground)',
+                      }}
+                    >
+                      📥 Export CSV
+                    </button>
+                  </div>
+                )}
 
                 {(testOutput || testError) && (
                   <div style={{ marginBottom: '0.75rem' }}>
@@ -2418,6 +2605,21 @@ export default function WorkbenchPage() {
                               📋 Copy
                             </button>
                             <button
+                              onClick={() => setCompareMode(!compareMode)}
+                              style={{
+                                flex: 1,
+                                padding: '0.375rem',
+                                fontSize: '0.65rem',
+                                backgroundColor: compareMode ? 'var(--color-accent)' : 'var(--color-surface)',
+                                border: `1px solid ${compareMode ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                                borderRadius: '0.25rem',
+                                cursor: 'pointer',
+                                color: compareMode ? '#1d2021' : 'var(--color-foreground)',
+                              }}
+                            >
+                              {compareMode ? '✓ A/B' : 'A/B'}
+                            </button>
+                            <button
                               onClick={() => deleteTestRun(lastResult.id)}
                               style={{
                                 flex: 1,
@@ -2433,6 +2635,99 @@ export default function WorkbenchPage() {
                               🗑️ Delete
                             </button>
                           </div>
+
+                          {compareMode && (
+                            <div style={{ marginTop: '0.375rem' }}>
+                              <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '500', fontSize: '0.65rem' }}>
+                                Compare to
+                              </label>
+                              <select
+                                value={compareTestId || ''}
+                                onChange={(e) => setCompareTestId(e.target.value || null)}
+                                className="input"
+                                style={{ width: '100%', fontSize: '0.65rem', marginBottom: '0.375rem' }}
+                              >
+                                <option value="">Select a test to compare...</option>
+                                {testResults.filter(r => r.id !== lastResult.id).map(r => (
+                                  <option key={r.id} value={r.id}>
+                                    {r.model} @ {r.timestamp}
+                                  </option>
+                                ))}
+                              </select>
+
+                              {compareTestId && (() => {
+                                const compareResult = testResults.find(r => r.id === compareTestId)
+                                if (!compareResult) return null
+
+                                const diffs = highlightDiff(testOutput, compareResult.output)
+
+                                return (
+                                  <div style={{
+                                    backgroundColor: 'var(--color-background)',
+                                    border: '1px solid var(--color-border)',
+                                    borderRadius: '0.375rem',
+                                    padding: '0.375rem',
+                                    fontSize: '0.65rem',
+                                    fontFamily: 'monospace',
+                                    maxHeight: '200px',
+                                    overflowY: 'auto',
+                                  }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem', marginBottom: '0.375rem' }}>
+                                      <div style={{ fontSize: '0.6rem', color: 'var(--color-foregroundAlt)', fontWeight: '500' }}>
+                                        Current
+                                      </div>
+                                      <div style={{ fontSize: '0.6rem', color: 'var(--color-foregroundAlt)', fontWeight: '500' }}>
+                                        Compare
+                                      </div>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem' }}>
+                                      {/* Current output */}
+                                      <div style={{
+                                        padding: '0.25rem',
+                                        backgroundColor: 'var(--color-backgroundAlt)',
+                                        borderRadius: '0.2rem',
+                                        maxHeight: '150px',
+                                        overflowY: 'auto',
+                                      }}>
+                                        {testOutput.split('\n').map((line, i) => (
+                                          <div key={i} style={{ color: 'var(--color-foreground)' }}>
+                                            {line}
+                                          </div>
+                                        ))}
+                                      </div>
+
+                                      {/* Comparison output */}
+                                      <div style={{
+                                        padding: '0.25rem',
+                                        backgroundColor: 'var(--color-backgroundAlt)',
+                                        borderRadius: '0.2rem',
+                                        maxHeight: '150px',
+                                        overflowY: 'auto',
+                                      }}>
+                                        {compareResult.output.split('\n').map((line, i) => (
+                                          <div key={i} style={{ color: 'var(--color-foreground)' }}>
+                                            {line}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    {/* Metadata comparison */}
+                                    <div style={{ marginTop: '0.375rem', fontSize: '0.6rem', color: 'var(--color-foregroundAlt)' }}>
+                                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem' }}>
+                                        <div>
+                                          <strong>Current:</strong> {lastResult.totalTokens} tokens, ${lastResult.totalCost?.toFixed(6)}
+                                        </div>
+                                        <div>
+                                          <strong>Compare:</strong> {compareResult.totalTokens} tokens, ${compareResult.totalCost?.toFixed(6)}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })()}
+                            </div>
+                          )}
                         </>
                       )
                     })()}
