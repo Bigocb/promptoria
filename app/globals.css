@@ -89,13 +89,16 @@
 
   .sidebar-layout-grid {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 280px 1fr 350px;
     gap: 2rem;
     width: 100%;
   }
 
   .sidebar-layout-grid aside {
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
   }
 
   .sidebar-layout-grid main {
@@ -106,6 +109,10 @@
     .sidebar-layout-grid {
       grid-template-columns: 1fr;
       gap: 1rem;
+    }
+
+    .sidebar-layout-grid aside {
+      flex-direction: column;
     }
   }
 }
@@ -133,7 +140,55 @@
   color: var(--color-accent);
 }
 
+/* Workbench Mobile/Desktop Layout */
+.mobile-section-tabs {
+  display: none;
+}
+
+.mobile-section-hidden {
+  display: none;
+}
+
+.btn-group-mobile {
+  display: none;
+}
+
+/* Desktop: Show all sections normally, hide tabs */
+@media (min-width: 1025px) {
+  .mobile-section-tabs {
+    display: none;
+  }
+
+  .mobile-section-hidden {
+    display: block !important;
+  }
+
+  .btn-group-mobile {
+    display: none;
+  }
+}
+
 /* Mobile styles */
+@media (max-width: 1024px) {
+  /* Show mobile tabs and buttons */
+  .mobile-section-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  /* Hide sections that aren't active */
+  .mobile-section-hidden {
+    display: none;
+  }
+
+  /* Show mobile button group */
+  .btn-group-mobile {
+    display: flex;
+  }
+}
+
 @media (max-width: 767px) {
   .bottom-nav {
     display: flex;
