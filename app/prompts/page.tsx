@@ -430,10 +430,38 @@ export default function WorkbenchPage() {
       return
     }
 
-    // NOTE: Tag suggestions endpoint not yet implemented in new backend
-    // This feature will be added in a future update
-    alert('Tag suggestions feature is not yet available in the new backend. Coming soon!')
-    return
+    if (!loadedPromptId) {
+      alert('Please save the prompt first to get tag suggestions')
+      return
+    }
+
+    setTagsLoading(true)
+    try {
+      const token = localStorage.getItem('auth-token')
+
+      // Call the new tag suggestions endpoint
+      const res = await fetch(`${API_ENDPOINTS.prompts.detail(loadedPromptId)}/tags-suggestions`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        setSuggestedTags([])
+        alert(`Error: ${error.error || 'Failed to get tag suggestions'}`)
+        return
+      }
+
+      const data = await res.json()
+      setSuggestedTags(data.tags || [])
+    } catch (error) {
+      setSuggestedTags([])
+      alert(`Error getting tag suggestions: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setTagsLoading(false)
+    }
   }
 
   const insertSnippet = (snippet: Snippet) => {
@@ -563,27 +591,21 @@ export default function WorkbenchPage() {
       return
     }
 
-    if (!currentPromptVersionId) {
+    if (!loadedPromptId) {
       alert('Please save the prompt first to get suggestions')
       return
     }
 
     setSuggestionsLoading(true)
     try {
-      const focusAreas = Array.from(suggestionFocus).join(', ')
       const token = localStorage.getItem('auth-token')
 
-      // Use the prompt suggestions endpoint
-      const res = await fetch(API_ENDPOINTS.prompts.suggestions(currentPromptVersionId), {
-        method: 'POST',
+      // Use the prompt suggestions endpoint - GET request
+      const res = await fetch(API_ENDPOINTS.prompts.suggestions(loadedPromptId), {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          promptContent,
-          focusAreas,
-        }),
       })
 
       if (!res.ok) {
@@ -593,7 +615,7 @@ export default function WorkbenchPage() {
       }
 
       const data = await res.json()
-      setSuggestions(data.suggestions)
+      setSuggestions(JSON.stringify(data.suggestions, null, 2))
     } catch (error) {
       setSuggestions(`Error getting suggestions: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
