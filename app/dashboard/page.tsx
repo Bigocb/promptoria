@@ -43,17 +43,12 @@ export default function DashboardPage() {
             // Transform backend response to match frontend interface
             setStats({
               stats: {
-                totalPrompts: data.stats.prompts,
-                totalSnippets: data.stats.snippets,
-                workspaceName: data.workspace_name,
+                totalPrompts: data.resources.prompts,
+                totalSnippets: data.resources.snippets,
+                workspaceName: data.workspace.name,
               },
               recent: {
-                prompts: data.recent_prompts.map((p: any) => ({
-                  id: p.id,
-                  name: p.name,
-                  createdAt: p.created_at,
-                  updatedAt: p.created_at,
-                })),
+                prompts: [],
                 snippets: [],
               },
             })
