@@ -109,37 +109,69 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const anthropic = new Anthropic({ apiKey })
     const startTime = Date.now()
 
-    // Call Claude API
-    const modelToUse = model || promptVersion.prompt.model || 'claude-3-haiku-20240307'
+    // Determine which provider to use based on model ID
+    const modelToUse = model || promptVersion.prompt.model || 'llama2'
     const tempToUse = temperature ?? 0.7
     const maxTokensToUse = max_tokens || 1024
 
-    const message = await anthropic.messages.create({
-      model: modelToUse,
-      max_tokens: maxTokensToUse,
-      temperature: tempToUse,
-      messages: [
-        {
-          role: 'user',
-          content: finalTestInput,
-        },
-      ],
-    })
+    let output: string = ''
+    let totalTokens: number = 0
+    const isOllama = modelToUse.startsWith('llama') || modelToUse === 'mistral' || modelToUse === 'neural-chat'
+
+    if (isOllama) {
+      // Call Ollama API (local/cloud, free)
+      try {
+        const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: modelToUse,
+            prompt: finalTestInput,
+            temperature: tempToUse,
+            stream: false,
+          }),
+        })
+
+        if (!ollamaResponse.ok) {
+          throw new Error(`Ollama API error: ${ollamaResponse.statusText}`)
+        }
+
+        const ollamaData = await ollamaResponse.json()
+        output = ollamaData.response || ''
+        // Estimate tokens for Ollama (roughly 1 token per 4 characters)
+        totalTokens = Math.ceil((finalTestInput.length + output.length) / 4)
+      } catch (error) {
+        throw new Error(`Failed to connect to Ollama at http://localhost:11434. Is Ollama running? Error: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    } else {
+      // Call Claude API (paid, requires API key)
+      const anthropic = new Anthropic({ apiKey })
+      const message = await anthropic.messages.create({
+        model: modelToUse,
+        max_tokens: maxTokensToUse,
+        temperature: tempToUse,
+        messages: [
+          {
+            role: 'user',
+            content: finalTestInput,
+          },
+        ],
+      })
+
+      // Extract output
+      output = message.content
+        .filter((block: any) => block.type === 'text')
+        .map((block: any) => block.text)
+        .join('\n')
+
+      // Count tokens
+      totalTokens = (message.usage?.input_tokens || 0) + (message.usage?.output_tokens || 0)
+    }
 
     const endTime = Date.now()
     const durationMs = endTime - startTime
-
-    // Extract output
-    const output = message.content
-      .filter((block: any) => block.type === 'text')
-      .map((block: any) => block.text)
-      .join('\n')
-
-    // Count tokens
-    const totalTokens = (message.usage?.input_tokens || 0) + (message.usage?.output_tokens || 0)
 
     // Update test run with results
     const updatedTestRun = await prisma.testRun.update({
