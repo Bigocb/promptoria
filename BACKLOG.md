@@ -65,6 +65,11 @@ Prioritized list of work items planned for development.
 - [ ] Mobile-responsive design
 - [ ] Offline mode
 - [ ] Plugin system
+- [ ] **Prompt Attachments & Response Storage**
+  - [ ] Support file attachments on prompts (images, documents, data files)
+  - [ ] Store LLM responses/outputs with prompts for historical context
+  - [ ] Use stored responses as context for improvement suggestions
+  - [ ] Build response library for A/B testing and comparative analysis
 
 ## Technical Debt
 
