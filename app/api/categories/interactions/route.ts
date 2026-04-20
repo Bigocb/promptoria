@@ -86,7 +86,11 @@ export async function GET(request: NextRequest) {
 
     const interactions = await prisma.agentInteractionType.findMany({
       where: { workspace_id: workspace.id },
-      include: { categories: true },
+      include: {
+        categories: {
+          include: { prompts: true }
+        }
+      },
       orderBy: { updated_at: 'desc' },
     })
 
