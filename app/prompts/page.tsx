@@ -136,6 +136,10 @@ export default function WorkbenchPage() {
   const [loadedPromptModel, setLoadedPromptModel] = useState('gpt-4')
   const [promptsLoading, setPromptsLoading] = useState(false)
 
+  // Save feedback state
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [saveMessage, setSaveMessage] = useState('')
+
   useEffect(() => {
     fetchSnippets()
     fetchInteractionTypes()
@@ -766,9 +770,14 @@ export default function WorkbenchPage() {
 
   const savePrompt = async () => {
     if (!promptName.trim() || !promptContent.trim()) {
-      alert('Please enter a prompt name and content')
+      setSaveStatus('error')
+      setSaveMessage('Please enter a prompt name and content')
+      setTimeout(() => setSaveStatus('idle'), 3000)
       return
     }
+
+    setSaveStatus('saving')
+    setSaveMessage('Saving...')
 
     try {
       const token = localStorage.getItem('auth-token')
@@ -793,11 +802,16 @@ export default function WorkbenchPage() {
 
         if (!updateRes.ok) {
           const error = await updateRes.json()
-          alert(`Error updating prompt: ${error.detail || 'Unknown error'}`)
+          setSaveStatus('error')
+          setSaveMessage(`Error: ${error.detail || 'Failed to update'}`)
+          setTimeout(() => setSaveStatus('idle'), 3000)
           return
         }
 
-        alert('Prompt updated successfully!')
+        setSaveStatus('saved')
+        setSaveMessage('Saved successfully!')
+        setTimeout(() => setSaveStatus('idle'), 2000)
+
         // Reload the prompt to get updated versions
         await loadPrompt(loadedPromptId)
         // Capture the latest version ID for testing
@@ -831,12 +845,16 @@ export default function WorkbenchPage() {
         if (!createRes.ok) {
           const error = await createRes.json()
           const errorMsg = error.error || error.detail || 'Failed to save prompt'
-          alert(`Error: ${typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg)}`)
+          setSaveStatus('error')
+          setSaveMessage(typeof errorMsg === 'string' ? errorMsg : 'Failed to save')
+          setTimeout(() => setSaveStatus('idle'), 3000)
           return
         }
 
         const newPromptData = await createRes.json()
-        alert('Prompt saved successfully!')
+        setSaveStatus('saved')
+        setSaveMessage('Created successfully!')
+        setTimeout(() => setSaveStatus('idle'), 2000)
 
         // Capture the version ID for testing
         if (newPromptData.latest_version?.id) {
@@ -848,8 +866,10 @@ export default function WorkbenchPage() {
         await fetchAvailablePrompts()
       }
     } catch (error) {
-      alert(`Failed to save prompt: ${error}`)
+      setSaveStatus('error')
+      setSaveMessage(`Error: ${error instanceof Error ? error.message : 'Failed to save'}`)
       console.error('Save error:', error)
+      setTimeout(() => setSaveStatus('idle'), 3000)
     }
   }
 
@@ -1401,12 +1421,45 @@ export default function WorkbenchPage() {
             </div>
           </div>
 
+          {/* Save Feedback Toast */}
+          {saveStatus !== 'idle' && (
+            <div style={{
+              padding: '1rem',
+              borderRadius: '0.5rem',
+              backgroundColor:
+                saveStatus === 'saving' ? 'rgba(184, 187, 38, 0.2)' :
+                saveStatus === 'saved' ? 'rgba(142, 192, 124, 0.2)' :
+                'rgba(204, 36, 29, 0.2)',
+              border: `1px solid ${
+                saveStatus === 'saving' ? '#b8bb26' :
+                saveStatus === 'saved' ? '#8ec07c' :
+                '#cc241d'
+              }`,
+              color:
+                saveStatus === 'saving' ? '#b8bb26' :
+                saveStatus === 'saved' ? '#8ec07c' :
+                '#cc241d',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+            }}>
+              {saveStatus === 'saving' && '⏳ ' }
+              {saveStatus === 'saved' && '✓ ' }
+              {saveStatus === 'error' && '✗ ' }
+              {saveMessage}
+            </div>
+          )}
+
           <div className="btn-group-mobile" style={{ display: 'flex', gap: '1rem' }}>
             <button
               className="btn btn-primary"
               onClick={savePrompt}
+              disabled={saveStatus === 'saving'}
+              style={{
+                opacity: saveStatus === 'saving' ? 0.6 : 1,
+                cursor: saveStatus === 'saving' ? 'not-allowed' : 'pointer',
+              }}
             >
-              Save Prompt
+              {saveStatus === 'saving' ? 'Saving...' : 'Save Prompt'}
             </button>
           </div>
         </div>

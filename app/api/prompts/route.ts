@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json()
-    const { name, description, template_body, tags, model, model_config, change_log } = body
+    const { name, description, template_body, tags, model, model_config, change_log, category_id } = body
 
     // Validate required fields
     if (!name || !template_body) {
@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
         workspace_id: workspace.id,
         tags: tags || [],
         model: model || 'claude-3-haiku',
+        ...(category_id && { category_id }),
         versions: {
           create: {
             version_number: 1,
@@ -90,7 +91,9 @@ export async function POST(request: NextRequest) {
         description: prompt.description,
         tags: prompt.tags,
         model: prompt.model,
-        version: prompt.versions[0],
+        category_id: prompt.category_id,
+        latest_version: prompt.versions[0],
+        versions: prompt.versions,
         created_at: prompt.created_at,
         updated_at: prompt.updated_at,
       },

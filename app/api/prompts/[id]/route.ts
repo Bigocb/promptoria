@@ -76,6 +76,7 @@ export async function GET(
         description: prompt.description,
         tags: prompt.tags,
         model: prompt.model,
+        category_id: prompt.category_id,
         versions: prompt.versions,
         created_at: prompt.created_at,
         updated_at: prompt.updated_at,
@@ -149,7 +150,7 @@ export async function PUT(
 
     // Parse request body
     const body = await request.json()
-    const { name, description, template_body, tags, model, model_config, change_log } = body
+    const { name, description, template_body, tags, model, model_config, change_log, category_id } = body
 
     // Get latest version number
     const latestVersion = existingPrompt.versions.reduce((max, v) =>
@@ -164,6 +165,7 @@ export async function PUT(
         description: description !== undefined ? description : existingPrompt.description,
         tags: tags !== undefined ? tags : existingPrompt.tags,
         model: model !== undefined ? model : existingPrompt.model,
+        ...(category_id !== undefined && { category_id: category_id || null }),
         ...(template_body && {
           versions: {
             create: {
@@ -201,6 +203,7 @@ export async function PUT(
         description: updatedPrompt.description,
         tags: updatedPrompt.tags,
         model: updatedPrompt.model,
+        category_id: updatedPrompt.category_id,
         versions: updatedPrompt.versions,
         created_at: updatedPrompt.created_at,
         updated_at: updatedPrompt.updated_at,
