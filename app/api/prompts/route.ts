@@ -140,7 +140,33 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get all prompts in workspace with latest version
+    // Parse pagination parameters
+    const skipParam = request.nextUrl.searchParams.get('skip')
+    const takeParam = request.nextUrl.searchParams.get('take')
+
+    let skip = 0
+    let take = 20
+
+    if (skipParam) {
+      const parsedSkip = parseInt(skipParam)
+      if (!isNaN(parsedSkip) && parsedSkip >= 0) {
+        skip = parsedSkip
+      }
+    }
+
+    if (takeParam) {
+      const parsedTake = parseInt(takeParam)
+      if (!isNaN(parsedTake) && parsedTake > 0 && parsedTake <= 100) {
+        take = parsedTake
+      }
+    }
+
+    // Get total count for pagination
+    const total = await prisma.prompt.count({
+      where: { workspace_id: workspace.id },
+    })
+
+    // Get paginated prompts in workspace with latest version
     const prompts = await prisma.prompt.findMany({
       where: { workspace_id: workspace.id },
       include: {
@@ -151,6 +177,8 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { updated_at: 'desc' },
+      skip,
+      take,
     })
 
     return NextResponse.json(
@@ -165,6 +193,11 @@ export async function GET(request: NextRequest) {
           created_at: p.created_at,
           updated_at: p.updated_at,
         })),
+        pagination: {
+          skip,
+          take,
+          total,
+        },
       },
       { status: 200 }
     )

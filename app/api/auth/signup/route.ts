@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { hashPassword } from '@/lib/auth'
-import { generateAccessToken } from '@/lib/jwt'
+import { generateAccessToken, generateRefreshToken } from '@/lib/jwt'
 
 // Simple email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -79,13 +79,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Generate JWT token
+    // Generate JWT tokens (access + refresh)
     const accessToken = generateAccessToken(user.id, user.email)
+    const refreshToken = generateRefreshToken(user.id)
 
     // Return response (match Python backend format)
     return NextResponse.json(
       {
         access_token: accessToken,
+        refresh_token: refreshToken,
         token_type: 'bearer',
         user: {
           id: user.id,

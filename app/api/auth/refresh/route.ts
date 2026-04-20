@@ -1,39 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { authenticateUser } from '@/lib/auth'
-import { generateAccessToken, generateRefreshToken } from '@/lib/jwt'
+import { verifyRefreshToken, generateAccessToken } from '@/lib/jwt'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, password } = body
+    const { refresh_token } = body
 
     // Validate input
-    if (!email || !password) {
+    if (!refresh_token) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: 'refresh_token is required' },
         { status: 400 }
       )
     }
 
-    // Authenticate user
-    const user = await authenticateUser(prisma, email, password)
-    if (!user) {
+    // Verify refresh token
+    let userId: string
+    try {
+      const decoded = verifyRefreshToken(refresh_token)
+      userId = decoded.userId
+    } catch (error) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'Invalid or expired refresh token' },
         { status: 401 }
       )
     }
 
-    // Generate JWT tokens (access + refresh)
-    const accessToken = generateAccessToken(user.id, user.email)
-    const refreshToken = generateRefreshToken(user.id)
+    // Get user to verify they still exist
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { user_settings: true },
+    })
 
-    // Return response (match Python backend format)
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 401 }
+      )
+    }
+
+    // Generate new access token
+    const accessToken = generateAccessToken(user.id, user.email)
+
+    // Return response matching login endpoint format
     return NextResponse.json(
       {
         access_token: accessToken,
-        refresh_token: refreshToken,
         token_type: 'bearer',
         user: {
           id: user.id,
@@ -56,7 +69,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
   } catch (error: any) {
-    console.error('Login error:', error)
+    console.error('Refresh token error:', error)
     return NextResponse.json(
       { error: 'Server error: ' + error.message },
       { status: 500 }

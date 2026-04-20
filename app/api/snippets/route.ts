@@ -115,14 +115,49 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get all snippets in workspace
+    // Parse pagination parameters
+    const skipParam = request.nextUrl.searchParams.get('skip')
+    const takeParam = request.nextUrl.searchParams.get('take')
+
+    let skip = 0
+    let take = 20
+
+    if (skipParam) {
+      const parsedSkip = parseInt(skipParam)
+      if (!isNaN(parsedSkip) && parsedSkip >= 0) {
+        skip = parsedSkip
+      }
+    }
+
+    if (takeParam) {
+      const parsedTake = parseInt(takeParam)
+      if (!isNaN(parsedTake) && parsedTake > 0 && parsedTake <= 100) {
+        take = parsedTake
+      }
+    }
+
+    // Get total count for pagination
+    const total = await prisma.snippet.count({
+      where: { workspace_id: workspace.id },
+    })
+
+    // Get paginated snippets in workspace
     const snippets = await prisma.snippet.findMany({
       where: { workspace_id: workspace.id },
       orderBy: { updated_at: 'desc' },
+      skip,
+      take,
     })
 
     return NextResponse.json(
-      { snippets },
+      {
+        snippets,
+        pagination: {
+          skip,
+          take,
+          total,
+        },
+      },
       { status: 200 }
     )
   } catch (error: any) {

@@ -20,8 +20,25 @@ model User {
 
   user_settings UserSettings?
   workspaces    Workspace?
+  devices       Device[]
 
   @@map("users")
+}
+
+// Device - track iOS/Android app instances
+model Device {
+  id            String   @id @default(cuid()) @db.VarChar(36)
+  user_id       String   @db.VarChar(36)
+  device_type   String   @db.VarChar(20)   // "ios" or "android"
+  device_name   String   @db.VarChar(255)  // e.g., "iPhone 14 Pro", "Samsung Galaxy S23"
+  app_version   String   @db.VarChar(20)   // e.g., "1.0.0"
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("devices")
 }
 
 // UserSettings - user preferences
@@ -206,14 +223,16 @@ model SyncLog {
   id            String   @id @default(cuid()) @db.VarChar(36)
   device_id     String?  @db.VarChar(36)
   workspace_id  String   @db.VarChar(36)
-  action        String   @db.VarChar(20)
-  entity_type   String   @db.VarChar(50)
+  action        String   @db.VarChar(20)   // "create", "update", "delete"
+  entity_type   String   @db.VarChar(50)   // "prompt", "snippet", etc.
   entity_id     String   @db.VarChar(36)
   changed_at    DateTime @default(now()) @db.Timestamp(6)
-  data          Json?    @db.Json
+  data          Json?    @db.Json          // Full or delta data
   created_at    DateTime @default(now()) @db.Timestamp(6)
 
   workspace Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
 
+  @@index([workspace_id])
+  @@index([changed_at])
   @@map("sync_logs")
 }
