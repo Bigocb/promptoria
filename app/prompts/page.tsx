@@ -178,8 +178,12 @@ export default function WorkbenchPage() {
     const key = `variable-sets-${loadedPromptId || 'draft'}`
     try {
       const raw = localStorage.getItem(key)
-      setVariableSets(raw ? JSON.parse(raw) : [])
-    } catch {
+      const loaded = raw ? JSON.parse(raw) : []
+      setVariableSets(loaded)
+      // Debug logging
+      console.log(`[Variable Sets] Loaded ${loaded.length} sets from key: ${key}`)
+    } catch (err) {
+      console.error(`[Variable Sets] Error loading from ${key}:`, err)
       setVariableSets([])
     }
     setActiveSetId(null)
@@ -507,7 +511,13 @@ export default function WorkbenchPage() {
   const varSetsKey = () => `variable-sets-${loadedPromptId || 'draft'}`
 
   const persistSets = (sets: VariableSet[]) => {
-    try { localStorage.setItem(varSetsKey(), JSON.stringify(sets)) } catch {}
+    try {
+      const key = varSetsKey()
+      localStorage.setItem(key, JSON.stringify(sets))
+      console.log(`[Variable Sets] Persisted ${sets.length} sets to key: ${key}`)
+    } catch (err) {
+      console.error('[Variable Sets] Failed to persist:', err)
+    }
   }
 
   const handleSaveSet = () => {
@@ -1127,7 +1137,21 @@ export default function WorkbenchPage() {
               )}
 
               {variableSets.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {setUpdateFeedback && (
+                    <div style={{
+                      padding: '0.5rem 0.75rem',
+                      fontSize: '0.7rem',
+                      backgroundColor: 'rgba(142, 192, 124, 0.2)',
+                      border: '1px solid #8ec07c',
+                      borderRadius: '0.25rem',
+                      color: '#8ec07c',
+                      textAlign: 'center',
+                    }}>
+                      ✓ Changes saved to localStorage
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                   {variableSets.map((set) => {
                     const isActive = activeSetId === set.id
                     return (
@@ -1175,6 +1199,7 @@ export default function WorkbenchPage() {
                       </div>
                     )
                   })}
+                  </div>
                 </div>
               ) : (
                 <p style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', fontStyle: 'italic' }}>
