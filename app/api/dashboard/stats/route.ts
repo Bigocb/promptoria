@@ -77,6 +77,31 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    // Get recent prompts
+    const recentPrompts = await prisma.prompt.findMany({
+      where: { workspace_id: workspace.id },
+      orderBy: { updated_at: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        name: true,
+        created_at: true,
+        updated_at: true,
+      },
+    })
+
+    // Get recent snippets
+    const recentSnippets = await prisma.snippet.findMany({
+      where: { workspace_id: workspace.id },
+      orderBy: { created_at: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        name: true,
+        created_at: true,
+      },
+    })
+
     // Get average test run duration
     const avgDurationResult = await prisma.testRun.aggregate({
       where: {
@@ -98,6 +123,10 @@ export async function GET(request: NextRequest) {
         snippets: snippetCount,
         interaction_types: interactionTypeCount,
         categories: categoryCount,
+      },
+      recent: {
+        prompts: recentPrompts,
+        snippets: recentSnippets,
       },
       testing: {
         total_test_runs: testRunCount,

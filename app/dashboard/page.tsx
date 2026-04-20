@@ -48,8 +48,8 @@ export default function DashboardPage() {
                 workspaceName: data.workspace.name,
               },
               recent: {
-                prompts: [],
-                snippets: [],
+                prompts: data.recent?.prompts || [],
+                snippets: data.recent?.snippets || [],
               },
             })
           }
