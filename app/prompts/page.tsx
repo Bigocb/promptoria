@@ -1869,26 +1869,36 @@ export default function WorkbenchPage() {
                 {/* Live Preview */}
                 <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border)' }}>
                   <p style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-foregroundAlt)', marginBottom: '0.5rem' }}>
-                    Preview:
+                    Preview (Prompt + Composed Snippets):
                   </p>
-                  <pre
-                    style={{
-                      fontSize: '0.7rem',
-                      backgroundColor: 'var(--color-backgroundAlt)',
-                      padding: '0.5rem',
-                      borderRadius: '0.25rem',
-                      maxHeight: '150px',
-                      overflow: 'auto',
-                      margin: '0',
-                      color: 'var(--color-foregroundAlt)',
-                      fontFamily: 'monospace',
-                      whiteSpace: 'pre-wrap',
-                      wordWrap: 'break-word',
-                    }}
-                  >
-                    {compileFromComposition().substring(0, 200)}
-                    {compileFromComposition().length > 200 ? '...' : ''}
-                  </pre>
+                  <div style={{
+                    fontSize: '0.7rem',
+                    backgroundColor: 'var(--color-backgroundAlt)',
+                    padding: '0.5rem',
+                    borderRadius: '0.25rem',
+                    maxHeight: '200px',
+                    overflow: 'auto',
+                    color: 'var(--color-foregroundAlt)',
+                    fontFamily: 'monospace',
+                    whiteSpace: 'pre-wrap',
+                    wordWrap: 'break-word',
+                  }}>
+                    {/* Show prompt content with composition context */}
+                    <div style={{ marginBottom: '0.5rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--color-border)' }}>
+                      <span style={{ color: 'var(--color-accent)', fontWeight: '600' }}>PROMPT:\n</span>
+                      {promptContent.substring(0, 150)}
+                      {promptContent.length > 150 ? '...' : ''}
+                    </div>
+
+                    {/* Show composed snippets */}
+                    {composition.length > 0 && (
+                      <div>
+                        <span style={{ color: 'var(--color-accent)', fontWeight: '600' }}>COMPOSITION:\n</span>
+                        {compileFromComposition().substring(0, 200)}
+                        {compileFromComposition().length > 200 ? '...' : ''}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Clear Button */}

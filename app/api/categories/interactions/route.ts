@@ -88,11 +88,61 @@ export async function GET(request: NextRequest) {
       where: { workspace_id: workspace.id },
       include: {
         categories: {
-          include: { prompts: true }
+          include: {
+            prompts: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+              },
+              orderBy: { updated_at: 'desc' },
+            }
+          },
+          orderBy: { updated_at: 'desc' },
         }
       },
       orderBy: { updated_at: 'desc' },
     })
+
+    // Fetch uncategorized prompts separately and add as a special category
+    const uncategorizedPrompts = await prisma.prompt.findMany({
+      where: {
+        workspace_id: workspace.id,
+        category_id: null,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+      },
+      orderBy: { updated_at: 'desc' },
+    })
+
+    // If there are uncategorized prompts, prepend an "Uncategorized" interaction type
+    if (uncategorizedPrompts.length > 0) {
+      const uncategorizedType = {
+        id: 'uncategorized-type',
+        name: '📋 Uncategorized',
+        description: 'Prompts without a category',
+        emoji: '📋',
+        workspace_id: workspace.id,
+        created_at: new Date(),
+        updated_at: new Date(),
+        categories: [
+          {
+            id: 'uncategorized-category',
+            name: 'All Uncategorized',
+            description: 'Prompts that need to be organized',
+            workspace_id: workspace.id,
+            agent_interaction_type_id: 'uncategorized-type',
+            created_at: new Date(),
+            updated_at: new Date(),
+            prompts: uncategorizedPrompts,
+          }
+        ]
+      }
+      interactions.unshift(uncategorizedType as any)
+    }
 
     return NextResponse.json({ interactions }, { status: 200 })
   } catch (error: any) {
