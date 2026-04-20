@@ -9,11 +9,16 @@ import { useAuth } from '@/app/providers'
 interface OllamaModel {
   id: string
   name: string
-  size: string | null
-  parameter_size: string | null
-  quantization_level: string | null
-  family: string | null
   description: string
+  inputPrice?: number
+  outputPrice?: number
+  maxTokens?: number
+  contextWindow?: string
+  // Legacy Ollama fields (for backwards compatibility)
+  size?: string | null
+  parameter_size?: string | null
+  quantization_level?: string | null
+  family?: string | null
 }
 
 interface Snippet {
@@ -39,6 +44,11 @@ interface TestResult {
   maxTokens: number
   variables: Record<string, string>
   output: string
+  totalTokens?: number
+  latencyMs?: number
+  inputCost?: number
+  outputCost?: number
+  totalCost?: number
 }
 
 type SuggestionFocus = 'effectiveness' | 'constraints'
@@ -183,6 +193,13 @@ export default function WorkbenchPage() {
       loadPrompt(promptId)
     }
   }, [searchParams, user])
+
+  // Load test history when prompt changes
+  useEffect(() => {
+    if (currentPromptVersionId) {
+      loadTestHistory(currentPromptVersionId)
+    }
+  }, [currentPromptVersionId])
 
   // Load saved variable sets whenever the active prompt changes
   useEffect(() => {
@@ -802,6 +819,81 @@ export default function WorkbenchPage() {
     }
   }
 
+  const loadTestHistory = async (promptVersionId: string) => {
+    try {
+      const token = localStorage.getItem('auth-token')
+      // Fetch all test runs for this workspace
+      const res = await fetch(API_ENDPOINTS.execute.run, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!res.ok) {
+        console.error('Failed to load test history:', res.statusText)
+        return
+      }
+
+      const data = await res.json()
+      const allTestRuns = data.test_runs || []
+
+      // Filter to only this prompt version
+      const filteredTestRuns = allTestRuns.filter(
+        (run: any) => run.prompt_version_id === promptVersionId
+      )
+
+      // Convert API format to TestResult format
+      const convertedResults: TestResult[] = filteredTestRuns.map((run: any) => {
+        // Get model info for pricing
+        const modelInfo = ollamaModels.find(m => m.id === (run.model || run.prompt_version?.prompt?.model))
+        const inputPrice = modelInfo?.inputPrice || 0
+        const outputPrice = modelInfo?.outputPrice || 0
+
+        // Calculate cost if we have token data
+        let inputCost = 0
+        let outputCost = 0
+        let totalCost = 0
+
+        if (run.total_tokens) {
+          // Rough estimate: split tokens based on typical input/output ratio
+          // This is approximate since we don't have exact input/output split from stored data
+          const estimatedInputTokens = Math.ceil(run.total_tokens * 0.3)
+          const estimatedOutputTokens = run.total_tokens - estimatedInputTokens
+          inputCost = (estimatedInputTokens / 1000000) * inputPrice
+          outputCost = (estimatedOutputTokens / 1000000) * outputPrice
+          totalCost = inputCost + outputCost
+        }
+
+        return {
+          id: run.id,
+          timestamp: new Date(run.created_at).toLocaleTimeString(),
+          model: run.model || run.prompt_version?.prompt?.model || 'Unknown',
+          temperature: run.temperature || 0.7,
+          maxTokens: run.max_tokens || 500,
+          variables: {},
+          output: run.output || '',
+          totalTokens: run.total_tokens,
+          latencyMs: run.duration_ms,
+          inputCost,
+          outputCost,
+          totalCost,
+        }
+      })
+
+      // Sort by creation date, most recent first
+      convertedResults.sort((a, b) => {
+        const aTime = new Date(a.timestamp).getTime()
+        const bTime = new Date(b.timestamp).getTime()
+        return bTime - aTime
+      })
+
+      setTestResults(convertedResults)
+    } catch (error) {
+      console.error('Error loading test history:', error)
+    }
+  }
+
   const runTest = async () => {
     if (!currentPromptVersionId) {
       alert('Please save the prompt first, then test it')
@@ -820,6 +912,9 @@ export default function WorkbenchPage() {
         body: JSON.stringify({
           prompt_version_id: currentPromptVersionId,
           variables: testVariables,
+          model: testModel,              // Send selected model
+          temperature: testTemperature,   // Send selected temperature
+          max_tokens: testMaxTokens,      // Send selected max tokens
         })
       })
 
@@ -829,7 +924,32 @@ export default function WorkbenchPage() {
       }
 
       const result = await res.json()
+
+      // Get model pricing info for cost calculation
+      const selectedModelInfo = ollamaModels.find(m => m.id === testModel)
+      const inputPrice = selectedModelInfo?.inputPrice || 0
+      const outputPrice = selectedModelInfo?.outputPrice || 0
+
+      // Estimate tokens (rough approximation: 4 chars ~= 1 token)
+      const estimatedInputTokens = Math.ceil(promptContent.length / 4)
+      const estimatedOutputTokens = Math.ceil((result.output?.length || 0) / 4)
+
+      // Calculate cost (prices are per million tokens)
+      const inputCost = (estimatedInputTokens / 1000000) * inputPrice
+      const outputCost = (estimatedOutputTokens / 1000000) * outputPrice
+      const totalCost = inputCost + outputCost
+
       setTestOutput(result.output)
+
+      // Use actual token count from API if available, otherwise estimate
+      const actualTokens = result.total_tokens || (estimatedInputTokens + estimatedOutputTokens)
+      const actualInputTokens = result.usage?.input_tokens || estimatedInputTokens
+      const actualOutputTokens = result.usage?.output_tokens || estimatedOutputTokens
+
+      // Recalculate cost with actual tokens
+      const actualInputCost = (actualInputTokens / 1000000) * inputPrice
+      const actualOutputCost = (actualOutputTokens / 1000000) * outputPrice
+      const actualTotalCost = actualInputCost + actualOutputCost
 
       const testResult: TestResult = {
         id: result.id,
@@ -839,6 +959,11 @@ export default function WorkbenchPage() {
         maxTokens: testMaxTokens,
         variables: { ...testVariables },
         output: result.output,
+        totalTokens: actualTokens,
+        latencyMs: result.latency_ms || result.request_duration_ms,
+        inputCost: actualInputCost,
+        outputCost: actualOutputCost,
+        totalCost: actualTotalCost,
       }
 
       setTestResults([testResult, ...testResults])
@@ -2134,26 +2259,91 @@ export default function WorkbenchPage() {
                   {testLoading ? '⏳ Running...' : '▶ Run Test'}
                 </button>
 
-                {testOutput && (
-                  <div style={{ marginBottom: '0.75rem' }}>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--color-foregroundAlt)', marginBottom: '0.375rem', fontWeight: '500' }}>
-                      Output
-                    </p>
-                    <div style={{
-                      backgroundColor: 'var(--color-background)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '0.375rem',
-                      padding: '0.5rem',
-                      fontSize: '0.7rem',
-                      fontFamily: 'monospace',
-                      maxHeight: '150px',
-                      overflowY: 'auto',
-                      color: 'var(--color-foreground)',
-                    }}>
-                      {testOutput}
+                {testOutput && testResults.length > 0 && (() => {
+                  const lastResult = testResults[0]
+                  return (
+                    <div style={{ marginBottom: '0.75rem' }}>
+                      <div style={{
+                        backgroundColor: 'var(--color-backgroundAlt)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '0.375rem',
+                        padding: '0.5rem',
+                        marginBottom: '0.5rem',
+                        fontSize: '0.65rem',
+                      }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.375rem' }}>
+                          <div>
+                            <span style={{ color: 'var(--color-foregroundAlt)' }}>Model:</span>{' '}
+                            <span style={{ fontWeight: '500', color: 'var(--color-foreground)' }}>
+                              {lastResult.model}
+                            </span>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--color-foregroundAlt)' }}>Temp:</span>{' '}
+                            <span style={{ fontWeight: '500', color: 'var(--color-foreground)' }}>
+                              {lastResult.temperature.toFixed(1)}
+                            </span>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--color-foregroundAlt)' }}>Tokens:</span>{' '}
+                            <span style={{ fontWeight: '500', color: 'var(--color-foreground)' }}>
+                              {lastResult.totalTokens || '?'}
+                            </span>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--color-foregroundAlt)' }}>Latency:</span>{' '}
+                            <span style={{ fontWeight: '500', color: 'var(--color-foreground)' }}>
+                              {lastResult.latencyMs ? `${lastResult.latencyMs}ms` : '?'}
+                            </span>
+                          </div>
+                          {lastResult.totalCost !== undefined && (
+                            <div>
+                              <span style={{ color: 'var(--color-foregroundAlt)' }}>Cost:</span>{' '}
+                              <span style={{ fontWeight: '500', color: 'var(--color-accent)' }}>
+                                ${lastResult.totalCost.toFixed(6)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--color-foregroundAlt)', marginBottom: '0.375rem', fontWeight: '500' }}>
+                        Output
+                      </p>
+                      <div style={{
+                        backgroundColor: 'var(--color-background)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '0.375rem',
+                        padding: '0.5rem',
+                        fontSize: '0.7rem',
+                        fontFamily: 'monospace',
+                        maxHeight: '150px',
+                        overflowY: 'auto',
+                        color: 'var(--color-foreground)',
+                      }}>
+                        {testOutput}
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(testOutput)
+                          alert('Output copied to clipboard!')
+                        }}
+                        style={{
+                          marginTop: '0.375rem',
+                          width: '100%',
+                          padding: '0.375rem',
+                          fontSize: '0.65rem',
+                          backgroundColor: 'var(--color-surface)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: '0.25rem',
+                          cursor: 'pointer',
+                          color: 'var(--color-foreground)',
+                        }}
+                      >
+                        📋 Copy Output
+                      </button>
                     </div>
-                  </div>
-                )}
+                  )
+                })()}
 
                 {testResults.length > 0 && (
                   <div>
@@ -2185,7 +2375,14 @@ export default function WorkbenchPage() {
                             e.currentTarget.style.backgroundColor = 'var(--color-background)'
                           }}
                         >
-                          <div style={{ fontWeight: '500' }}>{result.model} @ {result.timestamp}</div>
+                          <div style={{ fontWeight: '500', marginBottom: '0.125rem' }}>
+                            {result.model} @ {result.timestamp}
+                          </div>
+                          <div style={{ fontSize: '0.6rem', color: 'var(--color-foregroundAlt)' }}>
+                            {result.totalTokens ? `${result.totalTokens} tokens` : 'N/A'}
+                            {result.totalCost !== undefined && ` • $${result.totalCost.toFixed(6)}`}
+                            {result.latencyMs && ` • ${result.latencyMs}ms`}
+                          </div>
                         </button>
                       ))}
                     </div>
