@@ -69,10 +69,21 @@ interface VariableSet {
   updatedAt: string
 }
 
+interface CompositionItem {
+  id: string // unique id for this composition item
+  snippetId: string
+  snippetName: string
+  snippetContent: string
+  order: number
+}
+
 export default function WorkbenchPage() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
   const [snippets, setSnippets] = useState<Snippet[]>([])
+  const [snippetSearch, setSnippetSearch] = useState('')
+  const [composition, setComposition] = useState<CompositionItem[]>([])
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null)
   const [promptName, setPromptName] = useState('')
   const [promptContent, setPromptContent] = useState('')
   const [variables, setVariables] = useState('')
@@ -473,8 +484,69 @@ export default function WorkbenchPage() {
   }
 
   const insertSnippet = (snippet: Snippet) => {
-    const insertion = `[SNIPPET: ${snippet.name}]\n${snippet.content}\n`
-    setPromptContent(promptContent + insertion)
+    const newItem: CompositionItem = {
+      id: `comp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      snippetId: snippet.id,
+      snippetName: snippet.name,
+      snippetContent: snippet.content,
+      order: composition.length,
+    }
+    setComposition([...composition, newItem])
+  }
+
+  const removeFromComposition = (itemId: string) => {
+    const updated = composition.filter(item => item.id !== itemId)
+    setComposition(updated.map((item, idx) => ({ ...item, order: idx })))
+  }
+
+  const moveCompositionItem = (fromIndex: number, direction: 'up' | 'down') => {
+    const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
+    if (toIndex < 0 || toIndex >= composition.length) return
+
+    const newComp = [...composition]
+    const [item] = newComp.splice(fromIndex, 1)
+    newComp.splice(toIndex, 0, item)
+    setComposition(newComp.map((item, idx) => ({ ...item, order: idx })))
+  }
+
+  const compileFromComposition = (): string => {
+    if (composition.length === 0) return promptContent
+    return composition.map(item => item.snippetContent).join('\n\n')
+  }
+
+  const handleCompositionDragStart = (itemId: string) => {
+    setDraggedItemId(itemId)
+  }
+
+  const handleCompositionDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleCompositionDrop = (targetItemId: string, e: React.DragEvent) => {
+    e.preventDefault()
+    if (!draggedItemId || draggedItemId === targetItemId) {
+      setDraggedItemId(null)
+      return
+    }
+
+    const draggedIndex = composition.findIndex(item => item.id === draggedItemId)
+    const targetIndex = composition.findIndex(item => item.id === targetItemId)
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedItemId(null)
+      return
+    }
+
+    const newComp = [...composition]
+    const [item] = newComp.splice(draggedIndex, 1)
+    newComp.splice(targetIndex, 0, item)
+    setComposition(newComp.map((item, idx) => ({ ...item, order: idx })))
+    setDraggedItemId(null)
+  }
+
+  const handleCompositionDragEnd = () => {
+    setDraggedItemId(null)
   }
 
   const extractVariables = () => {
@@ -1495,6 +1567,7 @@ export default function WorkbenchPage() {
           <div className="mobile-section-tabs">
             {[
               { id: 'refine', label: '💡 Refine' },
+              { id: 'composition', label: '🧩 Composition' },
               { id: 'snippets', label: '📚 Snippets' },
               { id: 'test', label: '🧪 Test' },
               { id: 'versions', label: '📜 Versions' },
@@ -1733,6 +1806,111 @@ export default function WorkbenchPage() {
             )}
           </div>
 
+          {/* Composition Panel */}
+          <div className={`card${activeMobileSection !== 'composition' ? ' mobile-section-hidden' : ''}`}>
+            <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
+              🧩 Composition
+            </h3>
+            {composition.length === 0 ? (
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>
+                No snippets in composition yet. Add snippets from the Snippets panel.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {/* Composition Items */}
+                {composition.map((item, index) => (
+                  <div
+                    key={item.id}
+                    draggable
+                    onDragStart={() => handleCompositionDragStart(item.id)}
+                    onDragOver={handleCompositionDragOver}
+                    onDrop={(e) => handleCompositionDrop(item.id, e)}
+                    onDragEnd={handleCompositionDragEnd}
+                    style={{
+                      padding: '0.75rem',
+                      backgroundColor: draggedItemId === item.id ? 'var(--color-surface)' : 'var(--color-background)',
+                      border: draggedItemId === item.id ? '2px dashed var(--color-accent)' : '1px solid var(--color-border)',
+                      borderRadius: '0.5rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      justifyContent: 'space-between',
+                      cursor: 'grab',
+                      opacity: draggedItemId === item.id ? 0.6 : 1,
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: '0', fontWeight: '500', fontSize: '0.875rem', color: 'var(--color-foreground)' }}>
+                        ⋮⋮ {index + 1}. {item.snippetName}
+                      </p>
+                      <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.snippetContent.substring(0, 50)}...
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => removeFromComposition(item.id)}
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        fontSize: '0.75rem',
+                        backgroundColor: 'rgba(204, 36, 29, 0.2)',
+                        border: '1px solid #cc241d',
+                        borderRadius: '0.25rem',
+                        cursor: 'pointer',
+                        color: '#cc241d',
+                      }}
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+
+                {/* Live Preview */}
+                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border)' }}>
+                  <p style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-foregroundAlt)', marginBottom: '0.5rem' }}>
+                    Preview:
+                  </p>
+                  <pre
+                    style={{
+                      fontSize: '0.7rem',
+                      backgroundColor: 'var(--color-backgroundAlt)',
+                      padding: '0.5rem',
+                      borderRadius: '0.25rem',
+                      maxHeight: '150px',
+                      overflow: 'auto',
+                      margin: '0',
+                      color: 'var(--color-foregroundAlt)',
+                      fontFamily: 'monospace',
+                      whiteSpace: 'pre-wrap',
+                      wordWrap: 'break-word',
+                    }}
+                  >
+                    {compileFromComposition().substring(0, 200)}
+                    {compileFromComposition().length > 200 ? '...' : ''}
+                  </pre>
+                </div>
+
+                {/* Clear Button */}
+                <button
+                  onClick={() => setComposition([])}
+                  style={{
+                    padding: '0.5rem',
+                    backgroundColor: 'rgba(204, 36, 29, 0.2)',
+                    border: '1px solid #cc241d',
+                    borderRadius: '0.5rem',
+                    cursor: 'pointer',
+                    color: '#cc241d',
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                  }}
+                >
+                  🗑️ Clear Composition
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Snippets Panel */}
           <div className={`card${activeMobileSection !== 'snippets' ? ' mobile-section-hidden' : ''}`}>
             <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>
@@ -1748,33 +1926,70 @@ export default function WorkbenchPage() {
               </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {snippets.map((snippet) => (
-                  <button
-                    key={snippet.id}
-                    onClick={() => insertSnippet(snippet)}
-                    style={{
-                      padding: '0.75rem',
-                      backgroundColor: 'var(--color-background)',
-                      border: '2px solid var(--color-border)',
-                      borderRadius: '0.5rem',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem',
-                      textAlign: 'left',
-                      transition: 'all 0.2s ease',
-                      color: 'var(--color-foreground)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--color-accent)'
-                      e.currentTarget.style.backgroundColor = 'var(--color-backgroundAlt)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--color-border)'
-                      e.currentTarget.style.backgroundColor = 'var(--color-background)'
-                    }}
-                  >
-                    <strong>{snippet.name}</strong>
-                  </button>
-                ))}
+                {/* Search Input */}
+                <input
+                  type="text"
+                  placeholder="Search snippets..."
+                  value={snippetSearch}
+                  onChange={(e) => setSnippetSearch(e.target.value)}
+                  className="input"
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    fontSize: '0.875rem',
+                    marginBottom: '0.5rem',
+                  }}
+                />
+
+                {/* Filtered Snippets */}
+                {(() => {
+                  const filtered = snippets.filter(s =>
+                    s.name.toLowerCase().includes(snippetSearch.toLowerCase())
+                  )
+
+                  return (
+                    <>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', margin: '0' }}>
+                        {filtered.length} of {snippets.length} snippets
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '300px', overflowY: 'auto' }}>
+                        {filtered.length === 0 ? (
+                          <p style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)', textAlign: 'center' }}>
+                            No matching snippets
+                          </p>
+                        ) : (
+                          filtered.map((snippet) => (
+                            <button
+                              key={snippet.id}
+                              onClick={() => insertSnippet(snippet)}
+                              style={{
+                                padding: '0.75rem',
+                                backgroundColor: 'var(--color-background)',
+                                border: '2px solid var(--color-border)',
+                                borderRadius: '0.5rem',
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                                textAlign: 'left',
+                                transition: 'all 0.2s ease',
+                                color: 'var(--color-foreground)'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--color-accent)'
+                                e.currentTarget.style.backgroundColor = 'var(--color-backgroundAlt)'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--color-border)'
+                                e.currentTarget.style.backgroundColor = 'var(--color-background)'
+                              }}
+                            >
+                              <strong>{snippet.name}</strong>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             )}
           </div>

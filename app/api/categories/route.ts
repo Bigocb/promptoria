@@ -105,7 +105,21 @@ export async function GET(request: NextRequest) {
 
     const categories = await prisma.promptCategory.findMany({
       where: { workspace_id: workspace.id },
-      include: { interaction_type: true },
+      include: {
+        interaction_type: true,
+        prompts: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            model: true,
+            tags: true,
+            created_at: true,
+            updated_at: true,
+          },
+          orderBy: { updated_at: 'desc' },
+        },
+      },
       orderBy: { updated_at: 'desc' },
     })
 
