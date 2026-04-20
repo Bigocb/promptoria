@@ -64,9 +64,7 @@ export default function LibraryPage() {
       }
 
       const data = await res.json()
-      // Handle both response formats
-      const types = Array.isArray(data) ? data : (data.interactions || data.types || data || [])
-      setInteractionTypes(types)
+      setInteractionTypes(data.interactions || data.types || data || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load library')
       console.error('Error fetching interaction types:', err)
