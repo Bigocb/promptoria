@@ -132,8 +132,10 @@ export default function WorkbenchPage() {
   const [testMaxTokens, setTestMaxTokens] = useState(500)
   const [testVariables, setTestVariables] = useState<Record<string, string>>({})
   const [testOutput, setTestOutput] = useState<string | null>(null)
+  const [testError, setTestError] = useState<string | null>(null)
   const [testLoading, setTestLoading] = useState(false)
   const [testResults, setTestResults] = useState<TestResult[]>([])
+  const [lastTestRunId, setLastTestRunId] = useState<string | null>(null)
   const [showVersionHistory, setShowVersionHistory] = useState(false)
   const [versions, setVersions] = useState<PromptVersion[]>([])
   const [activeMobileSection, setActiveMobileSection] = useState<string>('refine')
@@ -901,6 +903,9 @@ export default function WorkbenchPage() {
     }
 
     setTestLoading(true)
+    setTestError(null)
+    setTestOutput(null)
+
     try {
       const token = localStorage.getItem('auth-token')
       const res = await fetch(API_ENDPOINTS.execute.run, {
@@ -920,7 +925,10 @@ export default function WorkbenchPage() {
 
       if (!res.ok) {
         const errorData = await res.json()
-        throw new Error(errorData.detail || 'Test execution failed')
+        const errorMessage = errorData.error || errorData.detail || 'Test execution failed'
+        setTestError(errorMessage)
+        setTestOutput(null)
+        return
       }
 
       const result = await res.json()
@@ -967,11 +975,42 @@ export default function WorkbenchPage() {
       }
 
       setTestResults([testResult, ...testResults])
+      setLastTestRunId(result.id)
+      setTestError(null)
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error)
-      setTestOutput(`Error running test: ${errorMsg}`)
+      setTestError(errorMsg)
+      setTestOutput(null)
     } finally {
       setTestLoading(false)
+    }
+  }
+
+  const deleteTestRun = async (testRunId: string) => {
+    if (!confirm('Delete this test run?')) return
+
+    try {
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(`${API_ENDPOINTS.execute.run}/${testRunId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!res.ok) {
+        alert('Failed to delete test run')
+        return
+      }
+
+      // Remove from results
+      setTestResults(testResults.filter(r => r.id !== testRunId))
+      if (lastTestRunId === testRunId) {
+        setLastTestRunId(null)
+        setTestOutput(null)
+      }
+    } catch (error) {
+      alert(`Error deleting test run: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -2259,91 +2298,146 @@ export default function WorkbenchPage() {
                   {testLoading ? '⏳ Running...' : '▶ Run Test'}
                 </button>
 
-                {testOutput && testResults.length > 0 && (() => {
-                  const lastResult = testResults[0]
-                  return (
-                    <div style={{ marginBottom: '0.75rem' }}>
+                {(testOutput || testError) && (
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    {testError && (
                       <div style={{
-                        backgroundColor: 'var(--color-backgroundAlt)',
-                        border: '1px solid var(--color-border)',
+                        backgroundColor: '#2c1b1b',
+                        border: '1px solid #8b4545',
                         borderRadius: '0.375rem',
                         padding: '0.5rem',
                         marginBottom: '0.5rem',
                         fontSize: '0.65rem',
                       }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.375rem' }}>
-                          <div>
-                            <span style={{ color: 'var(--color-foregroundAlt)' }}>Model:</span>{' '}
-                            <span style={{ fontWeight: '500', color: 'var(--color-foreground)' }}>
-                              {lastResult.model}
-                            </span>
-                          </div>
-                          <div>
-                            <span style={{ color: 'var(--color-foregroundAlt)' }}>Temp:</span>{' '}
-                            <span style={{ fontWeight: '500', color: 'var(--color-foreground)' }}>
-                              {lastResult.temperature.toFixed(1)}
-                            </span>
-                          </div>
-                          <div>
-                            <span style={{ color: 'var(--color-foregroundAlt)' }}>Tokens:</span>{' '}
-                            <span style={{ fontWeight: '500', color: 'var(--color-foreground)' }}>
-                              {lastResult.totalTokens || '?'}
-                            </span>
-                          </div>
-                          <div>
-                            <span style={{ color: 'var(--color-foregroundAlt)' }}>Latency:</span>{' '}
-                            <span style={{ fontWeight: '500', color: 'var(--color-foreground)' }}>
-                              {lastResult.latencyMs ? `${lastResult.latencyMs}ms` : '?'}
-                            </span>
-                          </div>
-                          {lastResult.totalCost !== undefined && (
-                            <div>
-                              <span style={{ color: 'var(--color-foregroundAlt)' }}>Cost:</span>{' '}
-                              <span style={{ fontWeight: '500', color: 'var(--color-accent)' }}>
-                                ${lastResult.totalCost.toFixed(6)}
-                              </span>
-                            </div>
-                          )}
+                        <div style={{ color: '#ff6b6b', fontWeight: '500', marginBottom: '0.375rem' }}>
+                          ❌ Error
                         </div>
+                        <div style={{ color: '#ffb3b3', marginBottom: '0.375rem' }}>
+                          {testError}
+                        </div>
+                        <button
+                          onClick={runTest}
+                          disabled={testLoading}
+                          style={{
+                            width: '100%',
+                            padding: '0.375rem',
+                            fontSize: '0.65rem',
+                            backgroundColor: 'var(--color-accent)',
+                            border: 'none',
+                            borderRadius: '0.25rem',
+                            cursor: testLoading ? 'not-allowed' : 'pointer',
+                            color: '#1d2021',
+                            fontWeight: '500',
+                          }}
+                        >
+                          {testLoading ? '⏳ Retrying...' : '🔄 Retry'}
+                        </button>
                       </div>
-                      <p style={{ fontSize: '0.7rem', color: 'var(--color-foregroundAlt)', marginBottom: '0.375rem', fontWeight: '500' }}>
-                        Output
-                      </p>
-                      <div style={{
-                        backgroundColor: 'var(--color-background)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: '0.375rem',
-                        padding: '0.5rem',
-                        fontSize: '0.7rem',
-                        fontFamily: 'monospace',
-                        maxHeight: '150px',
-                        overflowY: 'auto',
-                        color: 'var(--color-foreground)',
-                      }}>
-                        {testOutput}
-                      </div>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(testOutput)
-                          alert('Output copied to clipboard!')
-                        }}
-                        style={{
-                          marginTop: '0.375rem',
-                          width: '100%',
-                          padding: '0.375rem',
-                          fontSize: '0.65rem',
-                          backgroundColor: 'var(--color-surface)',
-                          border: '1px solid var(--color-border)',
-                          borderRadius: '0.25rem',
-                          cursor: 'pointer',
-                          color: 'var(--color-foreground)',
-                        }}
-                      >
-                        📋 Copy Output
-                      </button>
-                    </div>
-                  )
-                })()}
+                    )}
+
+                    {testOutput && testResults.length > 0 && (() => {
+                      const lastResult = testResults[0]
+                      return (
+                        <>
+                          <div style={{
+                            backgroundColor: 'var(--color-backgroundAlt)',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '0.375rem',
+                            padding: '0.5rem',
+                            marginBottom: '0.5rem',
+                            fontSize: '0.65rem',
+                          }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.375rem' }}>
+                              <div>
+                                <span style={{ color: 'var(--color-foregroundAlt)' }}>Model:</span>{' '}
+                                <span style={{ fontWeight: '500', color: 'var(--color-foreground)' }}>
+                                  {lastResult.model}
+                                </span>
+                              </div>
+                              <div>
+                                <span style={{ color: 'var(--color-foregroundAlt)' }}>Temp:</span>{' '}
+                                <span style={{ fontWeight: '500', color: 'var(--color-foreground)' }}>
+                                  {lastResult.temperature.toFixed(1)}
+                                </span>
+                              </div>
+                              <div>
+                                <span style={{ color: 'var(--color-foregroundAlt)' }}>Tokens:</span>{' '}
+                                <span style={{ fontWeight: '500', color: 'var(--color-foreground)' }}>
+                                  {lastResult.totalTokens || '?'}
+                                </span>
+                              </div>
+                              <div>
+                                <span style={{ color: 'var(--color-foregroundAlt)' }}>Latency:</span>{' '}
+                                <span style={{ fontWeight: '500', color: 'var(--color-foreground)' }}>
+                                  {lastResult.latencyMs ? `${lastResult.latencyMs}ms` : '?'}
+                                </span>
+                              </div>
+                              {lastResult.totalCost !== undefined && (
+                                <div>
+                                  <span style={{ color: 'var(--color-foregroundAlt)' }}>Cost:</span>{' '}
+                                  <span style={{ fontWeight: '500', color: 'var(--color-accent)' }}>
+                                    ${lastResult.totalCost.toFixed(6)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <p style={{ fontSize: '0.7rem', color: 'var(--color-foregroundAlt)', marginBottom: '0.375rem', fontWeight: '500' }}>
+                            Output
+                          </p>
+                          <div style={{
+                            backgroundColor: 'var(--color-background)',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '0.375rem',
+                            padding: '0.5rem',
+                            fontSize: '0.7rem',
+                            fontFamily: 'monospace',
+                            maxHeight: '150px',
+                            overflowY: 'auto',
+                            color: 'var(--color-foreground)',
+                          }}>
+                            {testOutput}
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.375rem' }}>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(testOutput)
+                                alert('Output copied to clipboard!')
+                              }}
+                              style={{
+                                flex: 1,
+                                padding: '0.375rem',
+                                fontSize: '0.65rem',
+                                backgroundColor: 'var(--color-surface)',
+                                border: '1px solid var(--color-border)',
+                                borderRadius: '0.25rem',
+                                cursor: 'pointer',
+                                color: 'var(--color-foreground)',
+                              }}
+                            >
+                              📋 Copy
+                            </button>
+                            <button
+                              onClick={() => deleteTestRun(lastResult.id)}
+                              style={{
+                                flex: 1,
+                                padding: '0.375rem',
+                                fontSize: '0.65rem',
+                                backgroundColor: 'transparent',
+                                border: '1px solid var(--color-border)',
+                                borderRadius: '0.25rem',
+                                cursor: 'pointer',
+                                color: 'var(--color-foreground)',
+                              }}
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+                )}
 
                 {testResults.length > 0 && (
                   <div>
@@ -2352,38 +2446,64 @@ export default function WorkbenchPage() {
                     </p>
                     <div style={{ maxHeight: '120px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                       {testResults.map((result) => (
-                        <button
+                        <div
                           key={result.id}
-                          onClick={() => setTestOutput(result.output)}
                           style={{
                             padding: '0.375rem',
                             backgroundColor: 'var(--color-background)',
                             border: '1px solid var(--color-border)',
                             borderRadius: '0.25rem',
-                            cursor: 'pointer',
-                            textAlign: 'left',
                             fontSize: '0.65rem',
-                            transition: 'all 0.2s ease',
-                            color: 'var(--color-foreground)',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = 'var(--color-accent)'
-                            e.currentTarget.style.backgroundColor = 'var(--color-backgroundAlt)'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = 'var(--color-border)'
-                            e.currentTarget.style.backgroundColor = 'var(--color-background)'
+                            display: 'flex',
+                            gap: '0.375rem',
+                            alignItems: 'flex-start',
                           }}
                         >
-                          <div style={{ fontWeight: '500', marginBottom: '0.125rem' }}>
-                            {result.model} @ {result.timestamp}
-                          </div>
-                          <div style={{ fontSize: '0.6rem', color: 'var(--color-foregroundAlt)' }}>
-                            {result.totalTokens ? `${result.totalTokens} tokens` : 'N/A'}
-                            {result.totalCost !== undefined && ` • $${result.totalCost.toFixed(6)}`}
-                            {result.latencyMs && ` • ${result.latencyMs}ms`}
-                          </div>
-                        </button>
+                          <button
+                            onClick={() => {
+                              setTestOutput(result.output)
+                              setTestError(null)
+                              setLastTestRunId(result.id)
+                            }}
+                            style={{
+                              flex: 1,
+                              padding: 0,
+                              backgroundColor: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              color: 'var(--color-foreground)',
+                            }}
+                          >
+                            <div style={{ fontWeight: '500', marginBottom: '0.125rem' }}>
+                              {result.model} @ {result.timestamp}
+                            </div>
+                            <div style={{ fontSize: '0.6rem', color: 'var(--color-foregroundAlt)' }}>
+                              {result.totalTokens ? `${result.totalTokens} tokens` : 'N/A'}
+                              {result.totalCost !== undefined && ` • $${result.totalCost.toFixed(6)}`}
+                              {result.latencyMs && ` • ${result.latencyMs}ms`}
+                            </div>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              deleteTestRun(result.id)
+                            }}
+                            style={{
+                              padding: '0.25rem 0.375rem',
+                              backgroundColor: 'transparent',
+                              border: '1px solid var(--color-border)',
+                              borderRadius: '0.2rem',
+                              cursor: 'pointer',
+                              color: 'var(--color-foreground)',
+                              fontSize: '0.6rem',
+                              flexShrink: 0,
+                            }}
+                            title="Delete this test run"
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>
