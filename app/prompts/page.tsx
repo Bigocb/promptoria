@@ -148,6 +148,7 @@ export default function WorkbenchPage() {
   const [compareVersionForDiff, setCompareVersionForDiff] = useState<PromptVersion | null>(null)
   const [showDiffView, setShowDiffView] = useState(false)
   const [fillCopied, setFillCopied] = useState(false)
+  const [contentCopied, setContentCopied] = useState(false)
 
   // Variable sets state
   const [variableSets, setVariableSets] = useState<VariableSet[]>([])
@@ -1236,8 +1237,29 @@ export default function WorkbenchPage() {
           </div>
 
           <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600' }}>
-              Prompt Content
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', fontWeight: '600' }}>
+              <span>Prompt Content</span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(promptContent)
+                  setContentCopied(true)
+                  setTimeout(() => setContentCopied(false), 2000)
+                }}
+                title="Copy prompt content"
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  color: contentCopied ? 'var(--color-success)' : 'var(--color-foregroundAlt)',
+                  padding: '0.25rem 0.5rem',
+                  transition: 'all 0.2s ease',
+                  lineHeight: 1,
+                }}
+              >
+                {contentCopied ? '✓' : '⎘'}
+              </button>
             </label>
             <textarea
               className="input"
