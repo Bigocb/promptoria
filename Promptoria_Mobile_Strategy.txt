@@ -1,0 +1,80 @@
+PROMPTORIA MOBILE STRATEGY
+From B2B Tool to Consumer 'Prompt Recipe Book' App
+April 2026
+The Opportunity
+• B2B limited to prompt engineers + AI PMs; Consumer targets 100M+ AI users
+• 'Prompt Recipe Book' reframing: Users want to save prompts they love
+• Mobile-first removes friction: Open app, save prompt, offline-first
+Feature Set: Offline-First MVP
+Core Features
+1. Quick Prompt Capture
+• Add button: Title, description, content, category
+• Camera: Snap text, extract via OCR
+• Paste from clipboard: Auto-detect and save
+2. Organization (Offline, Local Storage)
+• Categories: Writing, Coding, Marketing, Q&A, Custom
+• Favorites: Star for quick access
+• Search: Full-text search (offline)
+• Tags: Personal tagging (#marketing #urgent)
+3. Quick Test (Optional, Requires Internet)
+• Test button: Send to OpenAI or Claude API
+• Response: Show output, cost estimate, copy
+• User provides API key (stored securely in Keychain)
+4. Copy and Share
+• Long-press: Copy, Share, Export (JSON/Text)
+• Share public recipe: Generate shareable link
+• Import recipe: Paste link to add shared prompts
+5. Offline-First (Key Differentiator)
+• All prompts stored locally (SQLite/Realm)
+• No internet needed for search, organize, copy
+• Testing requires internet (API calls)
+Pricing
+Recommended: Free + $0.99 One-Time
+Free$0Save, organize, search. No testing. Ads.Pro$0.99Remove ads, API testing, cloud backup
+Why $0.99 Works:
+• Impulse-buy price (not a 'commitment')
+• No subscription = lower churn
+• You keep 70% ($0.70 per purchase)
+• 100k purchases = $70k revenue (achievable)
+Year 1 Projections
+M15k500$350$350M680k6k$4.2k$12kM12200k15k$10.5k$45k
+Go-to-Market
+Pre-Launch (Month 1)
+• Build waitlist: Landing page
+• Create assets: App preview videos, screenshots
+• App Store submission (2 weeks review)
+Launch Week (Month 2)
+• Product Hunt: Aim for top 5
+• Twitter/TikTok: Daily content
+• Press: Tech journalists, influencers
+• Reddit: r/ChatGPT, r/MachineLearning
+Growth Phase (Months 3-6)
+• Community recipes: Users share, vote
+• Blog: 'Best ChatGPT Prompts for X'
+• Referral: Users invite friends
+• Partnerships: Communities
+Technical Stack
+Recommended: Native Mobile
+• iOS: Swift + SwiftUI
+• Android: Kotlin + Jetpack Compose
+• Database: SQLite or Realm
+Alternative: Cross-Platform (Faster)
+• React Native or Flutter (single codebase)
+Recommendation
+Launch mobile app (iOS + Android) as 'Prompt Recipe Book'. Dead-simple: save, organize, test. $0.99 price. Forget web tool for now.
+Why This Wins:
+• Massive market (everyone using AI)
+• Offline-first is genuine differentiator
+• $0.99 drives viral word-of-mouth
+• Can add web/team features later as upsells
+• Easier pivot: Mobile success = web expansion
+Next Steps
+• 1. Survey 100 ChatGPT users: Would you pay $0.99?
+• 2. Wireframe 5 core screens
+• 3. Choose stack: Native or React Native?
+• 4. Hire iOS + Android developer(s)
+• 5. Target: MVP in 4-6 months
+Conclusion
+Prompt Recipe Book is a consumer mega-hit. Billions of AI users. Real problem. Simple solution. Mobile app, $0.99, offline-first, community sharing.
+You're not building for prompt engineers. You're building for humans who use AI. That's everyone now.
+Ship it.

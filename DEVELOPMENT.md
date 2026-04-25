@@ -1,246 +1,183 @@
-# PromptArchitect Backend - Local Development Guide
+# Promptoria - Development Guide
 
 ## Quick Start
 
 ### Prerequisites
-- Python 3.11+
-- pip (Python package manager)
-- Optional: MySQL server for full integration testing
+- Node.js 18+
+- PostgreSQL 14+
+- npm or yarn
 
 ### Setup
 
 1. **Install dependencies**
    ```bash
-   cd backend
-   pip install -r requirements.txt
+   npm install
    ```
 
-2. **Create `.env.local` if it doesn't exist**
+2. **Configure environment**
    ```bash
    cp .env.example .env.local
    ```
-   The `.env.local` already has development defaults configured.
-
-3. **Run development server**
-
-   **On Linux/Mac:**
-   ```bash
-   ./dev.sh
+   Edit `.env.local` with your database URL and optional API keys:
+   ```env
+   DATABASE_URL="postgresql://user:password@localhost:5432/promptarchitect"
+   JWT_SECRET="your-secret-key"
+   ANTHROPIC_API_KEY="sk-ant-..."  # Optional, for Claude integration
    ```
 
-   **On Windows:**
+3. **Setup database**
    ```bash
-   dev.bat
+   npm run db:push    # Push schema to database
+   npm run db:seed    # Seed example data (optional)
    ```
 
-   Or directly with Python:
+4. **Run development server**
    ```bash
-   python -m uvicorn main:app --reload --host 0.0.0.0 --port 3100
+   npm run dev
    ```
+   Visit `http://localhost:3000`
 
-4. **Access the API**
-   - **API Base URL**: http://localhost:3100
-   - **Interactive Docs**: http://localhost:3100/docs (Swagger UI)
-   - **ReDoc**: http://localhost:3100/redoc
+## Tech Stack
 
-## API Testing
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Database**: PostgreSQL + Prisma ORM
+- **Styling**: Tailwind CSS + CSS variables
+- **Auth**: JWT (custom implementation in `lib/jwt.ts`)
+- **AI Providers**: Ollama (local), Anthropic Claude (API)
 
-### Using Swagger UI (Recommended)
+## Project Structure
 
-1. Navigate to http://localhost:3100/docs
-2. Click on any endpoint to expand it
-3. Click "Try it out" button
-4. Fill in required parameters
-5. Click "Execute" to test
+```
+app/
+├── api/                        # API route handlers
+│   ├── auth/                   # Signup, login, refresh
+│   ├── prompts/                # Prompt CRUD, versions, compositions, etc.
+│   ├── snippets/               # Snippet CRUD, compare
+│   ├── categories/             # Interaction types and categories
+│   ├── test-runs/              # Test execution and history
+│   ├── models/                 # Available AI models
+│   ├── analytics/              # Usage analytics
+│   ├── activity/               # Audit log
+│   ├── workspaces/             # Workspace management
+│   ├── search/                 # Cross-entity search
+│   ├── export/ / import/       # Data portability
+│   ├── batch/                  # Batch operations
+│   └── settings/               # User settings, API keys
+├── auth/                       # Login, signup pages
+├── dashboard/                  # Dashboard page
+├── prompts/[id]/               # Prompt detail / workbench
+├── snippets/                  # Snippet library page
+├── library/                   # Prompt library page
+├── history/                   # Version history page
+├── test/                      # Test runner page
+└── settings/                  # Settings page
 
-### Using cURL
+lib/
+├── api-config.ts              # API endpoint constants
+├── jwt.ts                     # JWT authentication utilities
+├── prisma.ts                  # Prisma client singleton
+└── themes.ts                  # Theme definitions
 
-**1. Sign up for new account**
+prisma/
+├── schema.prisma              # Database schema
+└── seed.ts                    # Seed data
+```
+
+## Database
+
+### Migrations
+
 ```bash
-curl -X POST http://localhost:3100/api/auth/signup \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "TestPassword123"
-  }'
+# Push schema changes (development)
+npx prisma db push
+
+# Create a proper migration
+npx prisma migrate dev --name description
+
+# Reset database (WARNING: deletes all data)
+npx prisma migrate reset
+
+# Seed with example data
+npx prisma db seed
 ```
 
-**2. Login (get JWT token)**
+### Schema Changes
+
+Edit `prisma/schema.prisma`, then run:
 ```bash
-curl -X POST http://localhost:3100/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "TestPassword123"
-  }'
+npx prisma db push
+# or
+npx prisma migrate dev --name your-change-description
 ```
 
-Response will include JWT token:
-```json
-{
-  "access_token": "eyJhbGc...",
-  "token_type": "bearer",
-  "user": { ... }
-}
+## API Development
+
+All API routes are in `app/api/`. Each route file exports standard Next.js route handlers:
+
+```typescript
+// app/api/prompts/route.ts
+export async function GET(request: NextRequest) { ... }
+export async function POST(request: NextRequest) { ... }
 ```
-
-**3. Use token for authenticated requests**
-```bash
-TOKEN="your_token_here"
-
-# Get user settings
-curl -X GET http://localhost:3100/api/settings \
-  -H "Authorization: Bearer $TOKEN"
-
-# Create a prompt
-curl -X POST http://localhost:3100/api/prompts \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "My First Prompt",
-    "template_body": "Hello {{name}}, how are you?",
-    "description": "A simple greeting prompt"
-  }'
-```
-
-## API Endpoints
 
 ### Authentication
-- `POST /api/auth/signup` - Create account
-- `POST /api/auth/login` - Login with email/password
-- `POST /api/auth/logout` - Logout
 
-### Prompts
-- `GET /api/prompts` - List all prompts
-- `GET /api/prompts/{id}` - Get prompt with versions
-- `POST /api/prompts` - Create new prompt
-- `PUT /api/prompts/{id}` - Update prompt metadata
-- `DELETE /api/prompts/{id}` - Delete prompt
-- `GET /api/prompts/{id}/versions` - Get all versions
-- `POST /api/prompts/{id}/versions` - Create new version
-
-### Snippets
-- `GET /api/snippets` - List all snippets
-- `GET /api/snippets/{id}` - Get snippet
-- `POST /api/snippets` - Create snippet
-- `PUT /api/snippets/{id}` - Update snippet
-- `DELETE /api/snippets/{id}` - Delete snippet
-- `GET /api/snippets/folders` - List folders
-- `POST /api/snippets/folders` - Create folder
-- `PUT /api/snippets/folders/{id}` - Update folder
-- `DELETE /api/snippets/folders/{id}` - Delete folder
-
-### Dashboard
-- `GET /api/dashboard/stats` - Get workspace statistics
-
-### Test Execution
-- `POST /api/execute` - Run prompt (creates test run)
-- `GET /api/execute/{prompt_version_id}` - Get test history
-
-### Suggestions
-- `POST /api/suggestions/{prompt_version_id}` - Get AI suggestions
-
-### Settings
-- `GET /api/settings` - Get user settings
-- `POST /api/settings` - Update settings
-- `POST /api/settings/api-key` - Set API key
-
-### Taxonomy
-- `GET /api/taxonomy/interaction-types` - List types
-- `POST /api/taxonomy/interaction-types` - Create type
-- `GET /api/taxonomy/categories` - List categories
-- `POST /api/taxonomy/categories` - Create category
-
-## Environment Variables
-
-Configure in `.env.local`:
-
-```
-# Database (local MySQL or test instance)
-DATABASE_URL=mysql+mysqlconnector://user:password@localhost:3306/promptoria_test
-
-# JWT Configuration
-JWT_SECRET=dev-secret-key
-JWT_ALGORITHM=HS256
-JWT_EXPIRATION_DAYS=7
-
-# API Keys (optional for development)
-ANTHROPIC_API_KEY=
-OPENAI_API_KEY=
-
-# Environment
-ENVIRONMENT=development
-DEBUG=True
-
-# CORS
-CORS_ORIGINS=["http://localhost:3100", "https://syncellium.pro"]
+All protected routes verify JWT tokens:
+```typescript
+const authHeader = request.headers.get('Authorization')
+const token = authHeader.substring(7)
+const decoded = verifyAccessToken(token)
+const userId = decoded.userId
 ```
 
-## Database Migrations
+### Adding a New API Endpoint
 
-**Initialize database:**
+1. Create `app/api/your-endpoint/route.ts`
+2. Export `GET`, `POST`, `PUT`, or `DELETE` handlers
+3. Add auth verification at the start of each handler
+4. Add the endpoint URL to `lib/api-config.ts`
+
+## Testing
+
 ```bash
-# Run initial migration
-alembic upgrade head
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run specific test file
+npm test -- path/to/test.test.ts
 ```
 
-**Create new migration after model changes:**
-```bash
-# Auto-generate migration
-alembic revision --autogenerate -m "Description of changes"
+## Available Scripts
 
-# Apply it
-alembic upgrade head
-```
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npm run db:push` | Push schema to database |
+| `npm run db:migrate` | Create and run migration |
+| `npm run db:seed` | Seed database with example data |
+| `npm test` | Run tests |
 
 ## Troubleshooting
 
-### "ModuleNotFoundError: No module named 'X'"
-- Run `pip install -r requirements.txt` to install dependencies
+### Database connection error
+```bash
+# Create the database
+createdb promptarchitect
+npx prisma db push
+```
 
-### "Can't connect to MySQL server"
-- Make sure MySQL is running (or use test database)
-- The app will start even if database unavailable
-- Endpoints requiring DB will return connection error
+### Module not found errors
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
 
-### "Invalid email" when signing up
-- Email must have @ and domain: test@example.com
-
-### "Invalid token" when calling authenticated endpoints
-- Make sure to use "Bearer TOKEN" in Authorization header
-- Token is case-sensitive
-
-### Port 3100 already in use
-- Change port: `python -m uvicorn main:app --port 3101`
-
-## Testing with Frontend
-
-To test with the React frontend locally:
-
-1. **Build Next.js as static files:**
-   ```bash
-   cd frontend
-   npm run build
-   ```
-
-2. **Configure React to call API:**
-   - Update API_BASE_URL to http://localhost:3100
-   - CORS is configured to allow localhost:3100
-
-3. **Serve static files separately:**
-   ```bash
-   # Python simple server
-   cd frontend/.next/out
-   python -m http.server 3000
-   ```
-
-   Then access at http://localhost:3000
-
-## Next Steps
-
-1. Test all endpoints using Swagger UI
-2. Verify authentication flow
-3. Create sample prompts/snippets
-4. Test prompt versioning
-5. Once working locally → Deploy to DreamHost
-
+### API key error
+Set `ANTHROPIC_API_KEY` in `.env.local` for Claude integration, or use Ollama for local models.

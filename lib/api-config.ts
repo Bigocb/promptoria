@@ -8,7 +8,7 @@ const isDevelopment = process.env.NODE_ENV === 'development'
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ||
   (isDevelopment
     ? 'http://localhost:3000/api'  // Local dev: Next.js backend
-    : 'https://promptoria-dev.vercel.app/api')  // Production: Next.js on Vercel
+    : 'https://promptoria.me/api')
 
 export const API_ENDPOINTS = {
   auth: {

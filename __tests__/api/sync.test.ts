@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server'
 
-// Mock Prisma and JWT BEFORE importing route handler
 jest.mock('@/lib/prisma', () => {
   const mockClient = {
     user: {
@@ -24,6 +23,9 @@ jest.mock('@/lib/prisma', () => {
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+    },
+    prompt: {
+      findUnique: jest.fn(),
     },
     syncLog: {
       findMany: jest.fn(),
@@ -50,24 +52,24 @@ describe('GET /api/sync', () => {
 
   const mockWorkspace = {
     id: 'workspace123',
-    userId: 'user123',
+    user_id: 'user123',
   }
 
   const mockChanges = [
     {
       id: 'change1',
       action: 'create',
-      entityType: 'prompt',
-      entityId: 'prompt123',
-      changedAt: new Date('2026-04-18T10:00:00Z'),
-      data: { name: 'New Prompt', content: '...' },
+      entity_type: 'snippet',
+      entity_id: 'snippet123',
+      changed_at: new Date('2026-04-18T10:00:00Z'),
+      data: { name: 'New Snippet' },
     },
     {
       id: 'change2',
       action: 'update',
-      entityType: 'snippet',
-      entityId: 'snippet456',
-      changedAt: new Date('2026-04-18T11:00:00Z'),
+      entity_type: 'snippet',
+      entity_id: 'snippet456',
+      changed_at: new Date('2026-04-18T11:00:00Z'),
       data: { name: 'Updated Snippet' },
     },
   ]
@@ -256,6 +258,50 @@ describe('GET /api/sync', () => {
 
       expect(response.status).toBe(200)
       expect(data.changes).toEqual([])
+    })
+
+    test('fetches prompt data for prompt entity changes', async () => {
+      const prisma = require('@/lib/prisma').default
+      const promptChange = {
+        id: 'change3',
+        action: 'create',
+        entity_type: 'prompt',
+        entity_id: 'prompt123',
+        changed_at: new Date('2026-04-18T12:00:00Z'),
+        data: { name: 'New Prompt' },
+      }
+
+      prisma.workspace.findFirst.mockResolvedValueOnce(mockWorkspace)
+      prisma.syncLog.findMany.mockResolvedValueOnce([promptChange])
+      prisma.prompt.findUnique.mockResolvedValueOnce({
+        id: 'prompt123',
+        name: 'New Prompt',
+        description: 'Test desc',
+        tags: ['test'],
+        model: 'claude-3-haiku',
+        updated_at: new Date('2026-04-18T12:00:00Z'),
+        versions: [{
+          id: 'v1',
+          version_number: 1,
+          template_body: 'Hello {{name}}',
+          model_config: {},
+          change_log: 'Initial',
+          created_by: 'user123',
+          is_active: true,
+          created_at: new Date('2026-04-18T12:00:00Z'),
+        }],
+      })
+
+      const request = new NextRequest('http://localhost:3000/api/sync?lastSync=2026-04-18T00:00:00Z', {
+        headers: { Authorization: 'Bearer valid_token' },
+      })
+      const response = await syncHandler(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.changes).toHaveLength(1)
+      expect(data.changes[0].entity_type).toBe('prompt')
+      expect(data.changes[0].data.name).toBe('New Prompt')
     })
   })
 

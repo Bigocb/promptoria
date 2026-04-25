@@ -1,148 +1,102 @@
-# Deployment Guide: Vercel + Render
-
-This app is deployed across two platforms for optimal performance:
-- **Frontend**: Vercel (static Next.js export)
-- **Backend**: Render.com (Python/FastAPI)
+# Deployment Guide
 
 ## Architecture
+
+Promptoria is a single Next.js application deployed to Vercel:
 
 ```
 GitHub Repo (main branch)
     ↓
-    ├→ Vercel (Frontend)
-    │  https://promptoria.vercel.app
-    │
-    └→ Render (Backend API)
-       https://promptoria-api.onrender.com
+    └→ Vercel (Next.js — frontend + API routes)
+       https://promptoria.vercel.app
 ```
 
-## Setup Instructions
+The app uses Next.js API routes for the backend, with PostgreSQL as the database.
 
-### 1. Vercel Setup (Frontend)
+## Prerequisites
+
+- Vercel account
+- PostgreSQL database (Vercel Postgres, Supabase, Neon, or similar)
+- Anthropic API key (optional, for Claude integration)
+- Ollama running locally or remotely (optional, for local model support)
+
+## Vercel Deployment
 
 1. Go to [vercel.com](https://vercel.com) and sign up with GitHub
 2. Click "Import Project" and select your GitHub repo
 3. Framework: **Next.js**
-4. Build Command: `npm run build`
-5. Output Directory: `out`
-6. Environment Variables:
+4. Configure environment variables:
    ```
-   NEXT_PUBLIC_API_URL=https://your-render-backend.onrender.com
+   DATABASE_URL=postgresql://user:password@host:5432/dbname
+   JWT_SECRET=your-secret-key
+   ANTHROPIC_API_KEY=sk-ant-... (optional)
    ```
-7. Click "Deploy"
+5. Click "Deploy"
 
-**Note your Vercel URL** (e.g., `https://promptoria.vercel.app`)
+## Database Setup
 
-### 2. Render Setup (Backend)
+### Using Vercel Postgres
 
-1. Go to [render.com](https://render.com) and sign up
-2. Click "New +" → "Web Service"
-3. Connect GitHub repo
-4. Configure:
-   - **Name**: `promptoria-api`
-   - **Environment**: `Python 3.11`
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+1. In Vercel dashboard, go to Storage → Create Database
+2. Select Postgres and create
+3. The `DATABASE_URL` will be automatically set
 
-5. Environment Variables:
-   ```
-   CORS_ORIGINS=["https://your-vercel-domain.vercel.app"]
-   DATABASE_URL=sqlite:///./promptoria.db
-   DEBUG=false
+### Using External PostgreSQL
+
+1. Create a PostgreSQL database (Supabase, Neon, Railway, etc.)
+2. Add the `DATABASE_URL` to Vercel environment variables
+3. Run migrations:
+   ```bash
+   npx prisma db push
    ```
 
-6. Click "Deploy"
-
-**Note your Render URL** (e.g., `https://promptoria-api.onrender.com`)
-
-### 3. GitHub Secrets
-
-Add these to your repo (Settings → Secrets and variables → Actions):
-
-**Vercel Secrets:**
-```
-VERCEL_TOKEN        → Get from Vercel Settings → Tokens
-VERCEL_ORG_ID       → Your Vercel account ID (Settings)
-VERCEL_PROJECT_ID   → From Vercel project settings
-```
-
-**Environment:**
-```
-NEXT_PUBLIC_API_URL → https://your-render-backend.onrender.com
-```
-
-**Render Secrets (for backend redeployment):**
-```
-RENDER_SERVICE_ID   → From Render URL: https://dashboard.render.com/web/srv-xxxxx
-RENDER_DEPLOY_KEY   → From Render → Service Settings → Deploy Hook
-```
-
-### 4. CORS Configuration
-
-Update your Render environment variables with your Vercel domain:
-
-In Render Dashboard:
-1. Go to your service
-2. Settings → Environment
-3. Update `CORS_ORIGINS` to include your Vercel URL
-
-## Deployment Flow
-
-When you push to `main` branch:
-
-1. ✅ GitHub Actions builds Next.js → uploads to Vercel
-2. ✅ Vercel automatically deploys frontend
-3. ✅ GitHub Actions triggers Render backend redeployment
-4. ✅ Both live and synced
-
-## Testing Deployment
-
-After both services are live:
+### Seed Data (Optional)
 
 ```bash
-# Test frontend
-curl https://your-vercel-domain.vercel.app
-
-# Test backend
-curl https://your-render-backend.onrender.com/api/taxonomy/interaction-types
+npx prisma db seed
 ```
 
 ## Local Development
 
 ```bash
-# Terminal 1: Backend
-cd backend
-python -m uvicorn app.main:app --reload --port 3100
+# Install dependencies
+npm install
 
-# Terminal 2: Frontend  
+# Configure environment
+cp .env.example .env.local
+# Edit .env.local with your DATABASE_URL and optional ANTHROPIC_API_KEY
+
+# Setup database
+npm run db:push    # Push schema
+npm run db:seed    # Seed example data (optional)
+
+# Run development server
 npm run dev
-# http://localhost:3001
 ```
 
-## Important Notes
+Visit `http://localhost:3000`
 
-### Database on Render Free Tier
-- SQLite data is **ephemeral** (lost on redeploy)
-- For production, upgrade Render to paid tier or use PostgreSQL:
-  1. In Render dashboard, create a PostgreSQL database
-  2. Update `DATABASE_URL` to point to PostgreSQL
-  3. Redeploy backend
+## Environment Variables
 
-### First Deploy
-Render free tier may take 30 seconds to start up. Subsequent deploys are faster.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `JWT_SECRET` | Yes | Secret key for JWT tokens |
+| `ANTHROPIC_API_KEY` | No | For Claude AI integration |
+| `OLLAMA_BASE_URL` | No | Defaults to `http://localhost:11434` |
 
 ## Troubleshooting
 
-**Frontend can't reach backend:**
-- Check `NEXT_PUBLIC_API_URL` environment variable in Vercel
-- Verify Render backend is running (check logs in Render dashboard)
-- Check CORS_ORIGINS in Render environment matches your Vercel URL
+**Database connection error:**
+- Verify `DATABASE_URL` is correct
+- Ensure PostgreSQL is running and accessible
+- Run `npx prisma db push` to sync schema
 
-**Render keeps going to sleep:**
-- Free tier pauses inactive services after 15 minutes
-- Upgrade to paid tier for continuous uptime
-- Or ping the service periodically to keep it awake
+**Ollama not connecting:**
+- Ensure Ollama is running locally
+- Check `OLLAMA_BASE_URL` if not using default port
 
-**Database lost after deploy:**
-- This is normal on free tier (ephemeral storage)
-- Upgrade Render tier or migrate to persistent database
+**Vercel deployment fails:**
+- Check build logs in Vercel dashboard
+- Ensure all environment variables are set
+- Verify `prisma generate` runs during build

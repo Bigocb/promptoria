@@ -56,6 +56,9 @@ All other endpoints require a valid JWT token in the Authorization header.
 #### Versions
 - `GET /prompts/[id]/versions/compare?v1=1&v2=2` - Compare versions with diffs
 
+#### Tag Suggestions
+- `GET /prompts/[id]/tags-suggestions` - AI-generated tag suggestions for a prompt
+
 #### Compositions (Snippets in Prompts)
 - `GET /prompts/[id]/compositions` - List snippets in prompt
 - `POST /prompts/[id]/compositions` - Add snippet to prompt
@@ -87,13 +90,17 @@ All other endpoints require a valid JWT token in the Authorization header.
 - `PUT /categories/[id]` - Update category
 - `DELETE /categories/[id]` - Delete category
 
+### Models
+
+- `GET /models` - List available AI models (Ollama + Anthropic) with pricing info
+
 ### Testing & Execution
 
 - `GET /test-runs` - List test runs
-- `POST /test-runs` - Create test run (no execution)
+- `POST /test-runs` - Create and execute test run (supports Ollama and Claude)
 - `GET /test-runs/[id]` - Get test run details
 - `DELETE /test-runs/[id]` - Delete test run
-- `POST /test-runs/[id]/execute` - Execute test run against Claude API
+- `POST /test-runs/[id]/execute` - Execute a pending test run
 
 ### Analytics & Statistics
 
@@ -105,8 +112,8 @@ All other endpoints require a valid JWT token in the Authorization header.
 ### Search & Export
 
 - `GET /search?q=search_term&type=all` - Search prompts, snippets, categories
-- `GET /export?format=json&type=all` - Export workspace data
-- `POST /import` - Import prompts, snippets, categories from JSON
+- `GET /export?format=json&type=all` - Export workspace data (JSON or CSV)
+- `POST /import` - Import prompts, snippets, categories, interaction types from JSON
 
 ### Utilities
 

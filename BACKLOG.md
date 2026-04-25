@@ -1,184 +1,110 @@
 # Promptoria Backlog
 
-Prioritized list of work items planned for development.
+Prioritized list of remaining work. Completed items have been moved to `FEATURES.md`.
 
-## Status Summary
+---
 
-**Phase 1: Backend Migration** ✅ COMPLETE
-- JWT authentication system
-- User workspaces
-- Prompt CRUD endpoints (`/api/prompts/*`)
-- Snippet CRUD endpoints (`/api/snippets/*`)
-- Version history with rollback
-- SyncLog tracking for all changes
-- Database: Prisma + PostgreSQL
+## Tier 1: Incomplete Features (finish what's started)
 
-**Phase 2: Frontend Integration** 🟡 IN PROGRESS
-- Workbench page with prompt editing
-- Snippet library management
-- Version history viewer with diffs
-- Category system (backend ✓, frontend ❌)
-- Variable set management
-- Toast notifications & save feedback
+### Connect History page to real API
+- [ ] Replace hardcoded mock data in `/history` page with calls to `GET /api/test-runs`
+- [ ] Add pagination, filtering by prompt, date range picker
 
-**Phase 3: Core Features** 🟢 MOSTLY COMPLETE
-- [x] Snippet composition/picker enhancement (click-to-insert, composition UI, search, drag-drop all working)
-- [ ] Test runner (backend needs re-enabling)
-- [x] Categories endpoint to fetch with prompts (now shows uncategorized too)
-- [ ] Advanced snippet features (folders, tags)
+### Favorites persistence
+- [ ] Add `Favorite` model to Prisma schema (user_id, prompt_id, created_at)
+- [ ] Wire up `POST/DELETE /api/prompts/[id]/favorite` to create/delete Favorite records
+- [ ] Add favorites list endpoint `GET /api/prompts?favorited=true`
+- [ ] Add favorite toggle UI to prompt cards and detail page
 
-**Total MVP Completion:** ~82% (was 65%, improved with composition & library fixes)
+### Cost calculation in test results
+- [ ] Use pricing data from `/api/models` to calculate cost per test run
+- [ ] Display input cost, output cost, and total cost in test run results
+- [ ] Add cost aggregation to analytics/usage endpoint
 
-## Priority 1: Critical Blockers 🔴
+### Tag suggestions UI
+- [ ] Surface `GET /api/prompts/[id]/tags-suggestions` in prompt edit form
+- [ ] Show suggested tags as clickable chips below the tag input
 
-### Library Categories — Data Endpoint
-- [x] Create `GET /api/categories` endpoint returning categories with associated prompts
-- [x] Fix library page category display (now shows uncategorized prompts in "Uncategorized" section)
-- [x] Add pagination/filtering for category queries
-- **Blocks:** Library feature completion, category-based organization
-- **Status:** ✅ COMPLETE — Uncategorized prompts now visible in library
+## Tier 2: Polish & Gaps
 
-### Snippet Picker Composition (MVP)
-- [x] Snippet CRUD backend (`/api/snippets/*`) — **COMPLETE**
-- [x] Basic snippet panel in workbench — **COMPLETE** (click-to-insert)
-- [x] Search/filter input for snippets — **COMPLETE**
-- [x] Composition tracking (know which snippets inserted, in what order) — **COMPLETE**
-- [x] Reorder/remove controls for inserted snippets — **COMPLETE**
-- [x] Drag-and-drop insertion (replace click-to-append) — **COMPLETE**
-- [x] Live preview showing both prompt content and composed snippets — **COMPLETE** (Apr 20)
-- **Status:** ✅ MVP COMPLETE (all core features implemented)
-
-### Test Runner Backend
-- [ ] Re-enable test execution (currently shows "Coming soon")
-- [ ] OpenAI/Claude API integration
-- [ ] Local model execution fallback
-- [ ] Token counter and cost estimation
-- [ ] Response viewer UI
-- **Blocks:** Prompt testing/validation workflows
-- **Estimated: 2-3 days**
-
-## Priority 2: Snippet Picker Enhancements 🟠
-
-### Template Variable Handling
-- [ ] Inline editing for `{variable}` names within snippets
-- [ ] Variable collision detection (same var name across snippets)
-- [ ] Auto-merge of variables from composed snippets
-- [ ] Live preview of compiled prompt with variable substitution
-- **Estimated: 1-2 days**
+### UX
+- [ ] Breadcrumb navigation across pages
+- [ ] Copy-to-clipboard buttons globally (not just test runner)
+- [ ] Keyboard shortcuts (Cmd+K for search, Cmd+S for save)
+- [ ] Empty state illustrations (currently text-only)
+- [ ] Loading skeleton states for async data
+- [ ] Error boundaries for route-level error handling
 
 ### Snippet Organization
-- [ ] Snippet folders/collections (backend: `folder_id` field exists)
-- [ ] Tags and filtering by tag
-- [ ] Favorites/starred snippets
-- [ ] Search across snippet name + content + description
-- **Estimated: 1-2 days**
+- [ ] Snippet folders/collections (`folder_id` field exists in schema, no model or UI)
+- [ ] Snippet tags and filtering
+- [ ] Snippet search across name + content + description
 
-## Priority 3: Core UX Improvements 🟡
+### Variable Handling
+- [ ] Inline variable editing in composition UI
+- [ ] Variable collision detection across composed snippets
+- [ ] Auto-merge variables from snippets into test runner
 
-- [x] Toast notifications for actions — **COMPLETE**
-- [x] Save status indicators — **COMPLETE**
-- [x] Character-level diff viewer — **COMPLETE**
-- [ ] Breadcrumb navigation
-- [ ] Copy-to-clipboard buttons for code blocks
-- [ ] Keyboard shortcuts (Cmd+K for search, Cmd+S for save, etc.)
-- [ ] Empty state illustrations
-- [ ] Loading states for async operations
-- [ ] Dark mode Polish
+### Pagination & Performance
+- [ ] Add pagination to prompt list, snippet list, and test runs list
+- [ ] Optimize N+1 queries in API endpoints
+- [ ] Add database indexes for common queries
 
-## Priority 4: Version History & History Page 🟢
+## Tier 3: New Features
 
-- [x] Version list view — **COMPLETE**
-- [x] Diff viewer (character-level) — **COMPLETE**
-- [x] Version comparison UI — **COMPLETE**
-- [x] Rollback to previous version — **COMPLETE**
-- [ ] History page dedicated view (separate from workbench)
-- [ ] Branch/tag system for versions
-- [ ] Version pinning/locking
+### Prompt Templates Library
+- [ ] Pre-built prompt templates as starting points
+- [ ] Template seeding in database
+- [ ] "Create from template" flow
 
-## Priority 5: Feature Expansion 🔵
+### A/B Testing
+- [ ] A/B testing framework between prompt versions
+- [ ] Statistical comparison of test results
+- [ ] Batch testing with multiple variable sets
 
-- [ ] Bulk operations (batch save, batch delete)
-- [ ] Export prompts as JSON/Markdown/PDF
-- [ ] Import snippets/prompts from file
-- [ ] Prompt templates library (reusable starting points)
-- [ ] Favorites/starred prompts
-- [ ] Smart suggestions using version history
-- [ ] Prompt cloning/forking
+### Enhanced Test Runner
+- [ ] Response storage linked to prompts
+- [ ] Response library for comparative analysis
+- [ ] File attachments on prompts
 
-## Priority 6: Infrastructure 🟣
+### Collaboration
+- [ ] Shared workspaces with team members
+- [ ] Comments/annotations on prompts
+- [ ] User mentions and notifications
+- [ ] Role-based access control (owner, editor, viewer)
 
-- [x] Authentication system (JWT-based) — **COMPLETE**
-- [x] User workspaces — **COMPLETE**
-- [ ] Database backup strategy
-- [ ] API rate limiting
-- [ ] Error tracking (Sentry)
-- [ ] Analytics integration
-- [ ] Performance monitoring
-- [ ] Caching strategy (Redis/Edge Cache)
-
-## Priority 7: Advanced Features 💜
-
-- [ ] **Prompt Attachments & Response Storage**
-  - [ ] Support file attachments on prompts (images, documents, data files)
-  - [ ] Store LLM responses/outputs with prompts for historical context
-  - [ ] Use stored responses as context for improvement suggestions
-  - [ ] Build response library for A/B testing and comparative analysis
-  - **Estimated: 3-4 days**
-
-- [ ] Mobile app support
-  - [ ] React Native mobile app (iOS/Android)
-  - [ ] Offline sync capability
-  - [ ] Mobile-optimized UI
-
-- [ ] Collaborative features
-  - [ ] Real-time collaborative editing
-  - [ ] Comments/annotations on prompts
-  - [ ] Activity log/audit trail
-  - [ ] User mentions and @notifications
-
-- [ ] Advanced organization
-  - [ ] Snippet versioning
-  - [ ] Custom workspaces/teams
-  - [ ] Permission/role management
-  - [ ] Organization-level settings
-
-## Nice-to-Have (Future) 🌟
-
-- [ ] Plugin/extension system
-- [ ] Custom prompt DSL/language
-- [ ] AI-powered prompt optimization
-- [ ] A/B testing framework built-in
-- [ ] Prompt analytics dashboard
-- [ ] Integration with LLM APIs (OpenAI, Anthropic, etc.)
+### Integrations
 - [ ] Webhook support for automation
-- [ ] Dark theme variants per user preference
-- [ ] Full offline mode with sync
+- [ ] OpenAI provider integration (currently Ollama + Anthropic only)
+- [ ] Swagger/OpenAPI documentation endpoint
 
-## Technical Debt / Quality
+### Mobile
+- [ ] React Native mobile app (iOS/Android)
+- [ ] Offline sync capability
+- [ ] Mobile-optimized responsive layouts
+
+## Tier 4: Infrastructure & Quality
 
 ### Testing
-- [ ] Add proper error boundaries
-- [ ] Write unit tests (auth, API routes, components)
-- [ ] Write E2E tests (full user workflows)
+- [ ] Unit tests for auth, API routes, and components
+- [ ] E2E tests for full user workflows
 - [ ] Test coverage target: 80%+
 
 ### Code Quality
-- [ ] Remove unused dependencies (check package.json)
-- [ ] Optimize bundle size
-- [ ] Add input validation layer (Zod/Yup)
-- [ ] Improve TypeScript strictness (tsconfig)
+- [ ] Input validation layer (Zod)
 - [ ] Consistent error handling across all endpoints
+- [ ] Remove unused dependencies
+- [ ] TypeScript strict mode
 
-### Documentation
-- [ ] Document all API endpoints (OpenAPI/Swagger)
-- [ ] Add inline code comments for complex logic
-- [ ] Create developer setup guide
-- [ ] Architecture decision records (ADRs)
-- [ ] Database schema documentation
+### Production Readiness
+- [ ] Rate limiting (per IP/user)
+- [ ] Structured audit logging (beyond SyncLog)
+- [ ] Database backup strategy
+- [ ] Error tracking (Sentry)
+- [ ] Redis caching
+- [ ] CI/CD pipeline
+- [ ] Refresh tokens and token expiry handling
 
-### Performance
-- [ ] Query optimization (N+1 queries, missing indexes)
-- [ ] Implement query result caching (Prisma cache, Redis)
-- [ ] Code split React components
-- [ ] Image optimization
-- [ ] Database connection pooling
+### Developer Experience
+- [ ] CLI tool for Promptoria
+- [ ] VS Code extension

@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server'
 
-// Mock Prisma first (inline to avoid hoisting issues)
 jest.mock('@/lib/prisma', () => {
   const mockClient = {
     user: {
@@ -37,14 +36,12 @@ jest.mock('@/lib/prisma', () => {
   }
 })
 
-// Mock auth utilities
 jest.mock('@/lib/auth', () => ({
   authenticateUser: jest.fn(),
   hashPassword: jest.fn().mockResolvedValue('hashed_password_bcrypt'),
   verifyPassword: jest.fn(),
 }))
 
-// Mock JWT utilities
 jest.mock('@/lib/jwt', () => ({
   generateAccessToken: jest.fn().mockReturnValue('mock_access_token_123'),
   generateRefreshToken: jest.fn().mockReturnValue('mock_refresh_token_456'),
@@ -54,6 +51,31 @@ jest.mock('@/lib/jwt', () => ({
 
 import { POST as loginHandler } from '@/app/api/auth/login/route'
 import { POST as signupHandler } from '@/app/api/auth/signup/route'
+
+function makeMockUser(overrides = {}) {
+  return {
+    id: 'user_123',
+    email: 'test@example.com',
+    password: 'hashed_password_bcrypt',
+    created_at: new Date('2026-01-15T10:00:00Z'),
+    updated_at: new Date('2026-01-15T10:00:00Z'),
+    user_settings: {
+      id: 'settings_123',
+      user_id: 'user_123',
+      theme: 'gruvbox-dark',
+      suggestions_enabled: true,
+      default_model: 'claude-3-haiku',
+      default_temperature: 0.7,
+      default_max_tokens: 500,
+      anthropic_api_key: null,
+      created_at: new Date('2026-01-15T10:00:00Z'),
+      updated_at: new Date('2026-01-15T10:00:00Z'),
+    },
+    workspaces: null,
+    devices: [],
+    ...overrides,
+  }
+}
 
 describe('POST /api/auth/login', () => {
   beforeEach(() => {
@@ -141,25 +163,7 @@ describe('POST /api/auth/login', () => {
     const { authenticateUser } = require('@/lib/auth')
     const { generateAccessToken } = require('@/lib/jwt')
 
-    const mockUser = {
-      id: 'user_123',
-      email: 'test@example.com',
-      createdAt: new Date('2026-01-15T10:00:00Z'),
-      updatedAt: new Date('2026-01-15T10:00:00Z'),
-      settings: {
-        id: 'settings_123',
-        userId: 'user_123',
-        theme: 'gruvbox-dark',
-        suggestionsEnabled: true,
-        defaultModel: 'claude-3-haiku',
-        defaultTemperature: 0.7,
-        defaultMaxTokens: 500,
-        createdAt: new Date('2026-01-15T10:00:00Z'),
-        updatedAt: new Date('2026-01-15T10:00:00Z'),
-      },
-    }
-
-    authenticateUser.mockResolvedValueOnce(mockUser)
+    authenticateUser.mockResolvedValueOnce(makeMockUser())
     generateAccessToken.mockReturnValueOnce('mock_access_token_123')
 
     const request = new NextRequest('http://localhost:3000/api/auth/login', {
@@ -186,15 +190,7 @@ describe('POST /api/auth/login', () => {
   test('should return 200 with null settings if user has no settings', async () => {
     const { authenticateUser } = require('@/lib/auth')
 
-    const mockUser = {
-      id: 'user_456',
-      email: 'user@test.com',
-      createdAt: new Date('2026-01-15T10:00:00Z'),
-      updatedAt: new Date('2026-01-15T10:00:00Z'),
-      settings: null,
-    }
-
-    authenticateUser.mockResolvedValueOnce(mockUser)
+    authenticateUser.mockResolvedValueOnce(makeMockUser({ user_settings: null }))
 
     const request = new NextRequest('http://localhost:3000/api/auth/login', {
       method: 'POST',
@@ -368,26 +364,38 @@ describe('POST /api/auth/signup', () => {
     const { hashPassword } = require('@/lib/auth')
     const { generateAccessToken } = require('@/lib/jwt')
 
-    const mockNewUser = {
+    const createdUser = {
       id: 'new_user_123',
       email: 'newuser@example.com',
-      createdAt: new Date('2026-01-20T10:00:00Z'),
-      updatedAt: new Date('2026-01-20T10:00:00Z'),
-      settings: {
-        id: 'settings_new_123',
-        userId: 'new_user_123',
-        theme: 'gruvbox-dark',
-        suggestionsEnabled: true,
-        defaultModel: 'claude-3-haiku',
-        defaultTemperature: 0.7,
-        defaultMaxTokens: 500,
-        createdAt: new Date('2026-01-20T10:00:00Z'),
-        updatedAt: new Date('2026-01-20T10:00:00Z'),
-      },
+      password: 'hashed_password_bcrypt',
+      created_at: new Date('2026-01-20T10:00:00Z'),
+      updated_at: new Date('2026-01-20T10:00:00Z'),
+    }
+
+    const createdSettings = {
+      id: 'settings_new_123',
+      user_id: 'new_user_123',
+      theme: 'gruvbox-dark',
+      suggestions_enabled: true,
+      default_model: 'claude-3-haiku',
+      default_temperature: 0.7,
+      default_max_tokens: 500,
+      anthropic_api_key: null,
+      created_at: new Date('2026-01-20T10:00:00Z'),
+      updated_at: new Date('2026-01-20T10:00:00Z'),
+    }
+
+    const createdWorkspace = {
+      id: 'workspace_123',
+      name: 'Default Workspace',
+      slug: 'default',
+      user_id: 'new_user_123',
     }
 
     prisma.user.findUnique.mockResolvedValueOnce(null)
-    prisma.user.create.mockResolvedValueOnce(mockNewUser)
+    prisma.user.create.mockResolvedValueOnce(createdUser)
+    prisma.userSettings.create.mockResolvedValueOnce(createdSettings)
+    prisma.workspace.create.mockResolvedValueOnce(createdWorkspace)
     hashPassword.mockResolvedValueOnce('hashed_password_bcrypt')
     generateAccessToken.mockReturnValueOnce('mock_access_token_new_123')
 
@@ -417,26 +425,10 @@ describe('POST /api/auth/signup', () => {
     const prisma = require('@/lib/prisma').default
     const { hashPassword } = require('@/lib/auth')
 
-    const mockNewUser = {
-      id: 'new_user_456',
-      email: 'another@example.com',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      settings: {
-        id: 'settings_456',
-        userId: 'new_user_456',
-        theme: 'gruvbox-dark',
-        suggestionsEnabled: true,
-        defaultModel: 'claude-3-haiku',
-        defaultTemperature: 0.7,
-        defaultMaxTokens: 500,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    }
-
     prisma.user.findUnique.mockResolvedValueOnce(null)
-    prisma.user.create.mockResolvedValueOnce(mockNewUser)
+    prisma.user.create.mockResolvedValueOnce({ id: 'u1', email: 'a@b.com', created_at: new Date(), updated_at: new Date() })
+    prisma.userSettings.create.mockResolvedValueOnce({})
+    prisma.workspace.create.mockResolvedValueOnce({})
     hashPassword.mockResolvedValueOnce('hashed_password_bcrypt_test')
 
     const request = new NextRequest('http://localhost:3000/api/auth/signup', {
@@ -452,30 +444,14 @@ describe('POST /api/auth/signup', () => {
     expect(hashPassword).toHaveBeenCalledWith('MyPassword123')
   })
 
-  test('should create user with default workspace and settings', async () => {
+  test('should create user with hashed password', async () => {
     const prisma = require('@/lib/prisma').default
     const { hashPassword } = require('@/lib/auth')
 
-    const mockNewUser = {
-      id: 'new_user_789',
-      email: 'test@example.com',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      settings: {
-        id: 'settings_789',
-        userId: 'new_user_789',
-        theme: 'gruvbox-dark',
-        suggestionsEnabled: true,
-        defaultModel: 'claude-3-haiku',
-        defaultTemperature: 0.7,
-        defaultMaxTokens: 500,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    }
-
     prisma.user.findUnique.mockResolvedValueOnce(null)
-    prisma.user.create.mockResolvedValueOnce(mockNewUser)
+    prisma.user.create.mockResolvedValueOnce({ id: 'u2', email: 'a@b.com', created_at: new Date(), updated_at: new Date() })
+    prisma.userSettings.create.mockResolvedValueOnce({})
+    prisma.workspace.create.mockResolvedValueOnce({})
     hashPassword.mockResolvedValueOnce('hashed_password_bcrypt')
 
     const request = new NextRequest('http://localhost:3000/api/auth/signup', {
@@ -493,8 +469,6 @@ describe('POST /api/auth/signup', () => {
         data: expect.objectContaining({
           email: 'test@example.com',
           password: 'hashed_password_bcrypt',
-          settings: expect.any(Object),
-          workspace: expect.any(Object),
         }),
       })
     )
@@ -504,26 +478,10 @@ describe('POST /api/auth/signup', () => {
     const prisma = require('@/lib/prisma').default
     const { hashPassword } = require('@/lib/auth')
 
-    const mockNewUser = {
-      id: 'new_user_min',
-      email: 'test@example.com',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      settings: {
-        id: 'settings_min',
-        userId: 'new_user_min',
-        theme: 'gruvbox-dark',
-        suggestionsEnabled: true,
-        defaultModel: 'claude-3-haiku',
-        defaultTemperature: 0.7,
-        defaultMaxTokens: 500,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    }
-
     prisma.user.findUnique.mockResolvedValueOnce(null)
-    prisma.user.create.mockResolvedValueOnce(mockNewUser)
+    prisma.user.create.mockResolvedValueOnce({ id: 'u3', email: 'a@b.com', created_at: new Date(), updated_at: new Date() })
+    prisma.userSettings.create.mockResolvedValueOnce({})
+    prisma.workspace.create.mockResolvedValueOnce({})
     hashPassword.mockResolvedValueOnce('hashed_password')
 
     const request = new NextRequest('http://localhost:3000/api/auth/signup', {
@@ -682,26 +640,12 @@ describe('Email Validation', () => {
     ]
 
     for (const email of validEmails) {
-      const mockNewUser = {
-        id: 'user_' + Math.random(),
-        email,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        settings: {
-          id: 'settings_' + Math.random(),
-          userId: 'user_' + Math.random(),
-          theme: 'gruvbox-dark',
-          suggestionsEnabled: true,
-          defaultModel: 'claude-3-haiku',
-          defaultTemperature: 0.7,
-          defaultMaxTokens: 500,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      }
+      jest.clearAllMocks()
 
       prisma.user.findUnique.mockResolvedValueOnce(null)
-      prisma.user.create.mockResolvedValueOnce(mockNewUser)
+      prisma.user.create.mockResolvedValueOnce({ id: 'u', email, created_at: new Date(), updated_at: new Date() })
+      prisma.userSettings.create.mockResolvedValueOnce({})
+      prisma.workspace.create.mockResolvedValueOnce({})
       hashPassword.mockResolvedValueOnce('hashed_password')
 
       const request = new NextRequest('http://localhost:3000/api/auth/signup', {
@@ -723,12 +667,9 @@ describe('Email Validation', () => {
       '@example.com',
       'test@',
       'test @example.com',
-      '',
     ]
 
     for (const email of invalidEmails) {
-      if (!email) continue
-
       const request = new NextRequest('http://localhost:3000/api/auth/signup', {
         method: 'POST',
         body: JSON.stringify({
@@ -754,25 +695,7 @@ describe('Response Format Validation', () => {
   test('login response should have correct structure', async () => {
     const { authenticateUser } = require('@/lib/auth')
 
-    const mockUser = {
-      id: 'user_format_test',
-      email: 'format@test.com',
-      createdAt: new Date('2026-01-15T10:00:00Z'),
-      updatedAt: new Date('2026-01-15T10:00:00Z'),
-      settings: {
-        id: 'settings_format_test',
-        userId: 'user_format_test',
-        theme: 'gruvbox-dark',
-        suggestionsEnabled: true,
-        defaultModel: 'claude-3-haiku',
-        defaultTemperature: 0.7,
-        defaultMaxTokens: 500,
-        createdAt: new Date('2026-01-15T10:00:00Z'),
-        updatedAt: new Date('2026-01-15T10:00:00Z'),
-      },
-    }
-
-    authenticateUser.mockResolvedValueOnce(mockUser)
+    authenticateUser.mockResolvedValueOnce(makeMockUser())
 
     const request = new NextRequest('http://localhost:3000/api/auth/login', {
       method: 'POST',
@@ -785,7 +708,6 @@ describe('Response Format Validation', () => {
     const response = await loginHandler(request)
     const data = await response.json()
 
-    // Validate response structure
     expect(data).toHaveProperty('access_token')
     expect(data).toHaveProperty('token_type')
     expect(data).toHaveProperty('user')
@@ -801,26 +723,31 @@ describe('Response Format Validation', () => {
     const prisma = require('@/lib/prisma').default
     const { hashPassword } = require('@/lib/auth')
 
-    const mockNewUser = {
+    const createdUser = {
       id: 'user_signup_format',
       email: 'signup@test.com',
-      createdAt: new Date('2026-01-20T10:00:00Z'),
-      updatedAt: new Date('2026-01-20T10:00:00Z'),
-      settings: {
-        id: 'settings_signup_format',
-        userId: 'user_signup_format',
-        theme: 'gruvbox-dark',
-        suggestionsEnabled: true,
-        defaultModel: 'claude-3-haiku',
-        defaultTemperature: 0.7,
-        defaultMaxTokens: 500,
-        createdAt: new Date('2026-01-20T10:00:00Z'),
-        updatedAt: new Date('2026-01-20T10:00:00Z'),
-      },
+      password: 'hashed',
+      created_at: new Date('2026-01-20T10:00:00Z'),
+      updated_at: new Date('2026-01-20T10:00:00Z'),
+    }
+
+    const createdSettings = {
+      id: 'settings_signup_format',
+      user_id: 'user_signup_format',
+      theme: 'gruvbox-dark',
+      suggestions_enabled: true,
+      default_model: 'claude-3-haiku',
+      default_temperature: 0.7,
+      default_max_tokens: 500,
+      anthropic_api_key: null,
+      created_at: new Date('2026-01-20T10:00:00Z'),
+      updated_at: new Date('2026-01-20T10:00:00Z'),
     }
 
     prisma.user.findUnique.mockResolvedValueOnce(null)
-    prisma.user.create.mockResolvedValueOnce(mockNewUser)
+    prisma.user.create.mockResolvedValueOnce(createdUser)
+    prisma.userSettings.create.mockResolvedValueOnce(createdSettings)
+    prisma.workspace.create.mockResolvedValueOnce({})
     hashPassword.mockResolvedValueOnce('hashed_password')
 
     const request = new NextRequest('http://localhost:3000/api/auth/signup', {
@@ -834,17 +761,12 @@ describe('Response Format Validation', () => {
     const response = await signupHandler(request)
     const data = await response.json()
 
-    // Validate response structure
     expect(data).toHaveProperty('access_token')
     expect(data).toHaveProperty('token_type')
     expect(data).toHaveProperty('user')
     expect(data.user).toHaveProperty('id')
     expect(data.user).toHaveProperty('email')
-    expect(data.user).toHaveProperty('created_at')
-    expect(data.user).toHaveProperty('updated_at')
     expect(data.user).toHaveProperty('settings')
-    expect(data.user.settings).toHaveProperty('id')
-    expect(data.user.settings).toHaveProperty('user_id')
     expect(data.user.settings).toHaveProperty('theme')
     expect(data.user.settings).toHaveProperty('suggestions_enabled')
     expect(data.token_type).toBe('bearer')

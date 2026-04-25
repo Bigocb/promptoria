@@ -1,75 +1,83 @@
 # Promptoria Features
 
-## Completed ✅
+## Completed
 
 ### Core Infrastructure
-- [x] Next.js 14 setup with App Router
-- [x] PostgreSQL database with Prisma ORM
-- [x] TypeScript configuration
+- [x] Next.js 14 with App Router
+- [x] PostgreSQL + Prisma ORM
+- [x] TypeScript
 - [x] Tailwind CSS styling
-- [x] Global error handling components
-- [x] Git version control and GitHub integration
+- [x] Global error handling
+- [x] JWT authentication (signup, login, refresh tokens)
+- [x] Workspace isolation per user
+- [x] Activity/audit logging (SyncLog)
 
 ### Theme System
-- [x] Gruvbox Dark (default)
-- [x] Gruvbox Light
-- [x] Solarized Dark
-- [x] Monokai
-- [x] Custom Dark
-- [x] Theme switcher with localStorage persistence
-- [x] CSS variable-based theming system
-- [x] Sidebar navigation component
+- [x] Gruvbox Dark (default), Gruvbox Light, Solarized Dark, Monokai, Custom Dark
+- [x] CSS variable-based theming with localStorage persistence
+- [x] Sidebar navigation
 
-### Snippet Library (📚)
-- [x] Create snippets
-- [x] Read/List snippets
-- [x] Edit snippets
-- [x] Delete snippets
-- [x] Snippet CRUD API endpoints
-- [x] Snippet card display grid
-- [x] Database schema and migrations
+### Prompt Management
+- [x] Prompt CRUD API + UI
+- [x] Version history with immutable versions (editing creates new version)
+- [x] Diff viewer and version comparison UI
+- [x] Version rollback API
+- [x] Prompt composition (snippet picker, insert, reorder, remove)
+- [x] Compositions API (GET, POST, PUT for snippet ordering)
+- [x] Variable substitution (`{{variable_name}}`)
+- [x] Prompt cloning/forking
+- [x] Prompt validation API
+- [x] Tag suggestions API
+- [x] Search across prompts, snippets, and categories
+- [x] Category system with AgentInteractionType hierarchy
+- [x] Library page (browse by interaction type and category)
 
-## In Progress 🚀
+### Snippet Library
+- [x] Snippet CRUD (create, read, update, delete)
+- [x] Snippet card grid UI
+- [x] Snippet comparison API
+- [x] Snippet insertion into prompts via composition
 
-### Prompt Workspace (⚡)
-- [ ] Build prompt composition UI
-- [ ] Add snippet picker/selector
-- [ ] Implement drag-and-drop composition
-- [ ] Template variable support
+### Test Runner
+- [x] Ollama integration (local, free execution)
+- [x] Anthropic Claude integration (paid, API key)
+- [x] Multiple model support (Llama 2, Mistral, Neural Chat, Claude Opus/Sonnet/Haiku)
+- [x] Model selection UI with family filtering
+- [x] Variable extraction and test case input
+- [x] Run statistics (latency, token count, duration)
+- [x] Test history persistence (Prisma, not just in-memory)
+- [x] Batch prompt execution
+- [x] Single test run execution and re-execution
 
-### Version History (📊)
-- [ ] Create version history UI
-- [ ] Implement diff viewer
-- [ ] Add version comparison
-- [ ] Rollback functionality
+### Data Management
+- [x] Export (JSON and CSV formats)
+- [x] Import (prompts, snippets, categories, interaction types)
+- [x] Batch operations (delete/update multiple entities)
+- [x] Search API (cross-entity: prompts, snippets, categories)
 
-### Test Runner (▶️)
-- [ ] LLM API integration (OpenAI, Claude, etc.)
-- [ ] Test prompt execution
-- [ ] Token counting and cost calculation
-- [ ] Response logging and replay
+### AI-Powered Features
+- [x] AI prompt suggestions (Claude-powered analysis and recommendations)
+- [x] Model presets API
 
-## Planned 📋
+### Analytics & Monitoring
+- [x] Usage analytics API (per-prompt test run stats, success rates)
+- [x] Quota/usage tracking API (daily/weekly/monthly, token estimation)
+- [x] Activity log with filtering, grouping, and pagination
 
-### User Management
-- [ ] Authentication system (OAuth/JWT)
-- [ ] User workspaces
-- [ ] Team collaboration features
-- [ ] Permission management
+### Settings & Configuration
+- [x] Default model and temperature settings
+- [x] Ollama status detection
+- [x] Anthropic API key configuration
+- [x] Theme switching
+- [x] Suggestion toggle
 
-### Advanced Features
-- [ ] Prompt templating with variables
-- [ ] Snippet folders and organization
-- [ ] Tagging and search functionality
-- [ ] Export/import functionality
-- [ ] Batch operations
+## Partially Implemented
 
-### Developer Experience
-- [ ] API documentation
-- [ ] CLI tool for Promptoria
-- [ ] VS Code extension
-- [ ] Webhook integrations
+- [~] Favorites — API stub exists (POST/DELETE `/prompts/[id]/favorite`) but only logs to SyncLog, no persistence model
+- [~] History page — UI renders but uses hardcoded mock data instead of `/api/test-runs`
+- [~] Cost calculation — Model pricing data exists in `/api/models` but test results don't compute cost
+- [~] Tag suggestions — API exists but no UI surface for it
 
-## Archive Scribe Positioning
+## Not Yet Started
 
-Promptoria positions itself as "Archive Scribe" - a versioned, archival approach to prompt management. Each prompt and snippet is treated as an artifact to be preserved and tracked through iterations.
+See `BACKLOG.md` for the full prioritized list.
