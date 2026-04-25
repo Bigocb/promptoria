@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { API_ENDPOINTS } from '@/lib/api-config'
 
 type Version = {
   id: string
@@ -15,57 +16,72 @@ type Version = {
 }
 
 export default function HistoryPage() {
-  // Mock data
-  const [versions] = useState<Version[]>([
-    {
-      id: '1',
-      promptId: 'p1',
-      promptName: 'Product Description Generator',
-      versionNumber: 1,
-      template_body: 'You are a product writer. Create a description for {{product_name}}.',
-      changeLog: 'Initial version',
-      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      createdBy: 'user@example.com',
-    },
-    {
-      id: '2',
-      promptId: 'p1',
-      promptName: 'Product Description Generator',
-      versionNumber: 2,
-      template_body: `You are a professional product writer with expertise in e-commerce. Your task is to create a compelling product description for {{product_name}}.
-
-Requirements:
-- Keep it under 150 words
-- Highlight key features
-- Use persuasive language
-- Include a call-to-action`,
-      changeLog: 'Added requirements section and improved instructions',
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      createdBy: 'user@example.com',
-    },
-    {
-      id: '3',
-      promptId: 'p1',
-      promptName: 'Product Description Generator',
-      versionNumber: 3,
-      template_body: `You are a professional product writer with expertise in {{product_category}}.
-
-Your task is to create a compelling product description for {{product_name}}.
-
-Requirements:
-- Keep it under 150 words
-- Highlight {{num_features}} key features
-- Use persuasive language
-- Include a call-to-action
-
-Target audience: {{target_audience}}`,
-      changeLog: 'Added dynamic category and feature count, target audience variable',
-      createdAt: new Date().toISOString(),
-      createdBy: 'user@example.com',
-    },
-  ])
-
+  const [versions, setVersions] = useState<Version[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [selectedVersionIds, setSelectedVersionIds] = useState<[string, string] | null>(null)
+
+  useEffect(() => {
+    const fetchVersions = async () => {
+      try {
+        const token = localStorage.getItem('auth-token')
+        if (!token) {
+          setError('Not authenticated')
+          setLoading(false)
+          return
+        }
+
+        const res = await fetch(API_ENDPOINTS.prompts.list, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+
+        if (!res.ok) {
+          throw new Error('Failed to load prompts')
+        }
+
+        const data = await res.json()
+        const prompts = data.prompts || data
+
+        const allVersions: Version[] = []
+        for (const prompt of prompts) {
+          if (prompt.versions && prompt.versions.length > 0) {
+            for (const v of prompt.versions) {
+              allVersions.push({
+                id: v.id,
+                promptId: prompt.id,
+                promptName: prompt.name,
+                versionNumber: v.version_number,
+                template_body: v.template_body,
+                changeLog: v.change_log || 'No changelog',
+                createdAt: v.created_at,
+                createdBy: v.created_by || 'You',
+              })
+            }
+          } else if (prompt.latest_version) {
+            allVersions.push({
+              id: prompt.latest_version.id,
+              promptId: prompt.id,
+              promptName: prompt.name,
+              versionNumber: prompt.latest_version.version_number,
+              template_body: prompt.latest_version.template_body,
+              changeLog: prompt.latest_version.change_log || 'No changelog',
+              createdAt: prompt.latest_version.created_at,
+              createdBy: prompt.latest_version.created_by || 'You',
+            })
+          }
+        }
+
+        allVersions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        setVersions(allVersions)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load versions')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchVersions()
+  }, [])
 
   const toggleVersionSelection = (versionId: string) => {
     if (selectedVersionIds === null) {
@@ -107,6 +123,31 @@ Target audience: {{target_audience}}`,
     return diffs
   }
 
+  const handleRollback = async (promptId: string, versionNumber: number) => {
+    try {
+      const token = localStorage.getItem('auth-token')
+      if (!token) return
+
+      const res = await fetch(API_ENDPOINTS.prompts.rollback(promptId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ version_number: versionNumber }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Rollback failed')
+      }
+
+      window.location.reload()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Rollback failed')
+    }
+  }
+
   return (
     <div style={{ padding: '2rem' }}>
       <header style={{ marginBottom: '2rem' }}>
@@ -115,14 +156,14 @@ Target audience: {{target_audience}}`,
             ← Dashboard
           </Link>
         </div>
-        <h1 style={{ fontSize: 'clamp(1.25rem, 5vw, 2rem)', fontWeight: 'bold', marginBottom: '0.5rem' }}>📊 Version History</h1>
+        <h1 style={{ fontSize: 'clamp(1.25rem, 5vw, 2rem)', fontWeight: 'bold', marginBottom: '0.5rem' }}>Version History</h1>
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
           Compare and track all versions of your prompts
         </p>
 
         <div className="card" style={{ backgroundColor: 'var(--color-background)', padding: '1rem' }}>
           <h3 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--color-accent)', marginBottom: '0.75rem' }}>
-            🔍 How to use Version History
+            How to use Version History
           </h3>
           <ul style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)', marginLeft: '1.5rem', listStyle: 'disc' }}>
             <li style={{ marginBottom: '0.5rem' }}>Every time you save a prompt, a new version is created</li>
@@ -134,10 +175,17 @@ Target audience: {{target_audience}}`,
         </div>
       </header>
 
+      {error && (
+        <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: 'rgba(255, 0, 0, 0.1)', borderLeft: '4px solid #ff6b6b' }}>
+          <div style={{ color: '#ff6b6b', fontWeight: '600' }}>Error</div>
+          <div style={{ color: 'var(--color-foregroundAlt)', fontSize: '0.875rem', marginTop: '0.5rem' }}>{error}</div>
+        </div>
+      )}
+
       {selectedVersions.length === 2 && (
         <div className="card" style={{ marginBottom: '2rem', backgroundColor: 'var(--color-background)' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-accent)' }}>
-            Diff: {selectedVersions[0].promptName} v{selectedVersions[0].versionNumber}{' '}
+            Diff: {selectedVersions[0].promptName} v{selectedVersions[0].versionNumber}
             → v{selectedVersions[1].versionNumber}
           </h2>
 
@@ -182,71 +230,104 @@ Target audience: {{target_audience}}`,
             </div>
           </div>
 
-          <button
-            onClick={() => setSelectedVersionIds(null)}
-            className="btn btn-secondary"
-            style={{ marginTop: '1rem' }}
-          >
-            Clear Comparison
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+            <button
+              onClick={() => handleRollback(selectedVersions[1].promptId, selectedVersions[1].versionNumber)}
+              className="btn btn-primary"
+            >
+              Rollback to v{selectedVersions[1].versionNumber}
+            </button>
+            <button
+              onClick={() => setSelectedVersionIds(null)}
+              className="btn btn-secondary"
+            >
+              Clear Comparison
+            </button>
+          </div>
         </div>
       )}
 
       <div>
         <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--color-foreground)' }}>All Versions</h2>
 
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          {versions.map((version) => (
-            <div
-              key={version.id}
-              className="card"
-              onClick={() => toggleVersionSelection(version.id)}
-              style={{
-                cursor: 'pointer',
-                borderColor: selectedVersionIds?.includes(version.id) ? 'var(--color-accent)' : 'var(--color-border)',
-                borderWidth: selectedVersionIds?.includes(version.id) ? '2px' : '1px',
-              }}
-            >
-              <div style={{ marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedVersionIds?.includes(version.id) || false}
-                    onChange={() => {}}
-                    style={{ cursor: 'pointer' }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
-                      v{version.versionNumber} • {version.promptName}
-                    </h3>
-                    <p style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>
-                      {version.changeLog}
-                    </p>
-                  </div>
-                  <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>
-                    <p>{new Date(version.createdAt).toLocaleDateString()}</p>
-                    <p>by {version.createdBy}</p>
+        {loading ? (
+          <div style={{ color: 'var(--color-foregroundAlt)', textAlign: 'center', padding: '2rem' }}>
+            Loading versions...
+          </div>
+        ) : versions.length === 0 ? (
+          <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📋</div>
+            <h3 style={{ fontWeight: '600', marginBottom: '0.5rem' }}>No versions yet</h3>
+            <p style={{ color: 'var(--color-foregroundAlt)', fontSize: '0.875rem' }}>
+              Create a prompt to start building version history.
+            </p>
+            <Link href="/prompts" className="btn btn-primary" style={{ display: 'inline-block', marginTop: '1rem' }}>
+              Create a Prompt
+            </Link>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            {versions.map((version) => (
+              <div
+                key={version.id}
+                className="card"
+                onClick={() => toggleVersionSelection(version.id)}
+                style={{
+                  cursor: 'pointer',
+                  borderColor: selectedVersionIds?.includes(version.id) ? 'var(--color-accent)' : 'var(--color-border)',
+                  borderWidth: selectedVersionIds?.includes(version.id) ? '2px' : '1px',
+                }}
+              >
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedVersionIds?.includes(version.id) || false}
+                      onChange={() => {}}
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
+                        v{version.versionNumber} • {version.promptName}
+                      </h3>
+                      <p style={{ fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>
+                        {version.changeLog}
+                      </p>
+                    </div>
+                    <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>
+                      <p>{new Date(version.createdAt).toLocaleDateString()}</p>
+                      <p>by {version.createdBy}</p>
+                    </div>
                   </div>
                 </div>
+                <pre style={{
+                  backgroundColor: 'var(--color-background)',
+                  padding: '0.75rem',
+                  borderRadius: '0.25rem',
+                  fontSize: '0.8rem',
+                  overflow: 'auto',
+                  maxHeight: '200px',
+                  fontFamily: 'monospace',
+                  color: 'var(--color-foregroundAlt)',
+                }}>
+                  {version.template_body}
+                </pre>
+                <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleRollback(version.promptId, version.versionNumber) }}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.75rem' }}
+                  >
+                    Rollback to v{version.versionNumber}
+                  </button>
+                </div>
               </div>
-              <pre style={{
-                backgroundColor: 'var(--color-background)',
-                padding: '0.75rem',
-                borderRadius: '0.25rem',
-                fontSize: '0.8rem',
-                overflow: 'auto',
-                maxHeight: '200px',
-                fontFamily: 'monospace',
-                color: 'var(--color-foregroundAlt)',
-              }}>
-                {version.template_body}
-              </pre>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {selectedVersionIds?.[1] === '' && (
+        {selectedVersionIds?.[1] === '' && versions.length > 0 && (
           <div style={{
             marginTop: '1.5rem',
             padding: '1rem',
@@ -256,7 +337,7 @@ Target audience: {{target_audience}}`,
             fontSize: '0.875rem',
             color: 'var(--color-accent)',
           }}>
-            📌 Select another version to compare with v{
+            Select another version to compare with v{
               versions.find((v) => v.id === selectedVersionIds[0])?.versionNumber
             }
           </div>

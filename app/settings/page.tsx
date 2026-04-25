@@ -15,6 +15,9 @@ interface OllamaModel {
   quantization_level: string | null
   family: string | null
   description: string
+  provider?: string
+  inputPrice?: number
+  outputPrice?: number
 }
 
 export default function SettingsPage() {
@@ -91,9 +94,7 @@ export default function SettingsPage() {
 
   // Use dynamic Ollama models, fall back to static list if unavailable
   const staticModels: OllamaModel[] = [
-    { id: 'llama3.2', name: 'Llama 3.2', description: 'Fast, capable local model', size: null, parameter_size: null, quantization_level: null, family: null },
-    { id: 'mistral', name: 'Mistral', description: 'Balanced performance and speed', size: null, parameter_size: null, quantization_level: null, family: null },
-    { id: 'neural-chat', name: 'Neural Chat', description: 'Optimized for chat interactions', size: null, parameter_size: null, quantization_level: null, family: null },
+    { id: 'llama3.2', name: 'Llama 3.2', description: 'Fast, capable local model', size: null, parameter_size: null, quantization_level: null, family: 'llama', provider: 'ollama' },
   ]
   const allModels = ollamaModels.length > 0 ? ollamaModels : staticModels
   const modelFamilies = Array.from(new Set(allModels.map(m => m.family).filter(Boolean))) as string[]
@@ -195,7 +196,7 @@ export default function SettingsPage() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <h2 style={{ fontSize: '1.25rem', color: 'var(--color-text)', margin: 0 }}>
-              Default Model for Suggestions
+              Default Model
             </h2>
             <span style={{
               fontSize: '0.7rem',
@@ -204,7 +205,7 @@ export default function SettingsPage() {
               backgroundColor: ollamaAvailable === true ? 'rgba(34, 197, 94, 0.15)' : ollamaAvailable === false ? 'rgba(239, 68, 68, 0.15)' : 'rgba(156, 163, 175, 0.15)',
               color: ollamaAvailable === true ? '#22c55e' : ollamaAvailable === false ? '#ef4444' : 'var(--color-foregroundAlt)',
             }}>
-              {ollamaAvailable === true ? 'Ollama connected' : ollamaAvailable === false ? 'Ollama offline' : 'Checking...'}
+              {ollamaModels.length > 0 ? `${ollamaModels.length} models available` : ollamaError ? 'Offline' : 'Loading...'}
             </span>
           </div>
           {ollamaAvailable === false && ollamaError && (

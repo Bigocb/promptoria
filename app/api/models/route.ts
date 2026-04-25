@@ -1,88 +1,116 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
+const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || ''
+
+interface ModelInfo {
+  id: string
+  name: string
+  description: string
+  family: string
+  parameter_size: string | null
+  quantization_level: string | null
+  contextWindow: string
+  maxTokens: number
+}
+
+function inferFamily(modelId: string): string {
+  const lower = modelId.toLowerCase()
+  if (lower.includes('llama')) return 'llama'
+  if (lower.includes('mistral')) return 'mistral'
+  if (lower.includes('gemma')) return 'gemma'
+  if (lower.includes('qwen')) return 'qwen'
+  if (lower.includes('phi')) return 'phi'
+  if (lower.includes('deepseek')) return 'deepseek'
+  if (lower.includes('codellama') || lower.includes('code-llama')) return 'codellama'
+  if (lower.includes('neural')) return 'neural-chat'
+  if (lower.includes('wizard')) return 'wizard'
+  return 'other'
+}
+
+function formatName(id: string): string {
+  return id.replace(/[-_:]/g, ' ').replace(/\s+/g, ' ').trim()
+    .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
+function inferContextWindow(family: string): string {
+  const windows: Record<string, string> = {
+    llama: '8K', mistral: '32K', gemma: '8K', qwen: '32K',
+    phi: '4K', deepseek: '64K', codellama: '16K', 'neural-chat': '4K',
+    wizard: '4K', other: '4K',
+  }
+  return windows[family] || '4K'
+}
+
+function inferMaxTokens(family: string): number {
+  const limits: Record<string, number> = {
+    llama: 4096, mistral: 8000, gemma: 8192, qwen: 8192,
+    phi: 4096, deepseek: 8192, codellama: 16384, 'neural-chat': 4096,
+    wizard: 4096, other: 4096,
+  }
+  return limits[family] || 4096
+}
+
+function describeModel(family: string, paramSize: string | null): string {
+  const descs: Record<string, string> = {
+    llama: 'Meta Llama - versatile open source model',
+    mistral: 'Mistral - efficient, excellent quality-to-speed ratio',
+    gemma: 'Google Gemma - lightweight, built for safety',
+    qwen: 'Alibaba Qwen - strong multilingual model',
+    phi: 'Microsoft Phi - small but capable',
+    deepseek: 'DeepSeek - advanced reasoning model',
+    codellama: 'Code Llama - specialized for code generation',
+    'neural-chat': 'Neural Chat - optimized for conversation',
+    wizard: 'Wizard - fine-tuned for instructions',
+    other: 'Open source model',
+  }
+  const base = descs[family] || descs['other']
+  return paramSize ? `${base} (${paramSize})` : base
+}
+
 export async function GET(request: NextRequest) {
   try {
-    // Return list of available models from configured AI provider
-    // Default: Ollama (local, free) + option for Claude (paid)
-    const models = [
-      // Ollama models (default, free, local)
-      {
-        id: 'llama2',
-        name: 'Llama 2',
-        description: 'Open source, fast, good for most tasks',
-        inputPrice: 0,       // FREE - running locally
-        outputPrice: 0,
-        maxTokens: 4096,
-        contextWindow: '4K',
-        provider: 'ollama',
-      },
-      {
-        id: 'mistral',
-        name: 'Mistral 7B',
-        description: 'Efficient, excellent quality-to-speed ratio',
-        inputPrice: 0,       // FREE - running locally
-        outputPrice: 0,
-        maxTokens: 8000,
-        contextWindow: '8K',
-        provider: 'ollama',
-      },
-      {
-        id: 'neural-chat',
-        name: 'Neural Chat',
-        description: 'Specialized for conversation and chat',
-        inputPrice: 0,       // FREE - running locally
-        outputPrice: 0,
-        maxTokens: 4096,
-        contextWindow: '4K',
-        provider: 'ollama',
-      },
-      // Claude models (optional, requires API key)
-      {
-        id: 'claude-opus-4-6',
-        name: 'Claude Opus 4.6',
-        description: 'Most capable model, best for complex reasoning',
-        inputPrice: 15,      // $15 per 1M input tokens
-        outputPrice: 45,     // $45 per 1M output tokens
-        maxTokens: 200000,
-        contextWindow: '200K',
-        provider: 'anthropic',
-      },
-      {
-        id: 'claude-sonnet-4-6',
-        name: 'Claude Sonnet 4.6',
-        description: 'Balanced performance and speed',
-        inputPrice: 3,       // $3 per 1M input tokens
-        outputPrice: 15,     // $15 per 1M output tokens
-        maxTokens: 200000,
-        contextWindow: '200K',
-        provider: 'anthropic',
-      },
-      {
-        id: 'claude-haiku-4-5-20251001',
-        name: 'Claude Haiku',
-        description: 'Fast and compact for simple tasks',
-        inputPrice: 0.25,    // $0.25 per 1M input tokens
-        outputPrice: 1.25,   // $1.25 per 1M output tokens
-        maxTokens: 200000,
-        contextWindow: '200K',
-        provider: 'anthropic',
-      },
-    ]
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (OLLAMA_API_KEY) {
+      headers['Authorization'] = `Bearer ${OLLAMA_API_KEY}`
+    }
 
-    return NextResponse.json({
-      models,
-      updated_at: new Date().toISOString(),
-      note: 'Default: Ollama (local, free). Optionally configure Claude via Settings.',
-      providers: {
-        ollama: 'Local Ollama Cloud (default, requires installation)',
-        anthropic: 'Claude API (requires API key)',
+    const res = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
+      signal: AbortSignal.timeout(8000),
+      headers,
+    })
+
+    if (!res.ok) {
+      return NextResponse.json({
+        models: [],
+        error: `Could not reach model server at ${OLLAMA_BASE_URL} (${res.status})`,
+      }, { status: 200 })
+    }
+
+    const data = await res.json()
+    const models: ModelInfo[] = (data.models || []).map((m: any) => {
+      const family = m.details?.family || inferFamily(m.name || m.model || '')
+      const paramSize = m.details?.parameter_size || null
+      const quantLevel = m.details?.quantization_level || null
+
+      return {
+        id: m.name || m.model,
+        name: formatName(m.name || m.model || 'unknown'),
+        description: describeModel(family, paramSize),
+        family,
+        parameter_size: paramSize,
+        quantization_level: quantLevel,
+        contextWindow: inferContextWindow(family),
+        maxTokens: inferMaxTokens(family),
       }
-    }, { status: 200 })
+    })
+
+    return NextResponse.json({ models }, { status: 200 })
   } catch (error: any) {
     console.error('Get models error:', error)
-    return NextResponse.json(
-      { error: 'Server error: ' + error.message },
-      { status: 500 }
-    )
+    return NextResponse.json({
+      models: [],
+      error: `Could not reach model server at ${OLLAMA_BASE_URL}. ${error.message}`,
+    }, { status: 200 })
   }
 }

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
 
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
+const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || ''
+
 async function getWorkspaceForUser(userId: string) {
   return prisma.workspace.findFirst({ where: { user_id: userId } })
 }
@@ -44,7 +47,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify prompt version exists and belongs to workspace
     const promptVersion = await prisma.promptVersion.findUnique({
       where: { id: prompt_version_id },
       include: { prompt: true },
@@ -57,10 +59,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // If variables are provided instead of test_case_input, build the test input
     let finalTestInput = test_case_input
     if (!finalTestInput && variables) {
-      // Substitute variables into the template
       let substituted = promptVersion.template_body
       for (const [key, value] of Object.entries(variables)) {
         substituted = substituted.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(value))
@@ -75,7 +75,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create test run
     const testRun = await prisma.testRun.create({
       data: {
         workspace_id: workspace.id,
@@ -85,96 +84,51 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Immediately execute the test run inline to match frontend expectations
-    const { Anthropic } = await import('@anthropic-ai/sdk')
-
-    // Get user settings for API key
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { user_id: userId },
-    })
-
-    const apiKey = userSettings?.anthropic_api_key || process.env.ANTHROPIC_API_KEY
-    if (!apiKey) {
-      await prisma.testRun.update({
-        where: { id: testRun.id },
-        data: {
-          status: 'error',
-          error_message: 'No Anthropic API key configured',
-          completed_at: new Date(),
-        },
-      })
-      return NextResponse.json(
-        { error: 'No Anthropic API key configured' },
-        { status: 400 }
-      )
-    }
-
-    const startTime = Date.now()
-
-    // Determine which provider to use based on model ID
-    const modelToUse = model || promptVersion.prompt.model || 'llama2'
+    const modelToUse = model || promptVersion.prompt.model || 'llama3.2'
     const tempToUse = temperature ?? 0.7
     const maxTokensToUse = max_tokens || 1024
 
+    const startTime = Date.now()
     let output: string = ''
     let totalTokens: number = 0
-    const isOllama = modelToUse.startsWith('llama') || modelToUse === 'mistral' || modelToUse === 'neural-chat'
 
-    if (isOllama) {
-      // Call Ollama API (local/cloud, free)
-      try {
-        const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: modelToUse,
-            prompt: finalTestInput,
-            temperature: tempToUse,
-            stream: false,
-          }),
-        })
-
-        if (!ollamaResponse.ok) {
-          throw new Error(`Ollama API error: ${ollamaResponse.statusText}`)
-        }
-
-        const ollamaData = await ollamaResponse.json()
-        output = ollamaData.response || ''
-        // Estimate tokens for Ollama (roughly 1 token per 4 characters)
-        totalTokens = Math.ceil((finalTestInput.length + output.length) / 4)
-      } catch (error) {
-        throw new Error(`Failed to connect to Ollama at http://localhost:11434. Is Ollama running? Error: ${error instanceof Error ? error.message : String(error)}`)
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (OLLAMA_API_KEY) {
+        headers['Authorization'] = `Bearer ${OLLAMA_API_KEY}`
       }
-    } else {
-      // Call Claude API (paid, requires API key)
-      const anthropic = new Anthropic({ apiKey })
-      const message = await anthropic.messages.create({
-        model: modelToUse,
-        max_tokens: maxTokensToUse,
-        temperature: tempToUse,
-        messages: [
-          {
-            role: 'user',
-            content: finalTestInput,
-          },
-        ],
+
+      const ollamaResponse = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: modelToUse,
+          prompt: finalTestInput,
+          temperature: tempToUse,
+          stream: false,
+        }),
       })
 
-      // Extract output
-      output = message.content
-        .filter((block: any) => block.type === 'text')
-        .map((block: any) => block.text)
-        .join('\n')
+      if (!ollamaResponse.ok) {
+        const errorBody = await ollamaResponse.text()
+        throw new Error(`Model server error (${ollamaResponse.status}): ${errorBody || ollamaResponse.statusText}`)
+      }
 
-      // Count tokens
-      totalTokens = (message.usage?.input_tokens || 0) + (message.usage?.output_tokens || 0)
+      const ollamaData = await ollamaResponse.json()
+      output = ollamaData.response || ''
+      totalTokens = Math.ceil((finalTestInput.length + output.length) / 4)
+    } catch (error) {
+      await prisma.testRun.update({
+        where: { id: testRun.id },
+        data: { status: 'error', error_message: error instanceof Error ? error.message : String(error), completed_at: new Date() },
+      })
+      throw error
     }
 
     const endTime = Date.now()
     const durationMs = endTime - startTime
 
-    // Update test run with results
-    const updatedTestRun = await prisma.testRun.update({
+    await prisma.testRun.update({
       where: { id: testRun.id },
       data: {
         status: 'success',
@@ -184,7 +138,6 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Log execution
     await prisma.syncLog.create({
       data: {
         workspace_id: workspace.id,
@@ -195,10 +148,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Return response in format frontend expects
     return NextResponse.json({
-      id: updatedTestRun.id,
-      created_at: updatedTestRun.created_at,
+      id: testRun.id,
+      created_at: testRun.created_at,
       model: modelToUse,
       output,
       total_tokens: totalTokens,
