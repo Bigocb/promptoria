@@ -61,3 +61,25 @@ export function verifyRefreshToken(token: string): { userId: string } {
     throw new Error('Invalid or expired refresh token')
   }
 }
+
+const RESET_TOKEN_EXPIRY = '1h'
+
+export function generateResetToken(userId: string): string {
+  return jwt.sign(
+    { sub: userId, purpose: 'reset' },
+    JWT_SECRET,
+    { algorithm: ALGORITHM, expiresIn: RESET_TOKEN_EXPIRY }
+  )
+}
+
+export function verifyResetToken(token: string): { userId: string } {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: [ALGORITHM] }) as any
+    if (decoded.purpose !== 'reset') {
+      throw new Error('Invalid reset token')
+    }
+    return { userId: decoded.sub }
+  } catch (error) {
+    throw new Error('Invalid or expired reset token')
+  }
+}

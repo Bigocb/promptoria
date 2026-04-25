@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 const PUBLIC_ROUTES = [
   '/api/auth/login',
   '/api/auth/signup',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/auth/google',
 ]
 
 const ALLOWED_ORIGINS = [

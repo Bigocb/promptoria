@@ -107,6 +107,9 @@ export default function LoginPage() {
 
         <div className="login-footer">
           <p>
+            <Link href="/auth/forgot-password">Forgot password?</Link>
+          </p>
+          <p>
             Don&apos;t have an account?{' '}
             <Link href="/auth/signup">Create one</Link>
           </p>

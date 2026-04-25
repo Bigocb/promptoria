@@ -15,6 +15,8 @@ export const API_ENDPOINTS = {
     login: `${API_BASE_URL}/auth/login`,
     signup: `${API_BASE_URL}/auth/signup`,
     refresh: `${API_BASE_URL}/auth/refresh`,
+    forgotPassword: `${API_BASE_URL}/auth/forgot-password`,
+    resetPassword: `${API_BASE_URL}/auth/reset-password`,
   },
   devices: {
     register: `${API_BASE_URL}/devices/register`,
