@@ -99,6 +99,7 @@ export default function DashboardPage() {
   const statsData = stats?.stats
   const recentPrompts = stats?.recent?.prompts || []
   const recentSnippets = stats?.recent?.snippets || []
+  const isNewUser = !statsLoading && statsData && statsData.totalPrompts === 0 && statsData.totalSnippets === 0
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
@@ -111,6 +112,31 @@ export default function DashboardPage() {
           {statsLoading ? 'Loading your workspace...' : `${statsData?.workspaceName || 'Your workspace'} — ${statsData?.totalPrompts || 0} prompts, ${statsData?.totalSnippets || 0} snippets`}
         </p>
       </div>
+
+      {/* New user onboarding */}
+      {isNewUser && (
+        <div style={{
+          backgroundColor: 'var(--color-backgroundAlt)',
+          border: '2px solid var(--color-accent)',
+          borderRadius: '0.75rem',
+          padding: '2rem',
+          marginBottom: '2rem',
+          textAlign: 'center',
+        }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '0.5rem' }}>Welcome to Promptoria!</h2>
+          <p style={{ color: 'var(--color-foregroundAlt)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+            Your prompt recipe book is empty. Here&apos;s how to get started:
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: '320px', margin: '0 auto' }}>
+            <Link href="/prompts" style={{ display: 'block', padding: '0.75rem 1rem', backgroundColor: 'var(--color-accent)', color: 'var(--color-background)', borderRadius: '0.5rem', textDecoration: 'none', fontWeight: '600', fontSize: '0.9rem' }}>
+              ⚡ Create your first prompt
+            </Link>
+            <Link href="/snippets" style={{ display: 'block', padding: '0.75rem 1rem', border: '1px solid var(--color-border)', borderRadius: '0.5rem', textDecoration: 'none', color: 'var(--color-foreground)', fontSize: '0.9rem' }}>
+              📝 Or start with a snippet
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div style={{

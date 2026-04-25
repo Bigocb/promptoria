@@ -399,6 +399,10 @@ export default function Home() {
         fontSize: '0.8rem',
       }}>
         <p>&copy; 2026 Promptoria. All rights reserved.</p>
+        <p style={{ marginTop: '0.5rem' }}>
+          <a href="/privacy" style={{ color: 'var(--color-foregroundAlt)', textDecoration: 'underline', marginRight: '1rem' }}>Privacy Policy</a>
+          <a href="/terms" style={{ color: 'var(--color-foregroundAlt)', textDecoration: 'underline' }}>Terms of Service</a>
+        </p>
       </footer>
     </div>
   )
