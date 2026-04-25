@@ -6,43 +6,54 @@ import { exchangeCodeForTokens, getGoogleUserInfo } from '@/lib/google-oauth'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://promptoria.me'
 
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const code = searchParams.get('code')
+  const state = searchParams.get('state')
+  const storedState = request.cookies.get('oauth_state')?.value
+
+  if (!code) {
+    return NextResponse.redirect(new URL('/auth/login?error=no_code', APP_URL))
+  }
+
+  if (!state || state !== storedState) {
+    return NextResponse.redirect(new URL('/auth/login?error=invalid_oauth_state', APP_URL))
+  }
+
+  // Exchange code for tokens
+  let tokens: { access_token: string; id_token: string }
   try {
-    const { searchParams } = new URL(request.url)
-    const code = searchParams.get('code')
-    const state = searchParams.get('state')
-    const storedState = request.cookies.get('oauth_state')?.value
+    tokens = await exchangeCodeForTokens(code)
+  } catch (error: any) {
+    console.error('Google OAuth token exchange failed:', error.message)
+    return NextResponse.redirect(new URL(`/auth/login?error=${encodeURIComponent('token_exchange_failed: ' + error.message)}`, APP_URL))
+  }
 
-    if (!code || !state || state !== storedState) {
-      const res = NextResponse.redirect(new URL('/auth/login?error=invalid_oauth_state', APP_URL))
-      res.cookies.set('oauth_state', '', { maxAge: 0, path: '/' })
-      return res
-    }
+  // Fetch user info from Google
+  let googleUser: { sub: string; email: string; name?: string; picture?: string }
+  try {
+    googleUser = await getGoogleUserInfo(tokens.access_token)
+  } catch (error: any) {
+    console.error('Google OAuth user info failed:', error.message)
+    return NextResponse.redirect(new URL(`/auth/login?error=${encodeURIComponent('user_info_failed: ' + error.message)}`, APP_URL))
+  }
 
-    console.log('Google OAuth: Exchanging code for tokens...')
-    const tokens = await exchangeCodeForTokens(code)
-    console.log('Google OAuth: Tokens received, fetching user info...')
-    const googleUser = await getGoogleUserInfo(tokens.access_token)
-    console.log('Google OAuth: User info received:', googleUser.email)
+  if (!googleUser.email) {
+    return NextResponse.redirect(new URL('/auth/login?error=google_no_email', APP_URL))
+  }
 
-    if (!googleUser.email) {
-      const res = NextResponse.redirect(new URL('/auth/login?error=google_no_email', APP_URL))
-      res.cookies.set('oauth_state', '', { maxAge: 0, path: '/' })
-      return res
-    }
-
+  // Find or create user
+  let user: { id: string; email: string; name: string | null; image: string | null }
+  try {
     // Check if OAuth account already exists
-    let oauthAccount = await prisma.oAuthAccount.findUnique({
+    const oauthAccount = await prisma.oAuthAccount.findUnique({
       where: { provider_provider_id: { provider: 'google', provider_id: googleUser.sub } },
       include: { user: true },
     })
-
-    let user
 
     if (oauthAccount) {
       // Existing OAuth user — log them in
       user = oauthAccount.user
 
-      // Update tokens and profile info
       await prisma.oAuthAccount.update({
         where: { id: oauthAccount.id },
         data: {
@@ -51,7 +62,6 @@ export async function GET(request: NextRequest) {
         },
       })
 
-      // Update name/image if Google provided them
       if (googleUser.name || googleUser.picture) {
         await prisma.user.update({
           where: { id: user.id },
@@ -60,15 +70,15 @@ export async function GET(request: NextRequest) {
             ...(googleUser.picture ? { image: googleUser.picture } : {}),
           },
         })
+        user = { ...user, name: googleUser.name || user.name, image: googleUser.picture || user.image }
       }
     } else {
-      // Check if user with this email already exists (password user)
+      // Check if user with this email already exists
       const existingUser = await prisma.user.findUnique({
         where: { email: googleUser.email },
       })
 
       if (existingUser) {
-        // Link existing user to Google OAuth
         user = existingUser
 
         await prisma.oAuthAccount.create({
@@ -81,7 +91,6 @@ export async function GET(request: NextRequest) {
           },
         })
 
-        // Update name/image if not already set
         await prisma.user.update({
           where: { id: user.id },
           data: {
@@ -90,7 +99,7 @@ export async function GET(request: NextRequest) {
           },
         })
       } else {
-        // Brand new user — create account
+        // Brand new user
         user = await prisma.user.create({
           data: {
             email: googleUser.email,
@@ -110,7 +119,6 @@ export async function GET(request: NextRequest) {
           },
         })
 
-        // Create settings + workspace (same as password signup)
         await prisma.userSettings.create({
           data: {
             user_id: user.id,
@@ -131,24 +139,22 @@ export async function GET(request: NextRequest) {
         })
       }
     }
-
-    // Generate our own JWT tokens
-    const accessToken = generateAccessToken(user.id, user.email)
-    const refreshToken = generateRefreshToken(user.id)
-
-    // Clear the oauth_state cookie and redirect to frontend callback page
-    const redirectUrl = new URL('/auth/google/callback', APP_URL)
-    redirectUrl.searchParams.set('access_token', accessToken)
-    redirectUrl.searchParams.set('refresh_token', refreshToken)
-    redirectUrl.searchParams.set('user', JSON.stringify({ id: user.id, email: user.email }))
-
-    const res = NextResponse.redirect(redirectUrl)
-    res.cookies.set('oauth_state', '', { maxAge: 0, path: '/' })
-    return res
   } catch (error: any) {
-    console.error('Google OAuth callback error:', error.message, error.stack)
-    const res = NextResponse.redirect(new URL(`/auth/login?error=${encodeURIComponent('google_auth_failed')}`, APP_URL))
-    res.cookies.set('oauth_state', '', { maxAge: 0, path: '/' })
-    return res
+    console.error('Google OAuth database error:', error.message, error.stack)
+    return NextResponse.redirect(new URL(`/auth/login?error=${encodeURIComponent('db_error: ' + error.message)}`, APP_URL))
   }
+
+  // Generate JWT tokens
+  const accessToken = generateAccessToken(user.id, user.email)
+  const refreshToken = generateRefreshToken(user.id)
+
+  // Redirect to frontend callback page
+  const redirectUrl = new URL('/auth/google/callback', APP_URL)
+  redirectUrl.searchParams.set('access_token', accessToken)
+  redirectUrl.searchParams.set('refresh_token', refreshToken)
+  redirectUrl.searchParams.set('user', JSON.stringify({ id: user.id, email: user.email }))
+
+  const res = NextResponse.redirect(redirectUrl)
+  res.cookies.set('oauth_state', '', { maxAge: 0, path: '/' })
+  return res
 }
