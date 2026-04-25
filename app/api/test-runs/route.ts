@@ -84,9 +84,13 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const modelToUse = model || promptVersion.prompt.model || 'llama3.2'
-    const tempToUse = temperature ?? 0.7
-    const maxTokensToUse = max_tokens || 1024
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { user_id: userId },
+    })
+
+    const modelToUse = model || promptVersion.prompt.model || userSettings?.default_model || 'llama3.2'
+    const tempToUse = temperature ?? userSettings?.default_temperature ?? 0.7
+    const maxTokensToUse = max_tokens || userSettings?.default_max_tokens || 1024
 
     const startTime = Date.now()
     let output: string = ''

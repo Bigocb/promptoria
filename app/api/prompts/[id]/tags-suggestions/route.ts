@@ -72,6 +72,11 @@ Provide tags in JSON format:
 
 Make tags concise (1-2 words), lowercase, and descriptive of the prompt's purpose or domain (e.g., "content-generation", "data-analysis", "code-review", "summarization", etc.)`
 
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { user_id: userId },
+    })
+    const model = userSettings?.default_model || 'llama3.2'
+
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     if (OLLAMA_API_KEY) {
       headers['Authorization'] = `Bearer ${OLLAMA_API_KEY}`
@@ -81,7 +86,7 @@ Make tags concise (1-2 words), lowercase, and descriptive of the prompt's purpos
       method: 'POST',
       headers,
       body: JSON.stringify({
-        model: prompt.model || 'llama3.2',
+        model,
         prompt: tagPrompt,
         stream: false,
       }),

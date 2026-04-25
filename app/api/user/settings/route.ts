@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
 
+const DEFAULT_MODEL = 'llama3.2'
+
+function toCamelCase(settings: any) {
+  return {
+    theme: settings.theme,
+    suggestionsEnabled: settings.suggestions_enabled,
+    defaultModel: settings.default_model || DEFAULT_MODEL,
+    defaultTemperature: settings.default_temperature ?? 0.7,
+    defaultMaxTokens: settings.default_max_tokens ?? 500,
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization')
@@ -23,21 +35,20 @@ export async function GET(request: NextRequest) {
     })
 
     if (!settings) {
-      // Return default settings if none exist
       return NextResponse.json(
-        {
+        toCamelCase({
           user_id: userId,
           theme: 'light',
           suggestions_enabled: true,
-          default_model: 'claude-3-haiku-20240307',
+          default_model: DEFAULT_MODEL,
           default_temperature: 0.7,
-          default_max_tokens: 1024,
-        },
+          default_max_tokens: 500,
+        }),
         { status: 200 }
       )
     }
 
-    return NextResponse.json(settings, { status: 200 })
+    return NextResponse.json(toCamelCase(settings), { status: 200 })
   } catch (error: any) {
     console.error('Get user settings error:', error)
     return NextResponse.json(
@@ -64,16 +75,13 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const {
-      theme,
-      suggestions_enabled,
-      default_model,
-      default_temperature,
-      default_max_tokens,
-      anthropic_api_key,
-    } = body
+    // Accept both camelCase (from client) and snake_case (legacy)
+    const theme = body.theme
+    const suggestions_enabled = body.suggestions_enabled ?? body.suggestionsEnabled
+    const default_model = body.default_model ?? body.defaultModel
+    const default_temperature = body.default_temperature ?? body.defaultTemperature
+    const default_max_tokens = body.default_max_tokens ?? body.defaultMaxTokens
 
-    // Get or create settings
     let settings = await prisma.userSettings.findUnique({
       where: { user_id: userId },
     })
@@ -84,7 +92,6 @@ export async function PUT(request: NextRequest) {
       })
     }
 
-    // Update settings with provided values
     const updatedSettings = await prisma.userSettings.update({
       where: { user_id: userId },
       data: {
@@ -96,14 +103,10 @@ export async function PUT(request: NextRequest) {
           default_temperature !== undefined ? default_temperature : settings.default_temperature,
         default_max_tokens:
           default_max_tokens !== undefined ? default_max_tokens : settings.default_max_tokens,
-        anthropic_api_key:
-          anthropic_api_key !== undefined ? anthropic_api_key : settings.anthropic_api_key,
       },
     })
 
-    // Don't return the API key in the response for security
-    const { anthropic_api_key: _, ...safeSettings } = updatedSettings
-    return NextResponse.json(safeSettings, { status: 200 })
+    return NextResponse.json(toCamelCase(updatedSettings), { status: 200 })
   } catch (error: any) {
     console.error('Update user settings error:', error)
     return NextResponse.json(

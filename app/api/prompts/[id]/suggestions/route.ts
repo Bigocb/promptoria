@@ -77,6 +77,11 @@ Provide suggestions in JSON format with this structure:
   ]
 }`
 
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { user_id: userId },
+    })
+    const model = userSettings?.default_model || 'llama3.2'
+
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     if (OLLAMA_API_KEY) {
       headers['Authorization'] = `Bearer ${OLLAMA_API_KEY}`
@@ -86,7 +91,7 @@ Provide suggestions in JSON format with this structure:
       method: 'POST',
       headers,
       body: JSON.stringify({
-        model: prompt.model || 'llama3.2',
+        model,
         prompt: suggestionPrompt,
         stream: false,
       }),
