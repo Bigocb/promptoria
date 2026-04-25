@@ -174,8 +174,26 @@
   display: none;
 }
 
+/* Mobile-only elements */
+.mobile-only {
+  display: none;
+}
+
+/* Desktop-only elements (hidden on mobile) */
+.sidebar-only {
+  display: block;
+}
+
 /* Desktop: Show all sections normally, hide tabs */
 @media (min-width: 1025px) {
+  .mobile-only {
+    display: none;
+  }
+
+  .sidebar-only {
+    display: block;
+  }
+
   .mobile-section-tabs {
     display: none;
   }
@@ -191,6 +209,14 @@
 
 /* Tablet/Mobile: stack vertically with tabs */
 @media (max-width: 1024px) {
+  .mobile-only {
+    display: block;
+  }
+
+  .sidebar-only {
+    display: none;
+  }
+
   .workbench-grid {
     grid-template-columns: 1fr;
     gap: 0;

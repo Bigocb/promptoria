@@ -1665,6 +1665,36 @@ export default function WorkbenchPage() {
             </div>
           </div>
 
+          {/* Mobile-only metadata summary */}
+          <div className="mobile-only card" style={{ backgroundColor: 'var(--color-backgroundAlt)' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--color-foregroundAlt)' }}>📊</span>
+              {tags.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                  {tags.slice(0, 3).map((tag) => (
+                    <span key={tag} style={{ padding: '0.15rem 0.5rem', backgroundColor: 'var(--color-accent)', color: 'var(--color-background)', borderRadius: '0.2rem', fontSize: '0.7rem', fontWeight: '500' }}>
+                      {tag}
+                    </span>
+                  ))}
+                  {tags.length > 3 && <span style={{ fontSize: '0.7rem', color: 'var(--color-foregroundAlt)' }}>+{tags.length - 3}</span>}
+                </div>
+              )}
+              {selectedInteractionTypeId && (
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-foreground)' }}>
+                  {interactionTypes.find(t => t.id === selectedInteractionTypeId)?.emoji} {interactionTypes.find(t => t.id === selectedInteractionTypeId)?.name}
+                </span>
+              )}
+              {selectedCategoryId && (
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-foreground)' }}>
+                  {categories.find(c => c.id === selectedCategoryId)?.name}
+                </span>
+              )}
+              <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--color-foregroundAlt)' }}>
+                {loadedPromptModel || 'No model'}
+              </span>
+            </div>
+          </div>
+
           {/* Save Feedback Toast */}
           {saveStatus !== 'idle' && (
             <div style={{
@@ -1693,7 +1723,7 @@ export default function WorkbenchPage() {
             </div>
           )}
 
-          <div className="btn-group-mobile" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
             <button
               className="btn btn-primary"
               onClick={savePrompt}
@@ -1711,7 +1741,7 @@ export default function WorkbenchPage() {
         {/* Right Sidebar */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Current Metadata (desktop sidebar, mobile main) */}
-          <div className="card" style={{ backgroundColor: 'var(--color-backgroundAlt)' }}>
+          <div className="card sidebar-only" style={{ backgroundColor: 'var(--color-backgroundAlt)' }}>
             <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600' }}>
               📊 Metadata
             </label>
