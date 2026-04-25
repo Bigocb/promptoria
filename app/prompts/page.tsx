@@ -170,9 +170,8 @@ export default function WorkbenchPage() {
   const [saveMessage, setSaveMessage] = useState('')
 
   useEffect(() => {
-    fetchSnippets()
-    fetchInteractionTypes()
-    // Lazy load prompts only when load selector is opened
+    if (!user) return
+    Promise.allSettled([fetchSnippets(), fetchInteractionTypes()])
   }, [user])
 
   // Fetch Ollama models for test panel
@@ -195,9 +194,11 @@ export default function WorkbenchPage() {
   }, [])
 
   // Auto-load prompt from URL parameter
+  const [loadedPromptIdFromUrl, setLoadedPromptIdFromUrl] = useState<string | null>(null)
   useEffect(() => {
     const promptId = searchParams?.get('load')
-    if (promptId && user) {
+    if (promptId && user && promptId !== loadedPromptIdFromUrl) {
+      setLoadedPromptIdFromUrl(promptId)
       loadPrompt(promptId)
     }
   }, [searchParams, user])

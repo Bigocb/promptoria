@@ -38,6 +38,7 @@ export default function LibraryPage() {
 
   // Fetch interaction types on mount
   useEffect(() => {
+    if (!user) return
     fetchInteractionTypes()
   }, [user])
 

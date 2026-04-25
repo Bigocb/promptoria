@@ -166,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
-      {children}
+      {loading ? null : children}
     </AuthContext.Provider>
   )
 }
@@ -230,22 +230,19 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         }
 
         // If user is logged in, fetch from database
-        if (user) {
-          const token = localStorage.getItem('auth-token')
-          if (token) {
-            const res = await fetch(API_ENDPOINTS.user.settings, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-              },
-            })
-            if (res.ok) {
-              const data = await res.json()
-              // Handle both direct settings object and settings within a wrapper
-              const settingsData = data.settings || data
-              setSettings(settingsData)
-              localStorage.setItem('user-settings', JSON.stringify(settingsData))
-            }
-          }
+        if (!user) return
+        const token = localStorage.getItem('auth-token')
+        if (!token) return
+        const res = await fetch(API_ENDPOINTS.user.settings, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          const settingsData = data.settings || data
+          setSettings(settingsData)
+          localStorage.setItem('user-settings', JSON.stringify(settingsData))
         }
       } catch (error) {
         console.error('Failed to load settings:', error)
