@@ -1,5 +1,9 @@
 import { NextRequest } from 'next/server'
 
+jest.mock('@/lib/rate-limit', () => ({
+  rateLimit: jest.fn(() => ({ allowed: true, retryAfterMs: 0 })),
+}))
+
 jest.mock('@/lib/prisma', () => {
   const mockClient = {
     user: {

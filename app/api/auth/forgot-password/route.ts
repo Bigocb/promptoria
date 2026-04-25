@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { rateLimit } from '@/lib/rate-limit'
 
 const RESET_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://promptoria.me'
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
+    const { allowed, retryAfterMs } = rateLimit(`forgot:${ip}`)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(retryAfterMs / 1000)) } }
+      )
+    }
     const { email } = await request.json()
 
     if (!email) {
