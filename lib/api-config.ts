@@ -32,6 +32,9 @@ export const API_ENDPOINTS = {
       delete: `${API_BASE_URL}/settings/api-keys`,
     },
   },
+  favorites: {
+    list: `${API_BASE_URL}/favorites`,
+  },
   prompts: {
     list: `${API_BASE_URL}/prompts`,
     create: `${API_BASE_URL}/prompts`,

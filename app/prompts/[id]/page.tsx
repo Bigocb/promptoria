@@ -45,6 +45,8 @@ export default function PromptDetailPage({ params }: { params: { id: string } })
   const [compareVersionId, setCompareVersionId] = useState<string | null>(null)
   const [showDiff, setShowDiff] = useState(false)
   const [compareDropdownOpen, setCompareDropdownOpen] = useState(false)
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -57,6 +59,49 @@ export default function PromptDetailPage({ params }: { params: { id: string } })
       setSelectedVersionId(prompt.versions[0].id)
     }
   }, [prompt, selectedVersionId])
+
+  useEffect(() => {
+    if (user && params.id) {
+      checkFavorite()
+    }
+  }, [user, params.id])
+
+  const checkFavorite = async () => {
+    try {
+      const token = localStorage.getItem('auth-token')
+      if (!token) return
+      const res = await fetch(API_ENDPOINTS.prompts.favorite(params.id), {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setIsFavorite(data.is_favorite)
+      }
+    } catch {
+      // silently fail
+    }
+  }
+
+  const toggleFavorite = async () => {
+    if (favoriteLoading) return
+    setFavoriteLoading(true)
+    try {
+      const token = localStorage.getItem('auth-token')
+      if (!token) return
+      const method = isFavorite ? 'DELETE' : 'POST'
+      const res = await fetch(API_ENDPOINTS.prompts.favorite(params.id), {
+        method,
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+      if (res.ok) {
+        setIsFavorite(!isFavorite)
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setFavoriteLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (prompt && isEditing) {
@@ -244,7 +289,23 @@ export default function PromptDetailPage({ params }: { params: { id: string } })
         >
           ← Back
         </button>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <button
+            onClick={toggleFavorite}
+            disabled={favoriteLoading}
+            style={{
+              padding: '0.5rem 0.75rem',
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: favoriteLoading ? 'not-allowed' : 'pointer',
+              fontSize: '1.25rem',
+              opacity: favoriteLoading ? 0.5 : 1,
+              transition: 'transform 0.2s ease',
+            }}
+            title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            {isFavorite ? '★' : '☆'}
+          </button>
           {isEditing ? (
             <>
               <button
@@ -715,6 +776,27 @@ export default function PromptDetailPage({ params }: { params: { id: string } })
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.875rem', color: 'var(--color-foregroundAlt)' }}>
+              <div>
+                <span style={{ fontWeight: '600', display: 'block', marginBottom: '0.25rem' }}>Favorite</span>
+                <button
+                  onClick={toggleFavorite}
+                  disabled={favoriteLoading}
+                  style={{
+                    padding: '0.375rem 0.75rem',
+                    backgroundColor: isFavorite ? 'var(--color-accent)' : 'transparent',
+                    border: `2px solid ${isFavorite ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                    borderRadius: '0.375rem',
+                    cursor: favoriteLoading ? 'not-allowed' : 'pointer',
+                    fontSize: '0.875rem',
+                    color: isFavorite ? 'var(--color-background)' : 'var(--color-foreground)',
+                    fontWeight: '500',
+                    opacity: favoriteLoading ? 0.5 : 1,
+                  }}
+                >
+                  {isFavorite ? '★ Favorited' : '☆ Add to Favorites'}
+                </button>
+              </div>
+
               <div>
                 <span style={{ fontWeight: '600', display: 'block', marginBottom: '0.25rem' }}>ID</span>
                 <code style={{

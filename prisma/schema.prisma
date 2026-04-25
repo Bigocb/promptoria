@@ -24,8 +24,24 @@ model User {
   workspaces    Workspace?
   devices       Device[]
   oauth_accounts OAuthAccount[]
+  favorites     Favorite[]
 
   @@map("users")
+}
+
+// Favorite - user's favorited prompts
+model Favorite {
+  id         String   @id @default(cuid()) @db.VarChar(36)
+  user_id    String   @db.VarChar(36)
+  prompt_id  String   @db.VarChar(36)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  prompt Prompt @relation(fields: [prompt_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, prompt_id])
+  @@index([user_id])
+  @@map("favorites")
 }
 
 // OAuthAccount - third-party auth providers
@@ -153,6 +169,7 @@ model Prompt {
   workspace Workspace        @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
   category  PromptCategory?  @relation(fields: [category_id], references: [id], onDelete: SetNull)
   versions  PromptVersion[]
+  favorites  Favorite[]
 
   @@unique([workspace_id, name])
   @@index([workspace_id])

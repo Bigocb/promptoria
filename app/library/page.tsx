@@ -35,12 +35,31 @@ export default function LibraryPage() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
 
   // Fetch interaction types on mount
   useEffect(() => {
     if (!user) return
     fetchInteractionTypes()
+    fetchFavoriteIds()
   }, [user])
+
+  const fetchFavoriteIds = async () => {
+    try {
+      const token = localStorage.getItem('auth-token')
+      if (!token) return
+      const res = await fetch(API_ENDPOINTS.favorites.list, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setFavoriteIds(new Set(data.favorites.map((f: any) => f.id)))
+      }
+    } catch {
+      // silently fail
+    }
+  }
 
   // Set first type as selected when types are loaded
   useEffect(() => {
@@ -98,6 +117,22 @@ export default function LibraryPage() {
         <p style={{ color: 'var(--color-foregroundAlt)', marginBottom: '1.5rem' }}>
           Browse and discover prompts organized by agent interaction types and categories
         </p>
+        <button
+          onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: showFavoritesOnly ? 'var(--color-accent)' : 'transparent',
+            border: `2px solid ${showFavoritesOnly ? 'var(--color-accent)' : 'var(--color-border)'}`,
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            color: showFavoritesOnly ? 'var(--color-background)' : 'var(--color-foreground)',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          {showFavoritesOnly ? '★ Favorites Only' : '☆ Show Favorites'}
+        </button>
       </header>
 
       {error && (
@@ -224,7 +259,9 @@ export default function LibraryPage() {
 
                       {expandedCategories.has(category.id) && (category.prompts?.length ?? 0) > 0 && (
                         <div style={{ borderTop: '2px solid var(--color-border)', paddingTop: '0.75rem' }}>
-                          {(category.prompts || []).map((prompt) => (
+                          {(category.prompts || [])
+                            .filter((prompt) => !showFavoritesOnly || favoriteIds.has(prompt.id))
+                            .map((prompt) => (
                             <div
                               key={prompt.id}
                               onClick={() => router.push(`/prompts?load=${prompt.id}`)}
@@ -247,9 +284,14 @@ export default function LibraryPage() {
                                 e.currentTarget.style.paddingLeft = '0.75rem'
                               }}
                             >
-                              <p style={{ fontWeight: '500', marginBottom: '0.25rem', color: 'var(--color-foreground)' }}>
-                                {prompt.name}
-                              </p>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <p style={{ fontWeight: '500', marginBottom: 0, color: 'var(--color-foreground)' }}>
+                                  {prompt.name}
+                                </p>
+                                {favoriteIds.has(prompt.id) && (
+                                  <span style={{ fontSize: '0.875rem', color: 'var(--color-accent)' }}>★</span>
+                                )}
+                              </div>
                               {prompt.description && (
                                 <p style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', marginBottom: 0 }}>
                                   {prompt.description}
@@ -257,6 +299,12 @@ export default function LibraryPage() {
                               )}
                             </div>
                           ))}
+                        </div>
+                      )}
+
+                      {expandedCategories.has(category.id) && (category.prompts?.length ?? 0) > 0 && showFavoritesOnly && (category.prompts || []).filter((p) => favoriteIds.has(p.id)).length === 0 && (
+                        <div style={{ padding: '0.75rem', color: 'var(--color-foregroundAlt)', fontSize: '0.875rem' }}>
+                          No favorited prompts in this category
                         </div>
                       )}
 
