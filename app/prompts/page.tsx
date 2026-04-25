@@ -1693,7 +1693,7 @@ export default function WorkbenchPage() {
             </div>
           )}
 
-          <div className="btn-group-mobile" style={{ display: 'flex', gap: '1rem' }}>
+          <div className="btn-group-mobile" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
             <button
               className="btn btn-primary"
               onClick={savePrompt}
