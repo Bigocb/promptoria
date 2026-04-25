@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'bigoch.dev@gmail.com'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'bobby.cloutier@gmail.com'
 
 export async function GET(request: NextRequest) {
   try {
