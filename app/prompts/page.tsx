@@ -1723,17 +1723,24 @@ export default function WorkbenchPage() {
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', marginBottom: '0' }}>
             <button
-              className="btn btn-primary"
               onClick={savePrompt}
               disabled={saveStatus === 'saving'}
               style={{
-                opacity: saveStatus === 'saving' ? 0.6 : 1,
+                padding: '0.5rem 1.25rem',
+                backgroundColor: 'var(--color-accent)',
+                color: 'var(--color-background)',
+                border: 'none',
+                borderRadius: '0.5rem',
+                fontSize: '0.85rem',
+                fontWeight: '700',
                 cursor: saveStatus === 'saving' ? 'not-allowed' : 'pointer',
+                opacity: saveStatus === 'saving' ? 0.6 : 1,
+                transition: 'opacity 0.2s',
               }}
             >
-              {saveStatus === 'saving' ? 'Saving...' : 'Save Prompt'}
+              {saveStatus === 'saving' ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>
@@ -1804,10 +1811,10 @@ export default function WorkbenchPage() {
           </div>
 
           {/* Mobile Section Tabs */}
-          <div className="mobile-section-tabs">
+          <div className="mobile-section-tabs" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>
             {[
               { id: 'refine', label: '💡 Refine' },
-              { id: 'composition', label: '🧩 Composition' },
+              { id: 'composition', label: '🧩 Compose' },
               { id: 'snippets', label: '📚 Snippets' },
               { id: 'test', label: '🧪 Test' },
               { id: 'versions', label: '📜 Versions' },
@@ -1816,17 +1823,17 @@ export default function WorkbenchPage() {
                 key={tab.id}
                 onClick={() => setActiveMobileSection(tab.id)}
                 style={{
-                  padding: '8px 14px',
-                  minHeight: '40px',
+                  padding: '6px 10px',
+                  minHeight: '32px',
                   backgroundColor: activeMobileSection === tab.id ? 'var(--color-accent)' : 'var(--color-background)',
                   color: activeMobileSection === tab.id ? 'var(--color-background)' : 'var(--color-foreground)',
-                  border: `2px solid ${activeMobileSection === tab.id ? 'var(--color-accent)' : 'var(--color-border)'}`,
-                  borderRadius: '0.5rem',
+                  border: `1px solid ${activeMobileSection === tab.id ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                  borderRadius: '0.375rem',
                   cursor: 'pointer',
-                  fontSize: '0.8rem',
+                  fontSize: '0.7rem',
                   fontWeight: '600',
                   whiteSpace: 'nowrap',
-                  transition: 'all 0.2s',
+                  transition: 'all 0.15s',
                 }}
               >
                 {tab.label}
