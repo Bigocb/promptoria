@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma'
 import { generateAccessToken, generateRefreshToken } from '@/lib/jwt'
 import { exchangeCodeForTokens, getGoogleUserInfo } from '@/lib/google-oauth'
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://promptoria.me'
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -11,14 +13,21 @@ export async function GET(request: NextRequest) {
     const storedState = request.cookies.get('oauth_state')?.value
 
     if (!code || !state || state !== storedState) {
-      return NextResponse.redirect(new URL('/auth/login?error=invalid_oauth_state', request.url))
+      const res = NextResponse.redirect(new URL('/auth/login?error=invalid_oauth_state', APP_URL))
+      res.cookies.set('oauth_state', '', { maxAge: 0, path: '/' })
+      return res
     }
 
+    console.log('Google OAuth: Exchanging code for tokens...')
     const tokens = await exchangeCodeForTokens(code)
+    console.log('Google OAuth: Tokens received, fetching user info...')
     const googleUser = await getGoogleUserInfo(tokens.access_token)
+    console.log('Google OAuth: User info received:', googleUser.email)
 
     if (!googleUser.email) {
-      return NextResponse.redirect(new URL('/auth/login?error=google_no_email', request.url))
+      const res = NextResponse.redirect(new URL('/auth/login?error=google_no_email', APP_URL))
+      res.cookies.set('oauth_state', '', { maxAge: 0, path: '/' })
+      return res
     }
 
     // Check if OAuth account already exists
@@ -127,9 +136,8 @@ export async function GET(request: NextRequest) {
     const accessToken = generateAccessToken(user.id, user.email)
     const refreshToken = generateRefreshToken(user.id)
 
-    // Clear the oauth_state cookie
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    const redirectUrl = new URL('/auth/google/callback', baseUrl)
+    // Clear the oauth_state cookie and redirect to frontend callback page
+    const redirectUrl = new URL('/auth/google/callback', APP_URL)
     redirectUrl.searchParams.set('access_token', accessToken)
     redirectUrl.searchParams.set('refresh_token', refreshToken)
     redirectUrl.searchParams.set('user', JSON.stringify({ id: user.id, email: user.email }))
@@ -138,8 +146,9 @@ export async function GET(request: NextRequest) {
     res.cookies.set('oauth_state', '', { maxAge: 0, path: '/' })
     return res
   } catch (error: any) {
-    console.error('Google OAuth callback error:', error)
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    return NextResponse.redirect(new URL(`/auth/login?error=${encodeURIComponent('google_auth_failed')}`, baseUrl))
+    console.error('Google OAuth callback error:', error.message, error.stack)
+    const res = NextResponse.redirect(new URL(`/auth/login?error=${encodeURIComponent('google_auth_failed')}`, APP_URL))
+    res.cookies.set('oauth_state', '', { maxAge: 0, path: '/' })
+    return res
   }
 }
