@@ -51,6 +51,11 @@ export async function GET(
         versions: {
           orderBy: { version_number: 'desc' },
         },
+        category: {
+          include: {
+            interaction_type: true,
+          },
+        },
       },
     })
 
@@ -77,6 +82,7 @@ export async function GET(
         tags: prompt.tags,
         model: prompt.model,
         category_id: prompt.category_id,
+        agent_interaction_type_id: prompt.category?.agent_interaction_type_id || null,
         versions: prompt.versions,
         created_at: prompt.created_at,
         updated_at: prompt.updated_at,
