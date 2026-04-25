@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
-import { Anthropic } from '@anthropic-ai/sdk'
+
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
+const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || ''
 
 async function getWorkspaceForUser(userId: string) {
   return prisma.workspace.findFirst({ where: { user_id: userId } })
@@ -31,7 +33,6 @@ export async function GET(
       return NextResponse.json({ error: 'Workspace not found' }, { status: 404 })
     }
 
-    // Get prompt and latest version
     const prompt = await prisma.prompt.findUnique({
       where: { id: params.id },
       include: {
@@ -57,22 +58,6 @@ export async function GET(
       )
     }
 
-    // Get user settings for API key
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { user_id: userId },
-    })
-
-    const apiKey = userSettings?.anthropic_api_key || process.env.ANTHROPIC_API_KEY
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'No Anthropic API key configured' },
-        { status: 400 }
-      )
-    }
-
-    const anthropic = new Anthropic({ apiKey })
-
-    // Get suggestions from Claude
     const suggestionPrompt = `You are a prompt engineering expert. Analyze this prompt and provide 3-5 specific, actionable suggestions for improvement:
 
 Prompt Name: ${prompt.name}
@@ -92,23 +77,32 @@ Provide suggestions in JSON format with this structure:
   ]
 }`
 
-    const message = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: suggestionPrompt,
-        },
-      ],
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (OLLAMA_API_KEY) {
+      headers['Authorization'] = `Bearer ${OLLAMA_API_KEY}`
+    }
+
+    const ollamaResponse = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model: prompt.model || 'llama3.2',
+        prompt: suggestionPrompt,
+        stream: false,
+      }),
     })
 
-    const responseText = message.content
-      .filter((block: any) => block.type === 'text')
-      .map((block: any) => block.text)
-      .join('\n')
+    if (!ollamaResponse.ok) {
+      const errorBody = await ollamaResponse.text()
+      return NextResponse.json(
+        { error: `Model server error (${ollamaResponse.status}): ${errorBody || ollamaResponse.statusText}` },
+        { status: 502 }
+      )
+    }
 
-    // Try to parse JSON from response
+    const ollamaData = await ollamaResponse.json()
+    const responseText: string = ollamaData.response || ''
+
     let suggestions = []
     try {
       const jsonMatch = responseText.match(/\{[\s\S]*\}/)
@@ -117,7 +111,6 @@ Provide suggestions in JSON format with this structure:
         suggestions = parsed.suggestions || []
       }
     } catch (e) {
-      // If JSON parsing fails, return raw text as a single suggestion
       suggestions = [
         {
           title: 'Suggestions',
@@ -127,7 +120,6 @@ Provide suggestions in JSON format with this structure:
       ]
     }
 
-    // Log suggestion request
     await prisma.syncLog.create({
       data: {
         workspace_id: workspace.id,
