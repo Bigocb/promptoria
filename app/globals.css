@@ -140,7 +140,28 @@
   color: var(--color-accent);
 }
 
-/* Workbench Mobile/Desktop Layout */
+/* Workbench Layout */
+.workbench-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 2rem;
+  align-items: start;
+}
+
+.workbench-grid main,
+.workbench-grid > div:first-child {
+  min-width: 0;
+}
+
+.workbench-grid aside,
+.workbench-grid > div:last-child {
+  min-width: 0;
+  position: sticky;
+  top: 2rem;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+}
+
 .mobile-section-tabs {
   display: none;
 }
@@ -168,9 +189,20 @@
   }
 }
 
-/* Mobile styles */
+/* Tablet/Mobile: stack vertically with tabs */
 @media (max-width: 1024px) {
-  /* Show mobile tabs and buttons */
+  .workbench-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .workbench-grid aside,
+  .workbench-grid > div:last-child {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+
   .mobile-section-tabs {
     display: flex;
     gap: 0.5rem;
@@ -178,12 +210,10 @@
     flex-wrap: wrap;
   }
 
-  /* Hide sections that aren't active */
   .mobile-section-hidden {
     display: none;
   }
 
-  /* Show mobile button group */
   .btn-group-mobile {
     display: flex;
   }
