@@ -87,6 +87,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, password: string, confirmPassword: string) => Promise<void>
   logout: () => void
+  loginWithGoogle: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -111,7 +112,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Listen for auth changes from Google OAuth callback
+    const handleAuthChange = () => {
+      const newToken = localStorage.getItem('auth-token')
+      const newUserStr = localStorage.getItem('auth-user')
+      if (newToken && newUserStr) {
+        try {
+          setUser(JSON.parse(newUserStr))
+        } catch {}
+      }
+    }
+    window.addEventListener('auth-state-changed', handleAuthChange)
+
     setLoading(false)
+    return () => window.removeEventListener('auth-state-changed', handleAuthChange)
   }, [])
 
   const login = async (email: string, password: string) => {
@@ -164,8 +178,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null)
   }
 
+  const loginWithGoogle = () => {
+    window.location.href = '/api/auth/google'
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, loginWithGoogle }}>
       {loading ? null : children}
     </AuthContext.Provider>
   )
@@ -182,6 +200,7 @@ export function useAuth() {
       login: async () => {},
       signup: async () => {},
       logout: () => {},
+      loginWithGoogle: () => {},
     }
   }
 

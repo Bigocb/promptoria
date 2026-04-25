@@ -26,7 +26,7 @@ jest.mock('@/lib/jwt', () => ({
   verifyAccessToken: jest.fn(),
 }))
 
-const adminEmail = 'bigoch.dev@gmail.com'
+const adminEmail = 'bobby.cloutier@gmail.com'
 
 import { GET as getAdminStats } from '@/app/api/admin/stats/route'
 

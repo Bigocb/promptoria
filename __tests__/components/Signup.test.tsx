@@ -20,6 +20,7 @@ jest.mock('@/app/providers', () => ({
     signup: mockSignup,
     login: jest.fn(),
     logout: jest.fn(),
+    loginWithGoogle: jest.fn(),
   }),
 }))
 

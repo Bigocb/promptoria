@@ -36,7 +36,7 @@ describe('Login Page', () => {
 
   test('renders sign in button', () => {
     render(<LoginPage />)
-    expect(screen.getByRole('button', { name: /sign in/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^sign in$/i })).toBeTruthy()
   })
 
   test('renders link to signup page', () => {
@@ -54,13 +54,18 @@ describe('Login Page', () => {
     expect(screen.getByText(/recipe book/i)).toBeTruthy()
   })
 
+  test('renders Google sign-in button', () => {
+    render(<LoginPage />)
+    expect(screen.getByRole('button', { name: /sign in with google/i })).toBeTruthy()
+  })
+
   test('disables button and shows loading state when submitting', async () => {
     mockLogin.mockImplementation(() => new Promise(() => {}))
     render(<LoginPage />)
 
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/password/i)
-    const submitButton = screen.getByRole('button', { name: /sign in/i })
+    const submitButton = screen.getByRole('button', { name: /^sign in$/i })
 
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
     fireEvent.change(passwordInput, { target: { value: 'password123' } })
@@ -77,7 +82,7 @@ describe('Login Page', () => {
 
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/password/i)
-    const submitButton = screen.getByRole('button', { name: /sign in/i })
+    const submitButton = screen.getByRole('button', { name: /^sign in$/i })
 
     fireEvent.change(emailInput, { target: { value: 'bad@example.com' } })
     fireEvent.change(passwordInput, { target: { value: 'wrong' } })

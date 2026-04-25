@@ -32,7 +32,10 @@ export async function authenticateUser(
     return null  // User not found
   }
 
-  // Verify password
+  // Verify password (skip for OAuth users without password)
+  if (!user.password) {
+    return null  // OAuth-only user, cannot login with password
+  }
   const isPasswordValid = await verifyPassword(password, user.password)
   if (!isPasswordValid) {
     return null  // Password incorrect
