@@ -143,6 +143,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await res.json()
       localStorage.setItem('auth-token', data.access_token)
+      if (data.refresh_token) {
+        localStorage.setItem('auth-refresh-token', data.refresh_token)
+      }
       localStorage.setItem('auth-user', JSON.stringify(data.user))
       setUser(data.user)
     } catch (error) {
@@ -165,6 +168,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await res.json()
       localStorage.setItem('auth-token', data.access_token)
+      if (data.refresh_token) {
+        localStorage.setItem('auth-refresh-token', data.refresh_token)
+      }
       localStorage.setItem('auth-user', JSON.stringify(data.user))
       setUser(data.user)
     } catch (error) {
@@ -174,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('auth-token')
+    localStorage.removeItem('auth-refresh-token')
     localStorage.removeItem('auth-user')
     setUser(null)
   }
@@ -181,6 +188,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithGoogle = () => {
     window.location.href = '/api/auth/google'
   }
+
+  // Auto-refresh tokens before they expire
+  useEffect(() => {
+    if (!user) return
+
+    const refreshInterval = setInterval(async () => {
+      const token = localStorage.getItem('auth-token')
+      const refreshToken = localStorage.getItem('auth-refresh-token')
+      if (!token || !refreshToken) return
+
+      try {
+        const res = await fetch(API_ENDPOINTS.auth.refresh, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          localStorage.setItem('auth-token', data.access_token)
+          if (data.refresh_token) {
+            localStorage.setItem('auth-refresh-token', data.refresh_token)
+          }
+        } else {
+          // Refresh failed, log out
+          logout()
+        }
+      } catch {
+        // Network error, don't log out — try again next interval
+      }
+    }, 24 * 60 * 60 * 1000) // Refresh every 24 hours (token lasts 7 days)
+
+    return () => clearInterval(refreshInterval)
+  }, [user])
 
   return (
     <AuthContext.Provider value={{ user, loading, login, signup, logout, loginWithGoogle }}>
