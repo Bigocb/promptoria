@@ -146,6 +146,7 @@ export async function GET(request: NextRequest) {
     // Parse pagination parameters
     const skipParam = request.nextUrl.searchParams.get('skip')
     const takeParam = request.nextUrl.searchParams.get('take')
+    const includeAllVersions = request.nextUrl.searchParams.get('all_versions') === 'true'
 
     let skip = 0
     let take = 20
@@ -169,14 +170,14 @@ export async function GET(request: NextRequest) {
       where: { workspace_id: workspace.id },
     })
 
-    // Get paginated prompts in workspace with latest version
+    // Get paginated prompts in workspace
     const prompts = await prisma.prompt.findMany({
       where: { workspace_id: workspace.id },
       include: {
         versions: {
-          where: { is_active: true },
-          take: 1,
-          orderBy: { version_number: 'desc' },
+          where: includeAllVersions ? undefined : { is_active: true },
+          take: includeAllVersions ? undefined : 1,
+          orderBy: { version_number: includeAllVersions ? 'asc' : 'desc' },
         },
       },
       orderBy: { updated_at: 'desc' },
@@ -186,16 +187,23 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
       {
-        prompts: prompts.map(p => ({
-          id: p.id,
-          name: p.name,
-          description: p.description,
-          tags: p.tags,
-          model: p.model,
-          version: p.versions[0] || null,
-          created_at: p.created_at,
-          updated_at: p.updated_at,
-        })),
+        prompts: prompts.map(p => {
+          const base: any = {
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            tags: p.tags,
+            model: p.model,
+            created_at: p.created_at,
+            updated_at: p.updated_at,
+          }
+          if (includeAllVersions) {
+            base.versions = p.versions
+          } else {
+            base.version = p.versions[0] || null
+          }
+          return base
+        }),
         pagination: {
           skip,
           take,

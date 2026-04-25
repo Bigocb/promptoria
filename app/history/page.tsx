@@ -31,7 +31,7 @@ export default function HistoryPage() {
           return
         }
 
-        const res = await fetch(API_ENDPOINTS.prompts.list, {
+        const res = await fetch(`${API_ENDPOINTS.prompts.list}?all_versions=true&take=100`, {
           headers: { Authorization: `Bearer ${token}` },
         })
 
@@ -57,16 +57,16 @@ export default function HistoryPage() {
                 createdBy: v.created_by || 'You',
               })
             }
-          } else if (prompt.latest_version) {
+          } else if (prompt.version) {
             allVersions.push({
-              id: prompt.latest_version.id,
+              id: prompt.version.id,
               promptId: prompt.id,
               promptName: prompt.name,
-              versionNumber: prompt.latest_version.version_number,
-              template_body: prompt.latest_version.template_body,
-              changeLog: prompt.latest_version.change_log || 'No changelog',
-              createdAt: prompt.latest_version.created_at,
-              createdBy: prompt.latest_version.created_by || 'You',
+              versionNumber: prompt.version.version_number,
+              template_body: prompt.version.template_body,
+              changeLog: prompt.version.change_log || 'No changelog',
+              createdAt: prompt.version.created_at,
+              createdBy: prompt.version.created_by || 'You',
             })
           }
         }
