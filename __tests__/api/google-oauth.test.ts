@@ -65,7 +65,7 @@ describe('GET /api/auth/google/callback', () => {
       id_token: 'google-id-token',
     })
     ;(getGoogleUserInfo as jest.Mock).mockResolvedValueOnce({
-      sub: 'google-123',
+      id: 'google-123',
       email: 'newuser@gmail.com',
       name: 'New User',
       picture: 'https://avatar.url/pic.jpg',
@@ -161,7 +161,7 @@ describe('GET /api/auth/google/callback', () => {
       id_token: 'google-id-token',
     })
     ;(getGoogleUserInfo as jest.Mock).mockResolvedValueOnce({
-      sub: 'google-123',
+      id: 'google-123',
       email: 'existing@gmail.com',
       name: 'Updated Name',
     })

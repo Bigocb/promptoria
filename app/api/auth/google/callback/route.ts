@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
   try {
     // Check if OAuth account already exists
     const oauthAccount = await prisma.oAuthAccount.findUnique({
-      where: { provider_provider_id: { provider: 'google', provider_id: googleUser.sub } },
+      where: { provider_provider_id: { provider: 'google', provider_id: googleUser.id } },
       include: { user: true },
     })
 
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
         await prisma.oAuthAccount.create({
           data: {
             provider: 'google',
-            provider_id: googleUser.sub,
+            provider_id: googleUser.id,
             user_id: user.id,
             access_token: tokens.access_token,
             refresh_token: tokens.id_token,
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
         await prisma.oAuthAccount.create({
           data: {
             provider: 'google',
-            provider_id: googleUser.sub,
+            provider_id: googleUser.id,
             user_id: user.id,
             access_token: tokens.access_token,
             refresh_token: tokens.id_token,
