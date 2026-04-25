@@ -35,6 +35,12 @@ describe('Sidebar', () => {
     expect(screen.getByText(/Settings/)).toBeTruthy()
   })
 
+  test('does not show admin link for non-admin user', () => {
+    render(<Sidebar />)
+
+    expect(screen.queryByText(/🛡️ Admin/)).toBeNull()
+  })
+
   test('displays user email', () => {
     render(<Sidebar />)
 

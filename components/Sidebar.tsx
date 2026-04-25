@@ -4,6 +4,8 @@ import { useAuth } from '@/app/providers'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'bobby.cloutier@gmail.com'
+
 interface SidebarProps {
   isOpen?: boolean
   onClose?: () => void
@@ -29,6 +31,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
     { label: '📊 History', href: '/history' },
     { label: '▶️ Test', href: '/test' },
     { label: '⚙️ Settings', href: '/settings' },
+    ...(user?.email === ADMIN_EMAIL ? [{ label: '🛡️ Admin', href: '/admin' }] : []),
   ]
 
   return (
