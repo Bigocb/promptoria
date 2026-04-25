@@ -34,8 +34,11 @@ export default function SignupPage() {
     <div className="signup-container">
       <div className="signup-card">
         <div className="signup-header">
-          <h1>Promptoria</h1>
-          <p>Create your account</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <img src="/logo.svg" alt="" style={{ width: '28px', height: '28px' }} />
+            <h1>Promptoria</h1>
+          </div>
+          <p>Start building your prompt recipe book.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="signup-form">
@@ -59,12 +62,12 @@ export default function SignupPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Create a password"
               required
               disabled={loading}
             />
             <p className="password-hint">
-              Must be at least 8 characters with uppercase, lowercase, and number
+              At least 8 characters with uppercase, lowercase, and a number
             </p>
           </div>
 
@@ -75,7 +78,7 @@ export default function SignupPage() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Re-enter your password"
               required
               disabled={loading}
             />
@@ -84,7 +87,7 @@ export default function SignupPage() {
           {error && <div className="error-message">{error}</div>}
 
           <button type="submit" disabled={loading} className="submit-button">
-            {loading ? 'Creating account...' : 'Sign Up'}
+            {loading ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
 
@@ -93,6 +96,10 @@ export default function SignupPage() {
             Already have an account?{' '}
             <Link href="/auth/login">Sign in</Link>
           </p>
+        </div>
+
+        <div className="signup-tagline">
+          Your prompts, versioned and tested. Free forever.
         </div>
       </div>
     </div>

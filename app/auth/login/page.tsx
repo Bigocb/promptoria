@@ -33,8 +33,11 @@ export default function LoginPage() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1>Promptoria</h1>
-          <p>Modular, versioned prompt management</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <img src="/logo.svg" alt="" style={{ width: '28px', height: '28px' }} />
+            <h1>Promptoria</h1>
+          </div>
+          <p>Welcome back. Your prompt recipe book awaits.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
@@ -58,7 +61,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Enter your password"
               required
               disabled={loading}
             />
@@ -73,9 +76,13 @@ export default function LoginPage() {
 
         <div className="login-footer">
           <p>
-            Don't have an account?{' '}
-            <Link href="/auth/signup">Sign up</Link>
+            Don&apos;t have an account?{' '}
+            <Link href="/auth/signup">Create one</Link>
           </p>
+        </div>
+
+        <div className="login-tagline">
+          Save prompts you love. Test, tweak, and reuse them.
         </div>
       </div>
     </div>
