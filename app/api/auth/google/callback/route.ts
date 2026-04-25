@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { generateAccessToken, generateRefreshToken } from '@/lib/jwt'
-import { exchangeCodeForTokens, getGoogleUserInfo } from '@/lib/google-oauth'
+import { exchangeCodeForTokens, getGoogleUserInfo, type GoogleUserInfo } from '@/lib/google-oauth'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://promptoria.me'
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Fetch user info from Google
-  let googleUser: { sub: string; email: string; name?: string; picture?: string }
+  let googleUser: GoogleUserInfo
   try {
     googleUser = await getGoogleUserInfo(tokens.access_token)
   } catch (error: any) {
