@@ -6,11 +6,14 @@
 - [x] Next.js 14 with App Router
 - [x] PostgreSQL + Prisma ORM
 - [x] TypeScript
-- [x] Tailwind CSS styling
-- [x] Global error handling
+- [x] CSS custom properties theme system with Gruvbox Dark, Gruvbox Light, Solarized Dark, Monokai, Custom Dark
 - [x] JWT authentication (signup, login, refresh tokens)
+- [x] Google OAuth sign-up/login with account linking
+- [x] Password reset flow (forgot password / reset password)
+- [x] Rate limiting on auth endpoints (10 requests / 15 min per IP)
 - [x] Workspace isolation per user
 - [x] Activity/audit logging (SyncLog)
+- [x] Admin dashboard (owner-only metrics)
 
 ### Theme System
 - [x] Gruvbox Dark (default), Gruvbox Light, Solarized Dark, Monokai, Custom Dark
@@ -39,13 +42,12 @@
 - [x] Snippet insertion into prompts via composition
 
 ### Test Runner
-- [x] Ollama integration (local, free execution)
-- [x] Anthropic Claude integration (paid, API key)
-- [x] Multiple model support (Llama 2, Mistral, Neural Chat, Claude Opus/Sonnet/Haiku)
+- [x] Ollama Cloud integration (server-side API key)
+- [x] Multiple model support
 - [x] Model selection UI with family filtering
 - [x] Variable extraction and test case input
 - [x] Run statistics (latency, token count, duration)
-- [x] Test history persistence (Prisma, not just in-memory)
+- [x] Test history persistence (Prisma)
 - [x] Batch prompt execution
 - [x] Single test run execution and re-execution
 
@@ -56,7 +58,8 @@
 - [x] Search API (cross-entity: prompts, snippets, categories)
 
 ### AI-Powered Features
-- [x] AI prompt suggestions (Claude-powered analysis and recommendations)
+- [x] AI prompt suggestions (Ollama Cloud-powered analysis and recommendations)
+- [x] AI tag suggestions
 - [x] Model presets API
 
 ### Analytics & Monitoring
@@ -66,8 +69,7 @@
 
 ### Settings & Configuration
 - [x] Default model and temperature settings
-- [x] Ollama status detection
-- [x] Anthropic API key configuration
+- [x] Ollama Cloud status detection
 - [x] Theme switching
 - [x] Suggestion toggle
 

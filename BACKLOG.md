@@ -4,11 +4,16 @@ Prioritized list of remaining work. Completed items have been moved to `FEATURES
 
 ---
 
-## Tier 1: Incomplete Features (finish what's started)
+## Tier 1: Polish & UX
 
-### Connect History page to real API
-- [ ] Replace hardcoded mock data in `/history` page with calls to `GET /api/test-runs`
-- [ ] Add pagination, filtering by prompt, date range picker
+### Empty state guidance
+- [ ] Dashboard: show helpful onboarding for new users (no prompts, no snippets)
+- [ ] Library: suggest creating first prompt when empty
+- [ ] Test runner: explain how to use test variables
+
+### History page data
+- [ ] Wire up `/history` page to real `GET /api/test-runs` data (currently mock)
+- [ ] Add pagination, filtering by prompt, date range
 
 ### Favorites persistence
 - [ ] Add `Favorite` model to Prisma schema (user_id, prompt_id, created_at)
@@ -16,39 +21,25 @@ Prioritized list of remaining work. Completed items have been moved to `FEATURES
 - [ ] Add favorites list endpoint `GET /api/prompts?favorited=true`
 - [ ] Add favorite toggle UI to prompt cards and detail page
 
-### Cost calculation in test results
-- [ ] Use pricing data from `/api/models` to calculate cost per test run
-- [ ] Display input cost, output cost, and total cost in test run results
-- [ ] Add cost aggregation to analytics/usage endpoint
-
 ### Tag suggestions UI
 - [ ] Surface `GET /api/prompts/[id]/tags-suggestions` in prompt edit form
 - [ ] Show suggested tags as clickable chips below the tag input
 
-## Tier 2: Polish & Gaps
+## Tier 2: Security & Infrastructure
 
-### UX
-- [ ] Breadcrumb navigation across pages
-- [ ] Copy-to-clipboard buttons globally (not just test runner)
-- [ ] Keyboard shortcuts (Cmd+K for search, Cmd+S for save)
-- [ ] Empty state illustrations (currently text-only)
-- [ ] Loading skeleton states for async data
-- [ ] Error boundaries for route-level error handling
+### Rate limiting
+- [x] Auth endpoints rate limited (10 req / 15 min per IP)
+- [ ] Rate limit on all API endpoints (100 req / min per user)
+- [ ] Rate limit on test execution endpoints (10 req / min per user)
 
-### Snippet Organization
-- [ ] Snippet folders/collections (`folder_id` field exists in schema, no model or UI)
-- [ ] Snippet tags and filtering
-- [ ] Snippet search across name + content + description
+### Error tracking
+- [ ] Add Sentry (or similar) for runtime error tracking
+- [ ] Add source maps for production debugging
 
-### Variable Handling
-- [ ] Inline variable editing in composition UI
-- [ ] Variable collision detection across composed snippets
-- [ ] Auto-merge variables from snippets into test runner
-
-### Pagination & Performance
-- [ ] Add pagination to prompt list, snippet list, and test runs list
-- [ ] Optimize N+1 queries in API endpoints
-- [ ] Add database indexes for common queries
+### Data protection
+- [ ] Privacy policy page (`/privacy`)
+- [ ] Terms of service page (`/terms`)
+- [ ] CORS hardening (restrict origins more tightly)
 
 ## Tier 3: New Features
 
@@ -62,49 +53,30 @@ Prioritized list of remaining work. Completed items have been moved to `FEATURES
 - [ ] Statistical comparison of test results
 - [ ] Batch testing with multiple variable sets
 
-### Enhanced Test Runner
-- [ ] Response storage linked to prompts
-- [ ] Response library for comparative analysis
-- [ ] File attachments on prompts
-
 ### Collaboration
 - [ ] Shared workspaces with team members
 - [ ] Comments/annotations on prompts
-- [ ] User mentions and notifications
 - [ ] Role-based access control (owner, editor, viewer)
 
-### Integrations
-- [ ] Webhook support for automation
-- [ ] OpenAI provider integration (currently Ollama + Anthropic only)
-- [ ] Swagger/OpenAPI documentation endpoint
+### Email Integration
+- [ ] SendGrid or Resend integration for password reset emails
+- [ ] Email verification on signup
+- [ ] Welcome email
+
+## Tier 4: Mobile & Performance
 
 ### Mobile
-- [ ] React Native mobile app (iOS/Android)
+- [ ] React Native mobile app (see `docs/MOBILE_STRATEGY.md`)
 - [ ] Offline sync capability
 - [ ] Mobile-optimized responsive layouts
 
-## Tier 4: Infrastructure & Quality
-
-### Testing
-- [ ] Unit tests for auth, API routes, and components
-- [ ] E2E tests for full user workflows
-- [ ] Test coverage target: 80%+
+### Performance
+- [ ] Pagination on prompt/snippet/test-runs lists
+- [ ] Optimize N+1 queries in API endpoints
+- [ ] Database indexes for common queries
+- [ ] Redis caching layer
 
 ### Code Quality
 - [ ] Input validation layer (Zod)
 - [ ] Consistent error handling across all endpoints
-- [ ] Remove unused dependencies
 - [ ] TypeScript strict mode
-
-### Production Readiness
-- [ ] Rate limiting (per IP/user)
-- [ ] Structured audit logging (beyond SyncLog)
-- [ ] Database backup strategy
-- [ ] Error tracking (Sentry)
-- [ ] Redis caching
-- [ ] CI/CD pipeline
-- [ ] Refresh tokens and token expiry handling
-
-### Developer Experience
-- [ ] CLI tool for Promptoria
-- [ ] VS Code extension
