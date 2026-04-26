@@ -131,4 +131,9 @@ export const API_ENDPOINTS = {
     endpoints: `${API_BASE_URL}/docs/endpoints`,
   },
   models: `${API_BASE_URL}/models`,
+  admin: {
+    stats: `${API_BASE_URL}/admin/stats`,
+    models: `${API_BASE_URL}/admin/models`,
+    model: (id: string) => `${API_BASE_URL}/admin/models/${id}`,
+  },
 }

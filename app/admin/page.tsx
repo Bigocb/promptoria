@@ -4,6 +4,20 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/providers'
 
+interface ModelPreset {
+  id: string
+  ollama_id: string
+  display_name: string
+  family: string
+  parameter_size: string | null
+  context_window: string | null
+  max_tokens: number | null
+  tier_required: string
+  cost_estimate: string | null
+  is_active: boolean
+  sort_order: number
+}
+
 interface AdminStats {
   totals: {
     users: number
@@ -32,6 +46,9 @@ export default function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [error, setError] = useState('')
   const [statsLoading, setStatsLoading] = useState(true)
+  const [models, setModels] = useState<ModelPreset[]>([])
+  const [modelsLoading, setModelsLoading] = useState(true)
+  const [saveFeedback, setSaveFeedback] = useState('')
 
   useEffect(() => {
     if (!loading && !user) {
@@ -90,9 +107,14 @@ export default function AdminPage() {
             <h1 style={{ fontSize: '1.75rem', fontWeight: '800', letterSpacing: '-0.02em' }}>Admin Dashboard</h1>
             <p style={{ color: 'var(--color-foregroundAlt)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Promptoria metrics &amp; usage</p>
           </div>
-          <a href="/dashboard" style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--color-backgroundAlt)', border: '1px solid var(--color-border)', borderRadius: '0.5rem', color: 'var(--color-foreground)', textDecoration: 'none', fontSize: '0.85rem' }}>
-            Back to App
-          </a>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <a href="/admin/models" style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--color-backgroundAlt)', border: '1px solid var(--color-border)', borderRadius: '0.5rem', color: 'var(--color-foreground)', textDecoration: 'none', fontSize: '0.85rem' }}>
+              Model Config
+            </a>
+            <a href="/dashboard" style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--color-backgroundAlt)', border: '1px solid var(--color-border)', borderRadius: '0.5rem', color: 'var(--color-foreground)', textDecoration: 'none', fontSize: '0.85rem' }}>
+              Back to App
+            </a>
+          </div>
         </div>
 
         {statsLoading ? (
