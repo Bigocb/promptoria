@@ -28,6 +28,10 @@ export default function SettingsPage() {
   const [ollamaAvailable, setOllamaAvailable] = useState<boolean | null>(null)
   const [ollamaError, setOllamaError] = useState<string | null>(null)
   const [familyFilter, setFamilyFilter] = useState<string>('all')
+  const [anthropicKey, setAnthropicKey] = useState('')
+  const [hasAnthropicKey, setHasAnthropicKey] = useState(false)
+  const [savingKey, setSavingKey] = useState(false)
+  const [keyMessage, setKeyMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -38,7 +42,6 @@ export default function SettingsPage() {
         })
         if (res.ok) {
           const data = await res.json()
-          // New DB-backed API: { models, user_tier }
           setOllamaAvailable(data.models?.length > 0 || false)
           setOllamaModels((data.models || []).map((m: any) => ({
             ...m,
@@ -55,6 +58,75 @@ export default function SettingsPage() {
     }
     fetchModels()
   }, [])
+
+  useEffect(() => {
+    const checkApiKey = async () => {
+      try {
+        const token = localStorage.getItem('auth-token')
+        if (!token) return
+        const res = await fetch(API_ENDPOINTS.settings.apiKeys.get, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setHasAnthropicKey(data.has_api_key)
+        }
+      } catch { /* silent */ }
+    }
+    checkApiKey()
+  }, [])
+
+  const handleSaveAnthropicKey = async () => {
+    if (!anthropicKey || anthropicKey.length < 10) {
+      setKeyMessage({ text: 'Key must be at least 10 characters', type: 'error' })
+      return
+    }
+    setSavingKey(true)
+    setKeyMessage(null)
+    try {
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.settings.apiKeys.set, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: anthropicKey }),
+      })
+      if (res.ok) {
+        setHasAnthropicKey(true)
+        setAnthropicKey('')
+        setKeyMessage({ text: 'API key saved successfully', type: 'success' })
+      } else {
+        const data = await res.json()
+        setKeyMessage({ text: data.error || 'Failed to save key', type: 'error' })
+      }
+    } catch {
+      setKeyMessage({ text: 'Network error', type: 'error' })
+    } finally {
+      setSavingKey(false)
+    }
+  }
+
+  const handleDeleteAnthropicKey = async () => {
+    setSavingKey(true)
+    setKeyMessage(null)
+    try {
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.settings.apiKeys.delete, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        setHasAnthropicKey(false)
+        setAnthropicKey('')
+        setKeyMessage({ text: 'API key removed', type: 'success' })
+      } else {
+        setKeyMessage({ text: 'Failed to remove key', type: 'error' })
+      }
+    } catch {
+      setKeyMessage({ text: 'Network error', type: 'error' })
+    } finally {
+      setSavingKey(false)
+    }
+  }
 
   const handleThemeChange = async (theme: ThemeName) => {
     setSaving(true)
@@ -186,6 +258,62 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* API Keys */}
+        <section style={{
+          backgroundColor: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          borderRadius: '8px',
+          padding: '1.5rem',
+        }}>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.25rem', color: 'var(--color-text)' }}>
+            API Keys
+          </h2>
+          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1.25rem' }}>
+            Add your own keys to unlock BYOK models. Keys are stored encrypted and never sent to our servers.
+          </p>
+
+          {/* Anthropic */}
+          <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'var(--color-background)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>Anthropic</span>
+                <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.5rem', borderRadius: '9999px', backgroundColor: hasAnthropicKey ? 'rgba(34,197,94,0.15)' : 'rgba(156,163,175,0.15)', color: hasAnthropicKey ? '#22c55e' : 'var(--color-foregroundAlt)' }}>
+                  {hasAnthropicKey ? 'Connected' : 'No key'}
+                </span>
+              </div>
+              {hasAnthropicKey && (
+                <button onClick={handleDeleteAnthropicKey} disabled={savingKey} style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'transparent', color: '#ef4444', cursor: savingKey ? 'not-allowed' : 'pointer', opacity: savingKey ? 0.5 : 1 }}>
+                  Remove
+                </button>
+              )}
+            </div>
+            {!hasAnthropicKey ? (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  type="password"
+                  value={anthropicKey}
+                  onChange={(e) => setAnthropicKey(e.target.value)}
+                  placeholder="sk-ant-..."
+                  className="input"
+                  style={{ flex: 1, fontSize: '0.85rem' }}
+                />
+                <button onClick={handleSaveAnthropicKey} disabled={savingKey || !anthropicKey} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', borderRadius: '4px', border: 'none', backgroundColor: 'var(--color-accent)', color: '#1d2021', fontWeight: 600, cursor: savingKey ? 'not-allowed' : 'pointer', opacity: savingKey || !anthropicKey ? 0.5 : 1 }}>
+                  Save
+                </button>
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                Key is set. Claude models (Haiku, Sonnet, Opus) are now available.
+              </div>
+            )}
+          </div>
+
+          {keyMessage && (
+            <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '4px', fontSize: '0.85rem', backgroundColor: keyMessage.type === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: keyMessage.type === 'success' ? '#22c55e' : '#ef4444' }}>
+              {keyMessage.text}
+            </div>
+          )}
+        </section>
 
         {/* Suggestions Settings */}
         <section style={{

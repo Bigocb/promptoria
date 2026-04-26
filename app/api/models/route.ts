@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { inferModelMetadata } from '@/lib/model-enrichment'
+import { verifyAccessToken } from '@/lib/jwt'
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || ''
@@ -15,8 +16,13 @@ const TIER_RANK: Record<string, number> = {
   admin: 99,
 }
 
+const CLAUDE_MODELS = [
+  { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', description: 'Fastest Claude model, great for quick tasks', family: 'claude', parameter_size: null, contextWindow: '200K', maxTokens: 8192, tier_required: 'byok', is_byok: true, cost_estimate: 'bring-your-own' },
+  { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', description: 'Balanced performance and intelligence', family: 'claude', parameter_size: null, contextWindow: '200K', maxTokens: 8192, tier_required: 'byok', is_byok: true, cost_estimate: 'bring-your-own' },
+  { id: 'claude-opus-4-20250514', name: 'Claude Opus 4', description: 'Most capable Claude model for complex tasks', family: 'claude', parameter_size: null, contextWindow: '200K', maxTokens: 8192, tier_required: 'byok', is_byok: true, cost_estimate: 'bring-your-own' },
+]
+
 const FALLBACK_MODELS = [
-  { id: 'qwen3.5:2b', name: 'Qwen 3.5 (2B)', description: 'Fast multilingual general-purpose', family: 'qwen', parameter_size: '2B', contextWindow: '128K', maxTokens: 4096, tier_required: 'free', is_byok: false, cost_estimate: null },
   { id: 'gemma3:4b', name: 'Gemma 3 (4B)', description: 'Google latest single-GPU model', family: 'gemma', parameter_size: '4B', contextWindow: '128K', maxTokens: 4096, tier_required: 'free', is_byok: false, cost_estimate: null },
   { id: 'nemotron-3-nano:4b', name: 'Nemotron 3 Nano (4B)', description: 'Efficient agentic model', family: 'nemotron', parameter_size: '4B', contextWindow: '128K', maxTokens: 4096, tier_required: 'free', is_byok: false, cost_estimate: null },
   { id: 'qwen3.5:0.8b', name: 'Qwen 3.5 (0.8B)', description: 'Ultra-tiny edge model', family: 'qwen', parameter_size: '0.8B', contextWindow: '32K', maxTokens: 2048, tier_required: 'free', is_byok: false, cost_estimate: null },
@@ -121,6 +127,23 @@ export async function GET(request: NextRequest) {
 
     const userRank = TIER_RANK[userTier] || 1
 
+    let userId: string | null = null
+    let hasAnthropicKey = false
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.substring(7)
+        const decoded = verifyAccessToken(token)
+        userId = decoded.userId
+      } catch { /* no valid token */ }
+    }
+
+    if (userId) {
+      try {
+        const userSettings = await prisma.userSettings.findUnique({ where: { user_id: userId } })
+        hasAnthropicKey = !!userSettings?.anthropic_api_key
+      } catch { /* silent */ }
+    }
+
     let ollamaTags: string[] = []
     try {
       ollamaTags = await fetchOllamaTags()
@@ -173,6 +196,10 @@ export async function GET(request: NextRequest) {
         const modelRank = TIER_RANK[m.tier_required] || 1
         return modelRank <= userRank
       })
+    }
+
+    if (hasAnthropicKey) {
+      models = [...CLAUDE_MODELS, ...models]
     }
 
     return NextResponse.json(

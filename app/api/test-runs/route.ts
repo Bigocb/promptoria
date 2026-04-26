@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
 import { consumeTokens } from '@/lib/quota'
 import { resolveAvailableModel } from '@/lib/model-fallback'
+import Anthropic from '@anthropic-ai/sdk'
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || ''
@@ -122,33 +123,54 @@ export async function POST(request: NextRequest) {
     let totalTokens: number = 0
 
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (OLLAMA_API_KEY) {
-        headers['Authorization'] = `Bearer ${OLLAMA_API_KEY}`
-      }
+      const isClaudeModel = modelToUse.startsWith('claude-')
 
-      const ollamaResponse = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
+      if (isClaudeModel) {
+        const apiKey = userSettings?.anthropic_api_key || process.env.ANTHROPIC_API_KEY
+        if (!apiKey) throw new Error('No Anthropic API key configured. Add one in Settings.')
+
+        const anthropic = new Anthropic({ apiKey })
+        const message = await anthropic.messages.create({
           model: modelToUse,
-          prompt: finalTestInput,
-          stream: false,
-          options: {
-            temperature: tempToUse,
-            num_predict: maxTokensToUse,
-          },
-        }),
-      })
+          max_tokens: maxTokensToUse,
+          temperature: tempToUse,
+          messages: [{ role: 'user', content: finalTestInput }],
+        })
 
-      if (!ollamaResponse.ok) {
-        const errorBody = await ollamaResponse.text()
-        throw new Error(`Model server error (${ollamaResponse.status}): ${errorBody || ollamaResponse.statusText}`)
+        output = message.content
+          .filter((block: any) => block.type === 'text')
+          .map((block: any) => block.text)
+          .join('\n')
+        totalTokens = (message.usage?.input_tokens || 0) + (message.usage?.output_tokens || 0)
+      } else {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (OLLAMA_API_KEY) {
+          headers['Authorization'] = `Bearer ${OLLAMA_API_KEY}`
+        }
+
+        const ollamaResponse = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model: modelToUse,
+            prompt: finalTestInput,
+            stream: false,
+            options: {
+              temperature: tempToUse,
+              num_predict: maxTokensToUse,
+            },
+          }),
+        })
+
+        if (!ollamaResponse.ok) {
+          const errorBody = await ollamaResponse.text()
+          throw new Error(`Model server error (${ollamaResponse.status}): ${errorBody || ollamaResponse.statusText}`)
+        }
+
+        const ollamaData = await ollamaResponse.json()
+        output = ollamaData.response || ''
+        totalTokens = Math.ceil((finalTestInput.length + output.length) / 4)
       }
-
-      const ollamaData = await ollamaResponse.json()
-      output = ollamaData.response || ''
-      totalTokens = Math.ceil((finalTestInput.length + output.length) / 4)
     } catch (error) {
       await prisma.testRun.update({
         where: { id: testRun.id },
