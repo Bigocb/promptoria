@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    return NextResponse.json({ models, user_tier: userTier }, { status: 200 })
+    return NextResponse.json({ models, user_tier: userTier, version: 'deploy-test-v2' }, { status: 200 })
   } catch (error: any) {
     console.error('Get models error:', error)
     const errorMessage = error?.message || String(error)
