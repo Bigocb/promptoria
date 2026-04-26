@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Find or create user
-  let user: { id: string; email: string; name: string | null; image: string | null }
+  let user: { id: string; email: string; name: string | null; image: string | null; subscription_tier: string | null }
   try {
     // Check if OAuth account already exists
     const oauthAccount = await prisma.oAuthAccount.findUnique({
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Generate JWT tokens
-  const accessToken = generateAccessToken(user.id, user.email)
+  const accessToken = generateAccessToken(user.id, user.email, user.subscription_tier)
   const refreshToken = generateRefreshToken(user.id)
 
   // Redirect to frontend callback page

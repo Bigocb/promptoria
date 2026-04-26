@@ -11,9 +11,9 @@ const REFRESH_TOKEN_EXPIRY = '30d'
  * @param email - The user email
  * @returns JWT access token string
  */
-export function generateAccessToken(userId: string, email: string): string {
+export function generateAccessToken(userId: string, email: string, tier?: string): string {
   return jwt.sign(
-    { sub: userId, email },
+    { sub: userId, email, tier },
     JWT_SECRET,
     { algorithm: ALGORITHM, expiresIn: ACCESS_TOKEN_EXPIRY }
   )
@@ -38,10 +38,10 @@ export function generateRefreshToken(userId: string): string {
  * @returns Object containing userId and email
  * @throws Error if token is invalid or expired
  */
-export function verifyAccessToken(token: string): { userId: string; email: string } {
+export function verifyAccessToken(token: string): { userId: string; email: string; tier?: string } {
   try {
     const decoded = jwt.verify(token, JWT_SECRET, { algorithms: [ALGORITHM] }) as any
-    return { userId: decoded.sub, email: decoded.email }
+    return { userId: decoded.sub, email: decoded.email, tier: decoded.tier }
   } catch (error) {
     throw new Error('Invalid or expired token')
   }

@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate new access token
-    const accessToken = generateAccessToken(user.id, user.email)
+    const accessToken = generateAccessToken(user.id, user.email, user.subscription_tier)
 
     // Return response matching login endpoint format
     return NextResponse.json(

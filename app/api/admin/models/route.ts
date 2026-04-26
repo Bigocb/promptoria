@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
-
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'bobby.cloutier@gmail.com'
+import { isAdmin } from '@/lib/is-admin'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,15 +11,15 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.substring(7)
-    let userEmail: string
+    let decoded: { userId: string; email: string; tier?: string }
     try {
-      const decoded = verifyAccessToken(token)
-      userEmail = decoded.email
+      decoded = verifyAccessToken(token)
     } catch {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (userEmail !== ADMIN_EMAIL) {
+    const userIsAdmin = await isAdmin(decoded.userId)
+    if (!userIsAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Generate JWT tokens (access + refresh)
-    const accessToken = generateAccessToken(user.id, user.email)
+    const accessToken = generateAccessToken(user.id, user.email, user.subscription_tier)
     const refreshToken = generateRefreshToken(user.id)
 
     // Return response (match Python backend format)

@@ -24,11 +24,10 @@ export async function GET(request: NextRequest) {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
         const token = authHeader.substring(7)
-        // Try to decode token just for tier info — if it fails, stay free
         const base64Payload = token.split('.')[1]
         if (base64Payload) {
           const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString())
-          userTier = payload?.tier || payload?.subscription_tier || 'free'
+          userTier = payload?.tier || 'free'
         }
       } catch { /* stay free */ }
     }

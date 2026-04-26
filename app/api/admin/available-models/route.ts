@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
+import { isAdmin } from '@/lib/is-admin'
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'bobby.cloutier@gmail.com'
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || ''
 
@@ -14,15 +14,15 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.substring(7)
-    let userEmail: string
+    let decoded: { userId: string; email: string; tier?: string }
     try {
-      const decoded = verifyAccessToken(token)
-      userEmail = decoded.email
+      decoded = verifyAccessToken(token)
     } catch {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (userEmail !== ADMIN_EMAIL) {
+    const userIsAdmin = await isAdmin(decoded.userId)
+    if (!userIsAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
