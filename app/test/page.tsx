@@ -126,7 +126,10 @@ export default function TestRunnerPage() {
   useEffect(() => {
     const fetchModels = async () => {
       try {
-        const res = await fetch(API_ENDPOINTS.models)
+        const token = localStorage.getItem('auth-token')
+        const res = await fetch(API_ENDPOINTS.models, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
         if (res.ok) {
           const data = await res.json()
           setModels(data.models || [])

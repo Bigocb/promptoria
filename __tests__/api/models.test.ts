@@ -130,14 +130,17 @@ describe('GET /api/models', () => {
     })
   })
 
-  test('returns empty models with error on database failure', async () => {
+  test('falls back to static models when database fails', async () => {
     ;(prisma.modelPreset.findMany as jest.Mock).mockRejectedValue(new Error('DB down'))
+    ;(prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
 
     const req = new NextRequest('http://localhost:3000/api/models')
     const res = await getModels(req)
     const data = await res.json()
 
-    expect(data.models).toEqual([])
-    expect(data.error).toBeDefined()
+    // Should return fallback static models, not empty array
+    expect(data.models.length).toBeGreaterThan(0)
+    expect(data.models[0]).toHaveProperty('id')
+    expect(data.models[0]).toHaveProperty('name')
   })
 })

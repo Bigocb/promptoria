@@ -32,10 +32,27 @@ export async function GET(request: NextRequest) {
 
     const userRank = TIER_RANK[userTier] || 1
 
-    const presets = await prisma.modelPreset.findMany({
-      where: { is_active: true },
-      orderBy: [{ sort_order: 'asc' }, { display_name: 'asc' }],
-    })
+    let presets: any[] = []
+    let dbError = false
+    try {
+      presets = await prisma.modelPreset.findMany({
+        where: { is_active: true },
+        orderBy: [{ sort_order: 'asc' }, { display_name: 'asc' }],
+      })
+    } catch (err) {
+      console.error('ModelPreset DB error:', err)
+      dbError = true
+    }
+
+    // Fallback static free-tier models if DB query fails
+    if (dbError || presets.length === 0) {
+      presets = [
+        { ollama_id: 'llama3.2', display_name: 'Llama 3.2', family: 'llama', description: 'Fast general-purpose model', context_window: '128K', max_tokens: 4096, tier_required: 'free', is_byok: false },
+        { ollama_id: 'gemma2:2b', display_name: 'Gemma 2 (2B)', family: 'gemma', description: 'Google lightweight model', context_window: '8K', max_tokens: 2048, tier_required: 'free', is_byok: false },
+        { ollama_id: 'qwen2.5:0.5b', display_name: 'Qwen 2.5 (0.5B)', family: 'qwen', description: 'Ultra-tiny multilingual', context_window: '32K', max_tokens: 1024, tier_required: 'free', is_byok: false },
+        { ollama_id: 'phi4-mini', display_name: 'Phi-4 Mini', family: 'phi', description: 'Microsoft small model', context_window: '128K', max_tokens: 4096, tier_required: 'free', is_byok: false },
+      ]
+    }
 
     const models = presets
       .filter((p) => {

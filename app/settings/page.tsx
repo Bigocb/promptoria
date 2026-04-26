@@ -31,12 +31,21 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchModels = async () => {
       try {
-        const res = await fetch(API_ENDPOINTS.models)
+        const token = localStorage.getItem('auth-token')
+        const res = await fetch(API_ENDPOINTS.models, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
         if (res.ok) {
           const data = await res.json()
-          setOllamaAvailable(data.ollama_available)
-          setOllamaModels(data.models || [])
-          if (data.error) setOllamaError(data.error)
+          // New DB-backed API: { models, user_tier }
+          setOllamaAvailable(data.models?.length > 0 || false)
+          setOllamaModels((data.models || []).map((m: any) => ({
+            ...m,
+            description: m.description || m.name || m.id,
+            size: null,
+            quantization_level: null,
+            provider: 'ollama',
+          })))
         }
       } catch {
         setOllamaAvailable(false)
