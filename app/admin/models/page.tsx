@@ -361,6 +361,7 @@ export default function AdminModelsPage() {
                     <th style={{ padding: '0.75rem 1.25rem', textAlign: 'left', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Name</th>
                     <th style={{ padding: '0.75rem 1.25rem', textAlign: 'left', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Family</th>
                     <th style={{ padding: '0.75rem 1.25rem', textAlign: 'left', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Size</th>
+                    <th style={{ padding: '0.75rem 1.25rem', textAlign: 'left', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Cost</th>
                     <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Add</th>
                   </tr>
                 </thead>
@@ -370,6 +371,19 @@ export default function AdminModelsPage() {
                       <td style={{ padding: '0.75rem 1.25rem', fontFamily: 'monospace', fontSize: '0.85rem' }}>{m.name}</td>
                       <td style={{ padding: '0.75rem 1.25rem' }}>{m.family || 'unknown'}</td>
                       <td style={{ padding: '0.75rem 1.25rem' }}>{m.parameter_size || 'unknown'}</td>
+                      <td style={{ padding: '0.75rem 1.25rem' }}>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          padding: '0.1rem 0.4rem',
+                          borderRadius: '0.2rem',
+                          backgroundColor: m.cost_estimate === 'cheap' ? '#b8bb26' : m.cost_estimate === 'medium' ? '#fe8019' : m.cost_estimate === 'expensive' ? '#cc241d' : 'transparent',
+                          color: m.cost_estimate ? '#1d2021' : 'var(--color-foregroundAlt)',
+                          textTransform: 'uppercase',
+                        }}>
+                          {m.cost_estimate || 'unknown'}
+                        </span>
+                      </td>
                       <td style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
                         <button
                           onClick={() => addModel(m)}
@@ -392,7 +406,7 @@ export default function AdminModelsPage() {
                     </tr>
                   ))}
                   {availableModels.length === 0 && (
-                    <tr><td colSpan={4} style={{ padding: '1.25rem', textAlign: 'center', color: 'var(--color-foregroundAlt)' }}>No unassigned models found (all models are in curated list or Ollama Cloud is unreachable)</td></tr>
+                    <tr><td colSpan={5} style={{ padding: '1.25rem', textAlign: 'center', color: 'var(--color-foregroundAlt)' }}>No unassigned models found (all models are in curated list or Ollama Cloud is unreachable)</td></tr>
                   )}
                 </tbody>
               </table>
