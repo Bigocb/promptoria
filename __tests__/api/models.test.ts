@@ -1,5 +1,59 @@
 import { NextRequest } from 'next/server'
 
+const mockModelPresets = [
+  {
+    id: 'preset-1',
+    ollama_id: 'llama3:8b',
+    display_name: 'Llama 3 (8B)',
+    family: 'llama',
+    parameter_size: '8B',
+    description: 'Meta Llama',
+    context_window: '128K',
+    max_tokens: 4096,
+    is_active: true,
+    tier_required: 'free',
+    cost_estimate: 'medium',
+    is_byok: false,
+    sort_order: 1,
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+  {
+    id: 'preset-2',
+    ollama_id: 'mistral:7b',
+    display_name: 'Mistral 7B',
+    family: 'mistral',
+    parameter_size: '7B',
+    description: 'Mistral model',
+    context_window: '32K',
+    max_tokens: 8000,
+    is_active: true,
+    tier_required: 'pro',
+    cost_estimate: 'medium',
+    is_byok: false,
+    sort_order: 2,
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+  {
+    id: 'preset-3',
+    ollama_id: 'gemma:2b',
+    display_name: 'Gemma 2B',
+    family: 'gemma',
+    parameter_size: '2B',
+    description: 'Google Gemma',
+    context_window: '8K',
+    max_tokens: 2048,
+    is_active: true,
+    tier_required: 'free',
+    cost_estimate: 'cheap',
+    is_byok: false,
+    sort_order: 3,
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+]
+
 jest.mock('@/lib/prisma', () => {
   const mockClient = {
     workspace: { findFirst: jest.fn() },
@@ -7,6 +61,7 @@ jest.mock('@/lib/prisma', () => {
     snippet: { findMany: jest.fn(), count: jest.fn() },
     promptCategory: { findMany: jest.fn() },
     user: { findUnique: jest.fn(), findFirst: jest.fn() },
+    modelPreset: { findMany: jest.fn() },
     $transaction: jest.fn(),
   }
   return { __esModule: true, default: mockClient }
@@ -16,48 +71,18 @@ jest.mock('@/lib/jwt', () => ({
   verifyAccessToken: jest.fn(),
 }))
 
-const mockModels = [
-  {
-    name: 'llama3:8b',
-    model: 'llama3:8b',
-    details: {
-      family: 'llama',
-      parameter_size: '8B',
-      quantization_level: 'Q4_0',
-    },
-  },
-  {
-    name: 'mistral:7b',
-    model: 'mistral:7b',
-    details: {
-      family: 'mistral',
-      parameter_size: '7B',
-      quantization_level: 'Q4_0',
-    },
-  },
-  {
-    name: 'gemma:2b',
-    model: 'gemma:2b',
-    details: {
-      family: 'gemma',
-      parameter_size: '2B',
-      quantization_level: 'Q4_0',
-    },
-  },
-]
+import prisma from '@/lib/prisma'
+import { GET as getModels } from '@/app/api/models/route'
 
 beforeEach(() => {
   jest.clearAllMocks()
-  ;(global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({ models: mockModels }),
-  })
 })
 
-import { GET as getModels } from '@/app/api/models/route'
-
 describe('GET /api/models', () => {
-  test('returns list of available models', async () => {
+  test('returns list of active models for free tier', async () => {
+    ;(prisma.modelPreset.findMany as jest.Mock).mockResolvedValue([mockModelPresets[0], mockModelPresets[2]])
+    ;(prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
+
     const req = new NextRequest('http://localhost:3000/api/models')
     const res = await getModels(req)
     expect(res.status).toBe(200)
@@ -65,10 +90,31 @@ describe('GET /api/models', () => {
     const data = await res.json()
     expect(data.models).toBeDefined()
     expect(Array.isArray(data.models)).toBe(true)
+    expect(data.models.length).toBe(2)
+    expect(data.user_tier).toBe('free')
+  })
+
+  test('pro tier user sees pro models too', async () => {
+    const { verifyAccessToken } = require('@/lib/jwt')
+    verifyAccessToken.mockReturnValue({ userId: 'user-pro-123', email: 'test@example.com' })
+
+    ;(prisma.modelPreset.findMany as jest.Mock).mockResolvedValue(mockModelPresets)
+    ;(prisma.user.findUnique as jest.Mock).mockResolvedValue({ subscription_tier: 'pro' })
+
+    const req = new NextRequest('http://localhost:3000/api/models', {
+      headers: { Authorization: 'Bearer valid-token' },
+    })
+    const res = await getModels(req)
+    const data = await res.json()
+
     expect(data.models.length).toBe(3)
+    expect(data.user_tier).toBe('pro')
   })
 
   test('each model has required fields', async () => {
+    ;(prisma.modelPreset.findMany as jest.Mock).mockResolvedValue([mockModelPresets[0]])
+    ;(prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
+
     const req = new NextRequest('http://localhost:3000/api/models')
     const res = await getModels(req)
     const data = await res.json()
@@ -80,37 +126,12 @@ describe('GET /api/models', () => {
       expect(m).toHaveProperty('family')
       expect(m).toHaveProperty('contextWindow')
       expect(m).toHaveProperty('maxTokens')
+      expect(m).toHaveProperty('tier_required')
     })
   })
 
-  test('models include family-inferred metadata', async () => {
-    const req = new NextRequest('http://localhost:3000/api/models')
-    const res = await getModels(req)
-    const data = await res.json()
-
-    const llama = data.models.find((m: any) => m.id === 'llama3:8b')
-    expect(llama.family).toBe('llama')
-    expect(llama.parameter_size).toBe('8B')
-    expect(llama.quantization_level).toBe('Q4_0')
-  })
-
-  test('returns empty models with error when Ollama is unreachable', async () => {
-    ;(global.fetch as jest.Mock) = jest.fn().mockRejectedValue(new Error('ECONNREFUSED'))
-
-    const req = new NextRequest('http://localhost:3000/api/models')
-    const res = await getModels(req)
-    const data = await res.json()
-
-    expect(data.models).toEqual([])
-    expect(data.error).toBeDefined()
-  })
-
-  test('returns empty models with error when Ollama responds non-OK', async () => {
-    ;(global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
-      ok: false,
-      status: 503,
-      json: async () => ({}),
-    })
+  test('returns empty models with error on database failure', async () => {
+    ;(prisma.modelPreset.findMany as jest.Mock).mockRejectedValue(new Error('DB down'))
 
     const req = new NextRequest('http://localhost:3000/api/models')
     const res = await getModels(req)
