@@ -118,6 +118,10 @@ export default function WorkbenchPage() {
   const [loadedPromptModel, setLoadedPromptModel] = useState('gpt-4')
   const [promptsLoading, setPromptsLoading] = useState(false)
 
+  // Favorite state
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
+
   // Save feedback state
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [saveMessage, setSaveMessage] = useState('')
@@ -296,6 +300,9 @@ export default function WorkbenchPage() {
       setSuggestedTags([])
       setTagInput('')
 
+      // Check favorite status
+      checkFavoriteStatus(promptId)
+
       // Extract variables from loaded content
       const matches = (latestVersion?.template_body || data.template_body || '').match(/\{([^}]+)\}/g)
       if (matches) {
@@ -307,6 +314,43 @@ export default function WorkbenchPage() {
       alert('Failed to load prompt')
     } finally {
       setPromptsLoading(false)
+    }
+  }
+
+  const checkFavoriteStatus = async (promptId: string) => {
+    try {
+      const token = localStorage.getItem('auth-token')
+      if (!token) return
+      const res = await fetch(API_ENDPOINTS.prompts.favorite(promptId), {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setIsFavorite(data.is_favorite)
+      }
+    } catch {
+      // silently fail
+    }
+  }
+
+  const toggleFavorite = async () => {
+    if (!loadedPromptId || favoriteLoading) return
+    setFavoriteLoading(true)
+    try {
+      const token = localStorage.getItem('auth-token')
+      if (!token) return
+      const method = isFavorite ? 'DELETE' : 'POST'
+      const res = await fetch(API_ENDPOINTS.prompts.favorite(loadedPromptId), {
+        method,
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+      if (res.ok) {
+        setIsFavorite(!isFavorite)
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setFavoriteLoading(false)
     }
   }
 
@@ -327,6 +371,7 @@ export default function WorkbenchPage() {
     setSuggestions(null)
     setSuggestedTags([])
     setTagInput('')
+    setIsFavorite(false)
   }
 
   const createCategory = async () => {
@@ -882,9 +927,30 @@ export default function WorkbenchPage() {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {/* Load Prompt Section */}
           <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600' }}>
-              {loadedPromptId ? '📂 Editing' : '📂 Load Prompt'}
-            </label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <label style={{ fontWeight: '600' }}>
+                {loadedPromptId ? '📂 Editing' : '📂 Load Prompt'}
+              </label>
+              {loadedPromptId && (
+                <button
+                  onClick={toggleFavorite}
+                  disabled={favoriteLoading}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: favoriteLoading ? 'not-allowed' : 'pointer',
+                    fontSize: '1.1rem',
+                    opacity: favoriteLoading ? 0.5 : 1,
+                    transition: 'transform 0.2s ease',
+                    lineHeight: 1,
+                  }}
+                  title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  {isFavorite ? '★' : '☆'}
+                </button>
+              )}
+            </div>
             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
               <select
                 value={loadedPromptId || ''}
