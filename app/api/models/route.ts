@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 
-const TIER_RANK: Record<string, number> = { free: 1, pro: 2, enterprise: 3, byok: 4 }
+const TIER_RANK: Record<string, number> = { free: 1, pro: 2, enterprise: 3, byok: 4, admin: 99 }
 
 const STATIC_MODELS = [
   { id: 'llama3.2', name: 'Llama 3.2', description: 'Fast general-purpose model', family: 'llama', parameter_size: null, contextWindow: '128K', maxTokens: 4096, tier_required: 'free', is_byok: false, cost_estimate: null },
