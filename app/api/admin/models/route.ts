@@ -5,6 +5,39 @@ import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
 import { isAdmin } from '@/lib/is-admin'
 
+// GET /api/admin/models — list all model presets
+export async function GET(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+    let decoded: { userId: string; email: string; tier?: string }
+    try {
+      decoded = verifyAccessToken(token)
+    } catch {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userIsAdmin = await isAdmin(decoded.userId)
+    if (!userIsAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const presets = await prisma.modelPreset.findMany({
+      orderBy: [{ tier_required: 'asc' }, { sort_order: 'asc' }],
+    })
+
+    return NextResponse.json({ models: presets }, { status: 200 })
+  } catch (error: any) {
+    console.error('Admin models error:', error)
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  }
+}
+
+// POST /api/admin/models — create a new model preset
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization')
