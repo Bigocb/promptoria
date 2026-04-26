@@ -221,9 +221,10 @@ export default function AdminModelsPage() {
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                        <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                         <th style={{ padding: '0.75rem 1.25rem', textAlign: 'left', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Model</th>
                         <th style={{ padding: '0.75rem 1.25rem', textAlign: 'left', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>ID</th>
+                        <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Size</th>
                         <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Tier</th>
                         <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Cost</th>
                         <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Active</th>
@@ -238,6 +239,9 @@ export default function AdminModelsPage() {
                             {m.description && <div style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>{m.description}</div>}
                           </td>
                           <td style={{ padding: '0.75rem 1.25rem', fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--color-foregroundAlt)' }}>{m.ollama_id}</td>
+                          <td style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: '600' }}>{m.parameter_size || '—'}</span>
+                          </td>
                           <td style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
                             <select
                               value={m.tier_required}
@@ -312,7 +316,7 @@ export default function AdminModelsPage() {
                         </tr>
                       ))}
                       {tierModels.length === 0 && (
-                        <tr><td colSpan={6} style={{ padding: '1.25rem', textAlign: 'center', color: 'var(--color-foregroundAlt)' }}>No models in this tier</td></tr>
+                        <tr><td colSpan={7} style={{ padding: '1.25rem', textAlign: 'center', color: 'var(--color-foregroundAlt)' }}>No models in this tier</td></tr>
                       )}
                     </tbody>
                   </table>
