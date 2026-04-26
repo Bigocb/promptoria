@@ -909,7 +909,7 @@ export default function WorkbenchPage() {
   }
 
   return (
-    <div style={{ padding: '1.5rem' }}>
+    <div style={{ padding: '1.5rem', paddingBottom: '6rem' }}>
       <header style={{ marginBottom: '2rem' }}>
         <div style={{ marginBottom: '1rem' }}>
           <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', color: 'var(--color-foregroundAlt)', textDecoration: 'none', fontSize: '0.875rem', padding: '0.375rem 0.75rem', border: '1px solid var(--color-border)', borderRadius: '0.375rem' }}>

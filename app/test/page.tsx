@@ -155,6 +155,11 @@ export default function TestRunnerPage() {
       const fullPrompt = await res.json()
       setSelectedPrompt(fullPrompt)
 
+      // Use prompt's saved model if available, otherwise keep current model
+      if (fullPrompt.model) {
+        setModel(fullPrompt.model)
+      }
+
       const latestVersion = fullPrompt.latest_version || fullPrompt.versions?.[0]
       if (latestVersion?.template_body) {
         const varMatches = latestVersion.template_body.match(/\{\{(\w+)\}\}/g) || []
@@ -244,7 +249,7 @@ export default function TestRunnerPage() {
   const families = Array.from(new Set(models.map(m => m.family).filter(Boolean)))
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div style={{ padding: '2rem', paddingBottom: '6rem' }}>
       <header style={{ marginBottom: '2rem' }}>
         <div style={{ marginBottom: '1rem' }}>
           <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', color: 'var(--color-foregroundAlt)', textDecoration: 'none', fontSize: '0.875rem', padding: '0.375rem 0.75rem', border: '1px solid var(--color-border)', borderRadius: '0.375rem' }}>

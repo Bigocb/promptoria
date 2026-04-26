@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
           model: modelToUse,
           prompt: finalTestInput,
           temperature: tempToUse,
+          num_predict: maxTokensToUse,
           stream: false,
         }),
       })
