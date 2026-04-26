@@ -131,9 +131,11 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           model: modelToUse,
           prompt: finalTestInput,
-          temperature: tempToUse,
-          num_predict: maxTokensToUse,
           stream: false,
+          options: {
+            temperature: tempToUse,
+            num_predict: maxTokensToUse,
+          },
         }),
       })
 

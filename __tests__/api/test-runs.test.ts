@@ -57,9 +57,8 @@ describe('POST /api/test-runs', () => {
 
   test('returns 400 if no input provided', async () => {
     const prisma = require('@/lib/prisma').default
-    prisma.workspace.findFirst.mockResolvedValueOnce(mockWorkspace)
     prisma.promptVersion.findUnique.mockResolvedValueOnce({
-      id: 'v1', template_body: 'Hello', prompt: { model: 'llama3.2', workspace_id: 'ws1' },
+      id: 'v1', template_body: 'Hello', prompt: { model: 'llama3.2:3b', workspace_id: 'ws1' },
     })
     const req = new NextRequest('http://localhost:3000/api/test-runs', {
       method: 'POST',

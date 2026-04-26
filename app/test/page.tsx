@@ -195,11 +195,6 @@ export default function TestRunnerPage() {
       const fullPrompt = await res.json()
       setSelectedPrompt(fullPrompt)
 
-      // Use prompt's saved model if available, otherwise keep current model
-      if (fullPrompt.model) {
-        setModel(fullPrompt.model)
-      }
-
       const latestVersion = fullPrompt.latest_version || fullPrompt.versions?.[0]
       if (latestVersion?.template_body) {
         const varMatches = latestVersion.template_body.match(/\{\{(\w+)\}\}/g) || []
