@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { API_ENDPOINTS } from '@/lib/api-config'
 import { useAuth } from '@/app/providers'
+import TestHistoryPanel from '@/components/TestHistoryPanel'
 
 interface Snippet {
   id: string
@@ -1648,6 +1649,7 @@ export default function WorkbenchPage() {
               { id: 'composition', label: '🧩 Compose' },
               { id: 'snippets', label: '📚 Snippets' },
               { id: 'versions', label: '📜 Versions' },
+              { id: 'test-history', label: '🧪 Tests' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -2351,6 +2353,11 @@ export default function WorkbenchPage() {
               </div>
             )}
           </div>
+          {/* Test History Panel */}
+          <div className={`card${activeMobileSection !== 'test-history' ? ' mobile-section-hidden' : ''}`}>
+            <TestHistoryPanel promptId={loadedPromptId} promptContent={promptContent} />
+          </div>
+
         </aside>
       </div>
     </div>
