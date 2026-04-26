@@ -19,8 +19,14 @@ export function middleware(request: NextRequest) {
   const origin = request.headers.get('origin') || ''
   const isAllowedOrigin = ALLOWED_ORIGINS.includes(origin)
 
+  // For non-API page routes, always bust cache
   if (!pathname.startsWith('/api/')) {
-    return NextResponse.next()
+    const response = NextResponse.next()
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    response.headers.set('Surrogate-Control', 'no-store')
+    return response
   }
 
   if (PUBLIC_ROUTES.includes(pathname)) {
@@ -59,5 +65,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/:path*'],
+  matcher: ['/api/:path*', '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)'],
 }
