@@ -114,7 +114,7 @@ export const API_ENDPOINTS = {
   health: `${API_BASE_URL}/health`,
   templates: `${API_BASE_URL}/templates`,
   quotas: {
-    usage: `${API_BASE_URL}/quotas/usage`,
+    usage: `${API_BASE_URL}/quota`,
   },
   notes: {
     list: `${API_BASE_URL}/notes`,

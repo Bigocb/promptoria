@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
+import { consumeTokens } from '@/lib/quota'
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || ''
@@ -75,6 +76,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { user_id: userId },
+    })
+
+    const modelToUse = model || promptVersion.prompt.model || userSettings?.default_model || 'llama3.2'
+    const tempToUse = temperature ?? userSettings?.default_temperature ?? 0.7
+    const maxTokensToUse = max_tokens || userSettings?.default_max_tokens || 1024
+
+    const estimatedTokens = Math.ceil(((finalTestInput?.length || 0) + maxTokensToUse) / 4)
+
+    const quotaResult = await consumeTokens(userId, estimatedTokens)
+    if (!quotaResult.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Daily token quota exceeded',
+          quota: {
+            used: quotaResult.remaining + estimatedTokens,
+            limit: quotaResult.limit,
+            remaining: quotaResult.remaining,
+          },
+        },
+        { status: 429 }
+      )
+    }
+
     const testRun = await prisma.testRun.create({
       data: {
         workspace_id: workspace.id,
@@ -83,14 +109,6 @@ export async function POST(request: NextRequest) {
         status: 'pending',
       },
     })
-
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { user_id: userId },
-    })
-
-    const modelToUse = model || promptVersion.prompt.model || userSettings?.default_model || 'llama3.2'
-    const tempToUse = temperature ?? userSettings?.default_temperature ?? 0.7
-    const maxTokensToUse = max_tokens || userSettings?.default_max_tokens || 1024
 
     const startTime = Date.now()
     let output: string = ''
@@ -161,6 +179,11 @@ export async function POST(request: NextRequest) {
       total_tokens: totalTokens,
       latency_ms: durationMs,
       request_duration_ms: durationMs,
+      quota: {
+        used: quotaResult.limit - quotaResult.remaining,
+        limit: quotaResult.limit,
+        remaining: quotaResult.remaining,
+      },
     }, { status: 201 })
   } catch (error: any) {
     console.error('Create test run error:', error)
