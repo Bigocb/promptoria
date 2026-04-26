@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
 import { isAdmin } from '@/lib/is-admin'
+import { inferModelMetadata } from '@/lib/model-enrichment'
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || ''
@@ -54,16 +55,19 @@ export async function GET(request: NextRequest) {
     const unassigned = allOllamaModels
       .filter((m: any) => !dbIds.has(m.name || m.model))
       .map((m: any) => {
-        const paramSize = m.details?.parameter_size || 'unknown'
+        const ollamaId = m.name || m.model
+        // Ollama sometimes doesn't populate details; fall back to our inference
+        const inferred = inferModelMetadata(ollamaId)
+        const paramSize = m.details?.parameter_size || inferred.parameter_size || 'unknown'
         const paramNum = paramSize !== 'unknown'
           ? parseFloat(paramSize.replace(/[a-z]/gi, '')) * (paramSize.toLowerCase().endsWith('m') ? 0.001 : 1)
           : null
         const costEstimate = paramNum <= 3 ? 'cheap' : paramNum <= 14 ? 'medium' : 'expensive'
         return {
-          id: m.name || m.model,
+          id: ollamaId,
           name: m.name || m.model,
           size: m.size,
-          family: m.details?.family || 'unknown',
+          family: m.details?.family || inferred.family || 'unknown',
           parameter_size: paramSize,
           cost_estimate: costEstimate,
           quantization_level: m.details?.quantization_level || 'unknown',

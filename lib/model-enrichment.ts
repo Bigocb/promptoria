@@ -30,16 +30,18 @@ export function inferModelMetadata(ollamaId: string): InferredMetadata {
   else if (lower.startsWith('stable') && lower.includes('lm')) family = 'stablelm'
 
   // ── Parameter size ──────────────────────────────
+  // Try "family:3.2b" or "family:7b" form first
   const sizeMatch = lower.match(/:(\d+(?:\.?\d)?[km]?b)$/)
+  // Try "family3.2b" or "phi4-mini" form (number right after family name, before dash or end)
+  const infixMatch = lower.match(/[a-z](\d+\.?\d*)([km]?b)?(?:-|$)/i)
   let parameter_size: string | null = null
+
   if (sizeMatch) {
     parameter_size = sizeMatch[1].toUpperCase()
-  } else {
-    // Try infix patterns like "phi4-mini" → 4B-ish
-    const infixMatch = lower.match(/(\d+\.?\d*)(b|m)?(?:-|$)/)
-    if (infixMatch) {
-      parameter_size = infixMatch[2] === 'm' ? `${infixMatch[1]}M` : `${infixMatch[1]}B`
-    }
+  } else if (infixMatch) {
+    const num = infixMatch[1]
+    const unit = infixMatch[2] ? infixMatch[2].toUpperCase() : 'B'
+    parameter_size = `${num}${unit}`
   }
 
   const paramNum = parameter_size
