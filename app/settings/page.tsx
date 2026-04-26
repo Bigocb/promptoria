@@ -1,6 +1,6 @@
 'use client'
 
-import { useSettings } from '@/app/providers'
+import { useSettings, useAuth } from '@/app/providers'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { themes } from '@/lib/themes'
@@ -22,6 +22,7 @@ interface OllamaModel {
 
 export default function SettingsPage() {
   const { settings, updateSetting } = useSettings()
+  const { user } = useAuth()
   const [saving, setSaving] = useState(false)
   const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([])
   const [ollamaAvailable, setOllamaAvailable] = useState<boolean | null>(null)
@@ -116,7 +117,32 @@ export default function SettingsPage() {
           ← Dashboard
         </Link>
       </div>
-      <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', color: 'var(--color-text)' }}>Settings</h1>
+      <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        Settings
+        {user?.tier && (
+          <span
+            style={{
+              fontSize: '0.7rem',
+              padding: '0.15rem 0.6rem',
+              borderRadius: '9999px',
+              backgroundColor:
+                user.tier === 'admin'
+                  ? '#ff5c5c'
+                  : user.tier === 'pro'
+                    ? '#fe8019'
+                    : user.tier === 'enterprise'
+                      ? '#d3869b'
+                      : '#b8bb26',
+              color: '#1d2021',
+              fontWeight: '700',
+              textTransform: 'uppercase',
+              letterSpacing: '0.02em',
+            }}
+          >
+            {user.tier}
+          </span>
+        )}
+      </h1>
       <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>
         Manage your preferences and defaults
       </p>
