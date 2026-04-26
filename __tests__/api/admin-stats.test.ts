@@ -5,6 +5,7 @@ jest.mock('@/lib/prisma', () => {
     user: {
       count: jest.fn(),
       findMany: jest.fn(),
+      findUnique: jest.fn(),
     },
     prompt: {
       count: jest.fn(),
@@ -44,8 +45,10 @@ describe('GET /api/admin/stats', () => {
   })
 
   test('returns 403 for non-admin user', async () => {
+    const prisma = require('@/lib/prisma').default
     const { verifyAccessToken } = require('@/lib/jwt')
     verifyAccessToken.mockReturnValue({ userId: 'user1', email: 'regular@example.com' })
+    prisma.user.findUnique.mockResolvedValue({ email: 'regular@example.com', subscription_tier: 'free' })
     const req = new NextRequest('http://localhost:3000/api/admin/stats', {
       headers: { Authorization: 'Bearer valid_token' },
     })
@@ -59,6 +62,7 @@ describe('GET /api/admin/stats', () => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
     prisma.user.count.mockResolvedValue(42)
+    prisma.user.findUnique.mockResolvedValue({ email: adminEmail, subscription_tier: 'admin' })
     prisma.prompt.count.mockResolvedValue(200)
     prisma.snippet.count.mockResolvedValue(80)
     prisma.testRun.count.mockResolvedValue(500)

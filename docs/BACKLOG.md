@@ -19,14 +19,12 @@
 - Favorites filter on library page
 - Favorited prompts show star in lists
 
-### Model Tiering (v1)
-- `ModelPreset` table: tier_required, is_active, cost_estimate, sort_order
+### Model Tiering (v2)
+- `admin` tier added above `enterprise` — highest access, grants admin panel
+- `subscription_tier` now embedded in JWT payload so API routes can read it without DB lookup
+- `lib/is-admin.ts` helper — checks `tier === 'admin'` OR legacy `ADMIN_EMAIL` match
+- `GET /api/models` reads tier from JWT directly (no DB round-trip)
 - 12 curated Ollama models seeded (4 free, 5 pro, 3 BYOK)
-- `GET /api/models` filters by user's subscription_tier
-- `GET/PUT /api/admin/models/*` endpoints for admin config
-- Admin model config UI at `/admin/models`
-- Workbench model field converted to tiered dropdown
-- Test runner already respects tier via backend filter
 
 ### UI/UX Fixes
 - Bottom nav padding fix (mobile content no longer covered)
@@ -83,10 +81,32 @@
 - Push notifications
 
 ### Advanced AI Features
-- AI-powered prompt improvement suggestions
-- Prompt performance analytics (which versions perform best)
-- A/B test framework (compare two prompt versions statistically)
-- Auto-tagging from prompt content
+- **AI-powered prompt improvement suggestions**
+- **Prompt performance analytics** (which versions perform best)
+- **A/B Test Workbench** (see detailed notes below)
+- **Auto-tagging** from prompt content
+
+#### A/B Test Workbench — Detailed Design Notes
+Vision: A dedicated testing environment where users can compare prompt versions side-by-side, not just view raw outputs but understand *which performed better*.
+
+Key concepts:
+- **Version A vs Version B**: Load two prompt versions (or tweak the same version with different variables) into a split pane.
+- **AI Judge**: Ask a model to evaluate which output was more effective against criteria: clarity, completeness, tone accuracy, factual correctness, etc.
+- **Criteria scoring**: Each test gets a rubric (1-5 across dimensions). AI fills the rubric, user can override.
+- **Session persistence**: Test configurations + results stored per prompt, visible across sessions.
+- **Winner badge**: Prompt version that wins most A/B rounds gets a "most effective" marker.
+- **History timeline**: See all past tests for a prompt, filter by date, model used, winner.
+
+Why this matters:
+- Moves Promptoria from "prompt storage" to "prompt optimization"
+- Helps users iterate based on evidence, not gut feeling
+- Differentiator feature: most prompt tools don't offer systematic comparison
+
+Technical considerations:
+- Need to store `test_sessions` table linking two `test_run` rows
+- AI judge needs system prompt with evaluation rubric
+- Could be gated to Pro/Enterprise tier (compute intensive)
+- Could integrate with actual downstream task metrics if user connects eval dataset
 
 ### Platform Integrations
 - Zapier / Make.com webhook endpoints
