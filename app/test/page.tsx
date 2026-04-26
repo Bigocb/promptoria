@@ -577,12 +577,12 @@ export default function TestRunnerPage() {
                     const isSelected = selectedForCompare.includes(run.id)
                     const compareLabel = isSelected ? String.fromCharCode(65 + selectedForCompare.indexOf(run.id)) : null
                     return (
-                      <div key={run.id} style={{ display: 'flex', gap: 0, borderRadius: '0.5rem', overflow: 'hidden', border: `1px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}` }}>
-                        <button onClick={() => setViewedRun(run)} style={{ flex: 1, padding: '0.85rem 0.75rem', background: 'var(--color-backgroundAlt)', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem', color: 'var(--color-foreground)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                      <div key={run.id} style={{ display: 'flex', borderRadius: '0.5rem', border: `1px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}` }}>
+                        <button onClick={() => setViewedRun(run)} style={{ flex: 1, padding: '0.75rem', background: 'var(--color-backgroundAlt)', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem', color: 'var(--color-foreground)', minHeight: '52px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                             <span style={{ fontWeight: 600 }}>{getRunModel(run)}</span>
-                            {getRunVersion(run) != null && <span style={{ fontSize: '0.65rem', padding: '0.05rem 0.3rem', borderRadius: '0.2rem', backgroundColor: 'var(--color-surface)', color: 'var(--color-foregroundAlt)', border: '1px solid var(--color-border)' }}>v{getRunVersion(run)}</span>}
-                            {getRunTemp(run) != null && <span style={{ fontSize: '0.65rem', padding: '0.05rem 0.3rem', borderRadius: '0.2rem', backgroundColor: 'var(--color-surface)', color: 'var(--color-foregroundAlt)', border: '1px solid var(--color-border)' }}>T:{getRunTemp(run)}</span>}
+                            {getRunVersion(run) != null && <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '0.25rem', backgroundColor: 'var(--color-surface)', color: 'var(--color-foregroundAlt)', border: '1px solid var(--color-border)' }}>v{getRunVersion(run)}</span>}
+                            {getRunTemp(run) != null && <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '0.25rem', backgroundColor: 'var(--color-surface)', color: 'var(--color-foregroundAlt)', border: '1px solid var(--color-border)' }}>T:{getRunTemp(run)}</span>}
                           </div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>
                             {getRunTokens(run)?.toLocaleString() ?? '-'} tok · {formatDuration(getRunDurationMs(run))} · {getRunDate(run) ? new Date(getRunDate(run)).toLocaleString() : '-'}
