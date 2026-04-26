@@ -1,18 +1,13 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
 
-// Tier ranking — higher = more access
-const TIER_RANK: Record<string, number> = {
-  free: 1,
-  pro: 2,
-  enterprise: 3,
-  byok: 4,
-}
+const TIER_RANK: Record<string, number> = { free: 1, pro: 2, enterprise: 3, byok: 4 }
 
 export async function GET(request: NextRequest) {
   try {
-    // Auth is optional for public model listing (defaults to free)
     const authHeader = request.headers.get('Authorization')
     let userTier = 'free'
 
@@ -25,27 +20,22 @@ export async function GET(request: NextRequest) {
           select: { subscription_tier: true },
         })
         if (user?.subscription_tier) userTier = user.subscription_tier
-      } catch {
-        // silently fall back to free
-      }
+      } catch { /* silently fall back */ }
     }
 
     const userRank = TIER_RANK[userTier] || 1
 
     let presets: any[] = []
-    let dbError = false
     try {
       presets = await prisma.modelPreset.findMany({
         where: { is_active: true },
         orderBy: [{ sort_order: 'asc' }, { display_name: 'asc' }],
       })
-    } catch (err) {
-      console.error('ModelPreset DB error:', err)
-      dbError = true
+    } catch {
+      /* DB error handled below */ 
     }
 
-    // Fallback static free-tier models if DB query fails
-    if (dbError || presets.length === 0) {
+    if (presets.length === 0) {
       presets = [
         { ollama_id: 'llama3.2', display_name: 'Llama 3.2', family: 'llama', description: 'Fast general-purpose model', context_window: '128K', max_tokens: 4096, tier_required: 'free', is_byok: false },
         { ollama_id: 'gemma2:2b', display_name: 'Gemma 2 (2B)', family: 'gemma', description: 'Google lightweight model', context_window: '8K', max_tokens: 2048, tier_required: 'free', is_byok: false },
@@ -72,7 +62,6 @@ export async function GET(request: NextRequest) {
         cost_estimate: p.cost_estimate,
       }))
 
-    // If after filtering nothing is available, ALWAYS show fallback models
     if (models.length === 0) {
       models = [
         { id: 'llama3.2', name: 'Llama 3.2', description: 'Fast general-purpose model', family: 'llama', parameter_size: null, contextWindow: '128K', maxTokens: 4096, tier_required: 'free', is_byok: false, cost_estimate: null },
@@ -82,10 +71,28 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    return NextResponse.json({ models, user_tier: userTier, version: 'deploy-test-v2' }, { status: 200 })
+    return NextResponse.json(
+      { models, user_tier: userTier },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    )
   } catch (error: any) {
-    console.error('Get models error:', error)
-    const errorMessage = error?.message || String(error)
-    return NextResponse.json({ models: [], error: errorMessage }, { status: 200 })
+    return NextResponse.json(
+      { models: [], error: error?.message || String(error) },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    )
   }
 }
