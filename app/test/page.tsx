@@ -278,7 +278,7 @@ export default function TestRunnerPage() {
   const displayOutput = viewedRun ? getRunOutput(viewedRun) : output
 
   return (
-    <div style={{ padding: 'clamp(1rem, 3vw, 2rem)', paddingBottom: '6rem' }}>
+    <div style={{ maxWidth: '960px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 2rem)', paddingBottom: '6rem' }}>
       <header style={{ marginBottom: '1.5rem' }}>
         <div style={{ marginBottom: '0.75rem' }}>
           <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', color: 'var(--color-foregroundAlt)', textDecoration: 'none', fontSize: '0.875rem', padding: '0.375rem 0.75rem', border: '1px solid var(--color-border)', borderRadius: '0.375rem' }}>← Dashboard</Link>
@@ -427,7 +427,7 @@ export default function TestRunnerPage() {
               {/* A/B Compare */}
               {(runA || runB) && (
                 <div style={{ marginTop: '1rem', border: '1px solid var(--color-border)', borderRadius: '0.5rem', overflow: 'hidden' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: runA && runB ? '1fr 1fr' : '1fr', gap: '1px', backgroundColor: 'var(--color-border)' }}>
+                  <div className="ab-compare-grid" style={{ display: 'grid', gridTemplateColumns: runA && runB ? '1fr 1fr' : '1fr', gap: '1px', backgroundColor: 'var(--color-border)' }}>
                     {[{ label: 'A', run: runA }, { label: 'B', run: runB }].filter(({ run }) => run).map(({ label, run }) => (
                       <div key={label} style={{ backgroundColor: 'var(--color-backgroundAlt)', padding: '0.75rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -445,7 +445,7 @@ export default function TestRunnerPage() {
               {comparison && (
                 <div style={{ padding: '1rem', backgroundColor: 'var(--color-backgroundAlt)', borderRadius: '0.5rem', border: '1px solid var(--color-border)', marginTop: '0.75rem' }}>
                   <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem' }}>🏆 AI Judge</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.75rem' }}>
+                  <div className="ab-compare-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.75rem' }}>
                     {(['A', 'B'] as const).map(label => {
                       const scores = comparison.scores?.[label]
                       if (!scores) return null
@@ -473,7 +473,7 @@ export default function TestRunnerPage() {
       <style jsx>{`
         @media (min-width: 1024px) {
           .test-runner-grid {
-            grid-template-columns: 340px minmax(0, 1fr) !important;
+            grid-template-columns: 280px minmax(0, 1fr) !important;
           }
           .test-config-mobile { display: none !important; }
           .test-config-desktop { display: block !important; }
@@ -481,6 +481,11 @@ export default function TestRunnerPage() {
         @media (max-width: 1023px) {
           .test-config-desktop { display: none !important; }
           .test-config-mobile { display: block !important; }
+        }
+        @media (max-width: 640px) {
+          .ab-compare-grid {
+            grid-template-columns: 1fr !important;
+          }
         }
       `}</style>
     </div>
