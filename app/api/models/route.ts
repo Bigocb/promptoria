@@ -11,10 +11,10 @@ const TIER_RANK: Record<string, number> = {
 }
 
 const ALL_MODELS = [
-  { id: 'llama3.2', name: 'Llama 3.2', description: 'Fast general-purpose model', family: 'llama', parameter_size: null, contextWindow: '128K', maxTokens: 4096, tier_required: 'free', is_byok: false, cost_estimate: null },
-  { id: 'gemma2:2b', name: 'Gemma 2 (2B)', description: 'Google lightweight model', family: 'gemma', parameter_size: null, contextWindow: '8K', maxTokens: 2048, tier_required: 'free', is_byok: false, cost_estimate: null },
-  { id: 'qwen2.5:0.5b', name: 'Qwen 2.5 (0.5B)', description: 'Ultra-tiny multilingual', family: 'qwen', parameter_size: null, contextWindow: '32K', maxTokens: 1024, tier_required: 'free', is_byok: false, cost_estimate: null },
-  { id: 'phi4-mini', name: 'Phi-4 Mini', description: 'Microsoft small model', family: 'phi', parameter_size: null, contextWindow: '128K', maxTokens: 4096, tier_required: 'free', is_byok: false, cost_estimate: null },
+  { id: 'llama3.2:3b', name: 'Llama 3.2 (3B)', description: 'Fast general-purpose model', family: 'llama', parameter_size: '3B', contextWindow: '128K', maxTokens: 4096, tier_required: 'free', is_byok: false, cost_estimate: null },
+  { id: 'gemma2:2b', name: 'Gemma 2 (2B)', description: 'Google lightweight model', family: 'gemma', parameter_size: '2B', contextWindow: '8K', maxTokens: 2048, tier_required: 'free', is_byok: false, cost_estimate: null },
+  { id: 'qwen2.5:0.5b', name: 'Qwen 2.5 (0.5B)', description: 'Ultra-tiny multilingual', family: 'qwen', parameter_size: '0.5B', contextWindow: '32K', maxTokens: 1024, tier_required: 'free', is_byok: false, cost_estimate: null },
+  { id: 'phi4-mini', name: 'Phi-4 Mini', description: 'Microsoft small model', family: 'phi', parameter_size: '3.8B', contextWindow: '128K', maxTokens: 4096, tier_required: 'free', is_byok: false, cost_estimate: null },
   { id: 'llama3.1:8b', name: 'Llama 3.1 (8B)', description: 'Better quality, longer context', family: 'llama', parameter_size: '8B', contextWindow: '128K', maxTokens: 8192, tier_required: 'pro', is_byok: false, cost_estimate: 'medium' },
   { id: 'mistral-nemo', name: 'Mistral Nemo', description: 'Strong open model, great instructions', family: 'mistral', parameter_size: '12B', contextWindow: '128K', maxTokens: 8192, tier_required: 'pro', is_byok: false, cost_estimate: 'medium' },
   { id: 'llama3.1:70b', name: 'Llama 3.1 (70B)', description: 'Best open-source model, highest quality', family: 'llama', parameter_size: '70B', contextWindow: '128K', maxTokens: 8192, tier_required: 'pro', is_byok: false, cost_estimate: 'expensive' },

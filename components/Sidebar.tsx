@@ -6,6 +6,11 @@ import { usePathname, useRouter } from 'next/navigation'
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'bobby.cloutier@gmail.com'
 
+const isAdminUser = (user: any) => {
+  if (!user) return false
+  return user.tier === 'admin' || user.email === ADMIN_EMAIL
+}
+
 interface SidebarProps {
   isOpen?: boolean
   onClose?: () => void
@@ -31,7 +36,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
     { label: '📊 History', href: '/history' },
     { label: '▶️ Test', href: '/test' },
     { label: '⚙️ Settings', href: '/settings' },
-    ...(user?.email === ADMIN_EMAIL ? [{ label: '🛡️ Admin', href: '/admin' }] : []),
+    ...(isAdminUser(user) ? [{ label: '🛡️ Admin', href: '/admin' }] : []),
   ]
 
   return (

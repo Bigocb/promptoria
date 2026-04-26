@@ -79,6 +79,7 @@ export function useTheme() {
 interface User {
   id: string
   email: string
+  tier?: string
 }
 
 interface AuthContextType {
