@@ -298,6 +298,9 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Daily Token Quota */}
+        <TokenQuotaSection />
+
         {/* Temperature Settings */}
         <section style={{
           backgroundColor: 'var(--color-surface)',
@@ -371,5 +374,136 @@ export default function SettingsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+function TokenQuotaSection() {
+  const [quota, setQuota] = useState<{ used: number; limit: number; remaining: number } | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchQuota = async () => {
+      try {
+        const token = localStorage.getItem('auth-token')
+        if (!token) { setLoading(false); return }
+        const res = await fetch(API_ENDPOINTS.quotas.usage, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setQuota(data)
+        }
+      } catch {
+        // silently fail
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchQuota()
+  }, [])
+
+  if (loading) {
+    return (
+      <section style={{
+        backgroundColor: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: '8px',
+        padding: '1.5rem',
+        marginBottom: '1.5rem',
+      }}>
+        <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--color-text)' }}>Daily Token Quota</h2>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>Loading...</p>
+      </section>
+    )
+  }
+
+  if (!quota) return null
+
+  const percentage = quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0
+  const isNearLimit = percentage >= 80
+  const isExceeded = percentage >= 100
+
+  return (
+    <section style={{
+      backgroundColor: 'var(--color-surface)',
+      border: '1px solid var(--color-border)',
+      borderRadius: '8px',
+      padding: '1.5rem',
+      marginBottom: '1.5rem',
+    }}>
+      <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--color-text)' }}>Daily Token Quota</h2>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <div style={{
+          height: '1.25rem',
+          backgroundColor: 'var(--color-border)',
+          borderRadius: '0.5rem',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            height: '100%',
+            width: `${Math.min(percentage, 100)}%`,
+            backgroundColor: isExceeded ? '#cc241d' : isNearLimit ? '#fe8019' : 'var(--color-success)',
+            borderRadius: '0.5rem',
+            transition: 'width 0.5s ease',
+          }} />
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+          <span style={{ fontWeight: '600', color: isExceeded ? '#cc241d' : 'var(--color-accent)' }}>{quota.used.toLocaleString()}</span>
+          <span> / {quota.limit.toLocaleString()} tokens used</span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {isExceeded ? (
+            <span style={{
+              fontSize: '0.8rem',
+              padding: '0.25rem 0.75rem',
+              borderRadius: '0.25rem',
+              backgroundColor: '#cc241d',
+              color: '#1d2021',
+              fontWeight: '600',
+            }}>
+              Quota exceeded
+            </span>
+          ) : isNearLimit ? (
+            <span style={{
+              fontSize: '0.8rem',
+              padding: '0.25rem 0.75rem',
+              borderRadius: '0.25rem',
+              backgroundColor: '#fe8019',
+              color: '#1d2021',
+              fontWeight: '600',
+            }}>
+              Near limit
+            </span>
+          ) : (
+            <span style={{
+              fontSize: '0.8rem',
+              padding: '0.25rem 0.75rem',
+              borderRadius: '0.25rem',
+              backgroundColor: 'var(--color-accent)',
+              color: '#1d2021',
+              fontWeight: '600',
+            }}>
+              {quota.remaining.toLocaleString()} remaining
+            </span>
+          )}
+        </div>
+      </div>
+
+      {isExceeded && (
+        <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: '#cc241d' }}>
+          You've hit your daily token limit. Upgrade to Pro for more tokens.
+        </p>
+      )}
+      {isNearLimit && !isExceeded && (
+        <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: '#fe8019' }}>
+          You're approaching your daily token limit. Upgrade to Pro for more tokens.
+        </p>
+      )}
+    </section>
   )
 }
