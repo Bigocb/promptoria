@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { API_ENDPOINTS } from '@/lib/api-config'
 
@@ -54,6 +54,16 @@ interface ModelInfo {
   maxTokens: number
 }
 
+interface ComparisonResult {
+  winner: string
+  winner_id: string | null
+  scores: {
+    A: Record<string, number>
+    B: Record<string, number>
+  }
+  explanation: string
+}
+
 function OutputActions({ output, promptName }: { output: string; promptName?: string }) {
   const [copied, setCopied] = useState(false)
 
@@ -97,9 +107,16 @@ function OutputActions({ output, promptName }: { output: string; promptName?: st
   )
 }
 
+function formatDuration(ms: number | null | undefined): string {
+  if (!ms) return '—'
+  if (ms < 1000) return `${ms}ms`
+  return `${(ms / 1000).toFixed(1)}s`
+}
+
 export default function TestRunnerPage() {
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null)
+  const [selectedVersionId, setSelectedVersionId] = useState<string>('')
   const [variables, setVariables] = useState<Record<string, string>>({})
   const [model, setModel] = useState('')
   const [temperature, setTemperature] = useState('0.7')
@@ -113,6 +130,12 @@ export default function TestRunnerPage() {
   const [models, setModels] = useState<ModelInfo[]>([])
   const [modelsError, setModelsError] = useState<string | null>(null)
   const [familyFilter, setFamilyFilter] = useState<string>('all')
+
+  const [persistedRuns, setPersistedRuns] = useState<PersistedTestRun[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [selectedForCompare, setSelectedForCompare] = useState<string[]>([])
+  const [comparison, setComparison] = useState<ComparisonResult | null>(null)
+  const [comparing, setComparing] = useState(false)
 
   useEffect(() => {
     const fetchPrompts = async () => {
@@ -162,11 +185,7 @@ export default function TestRunnerPage() {
     fetchModels()
   }, [])
 
-  const [persistedRuns, setPersistedRuns] = useState<PersistedTestRun[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(false)
-
-  // Fetch persisted test runs when a prompt is selected
-  const fetchPersistedHistory = async (promptId: string) => {
+  const fetchPersistedHistory = useCallback(async (promptId: string) => {
     try {
       setLoadingHistory(true)
       const token = localStorage.getItem('auth-token')
@@ -178,14 +197,15 @@ export default function TestRunnerPage() {
         setPersistedRuns(data.test_runs || [])
       }
     } catch {
-      // Silently fail — session results still show
+      // silently fail
     } finally {
       setLoadingHistory(false)
     }
-  }
+  }, [])
 
   const handleSelectPrompt = async (prompt: Prompt) => {
     setOutput(''); setResults([]); setError(''); setVariables({})
+    setSelectedForCompare([]); setComparison(null)
     try {
       const token = localStorage.getItem('auth-token')
       const res = await fetch(API_ENDPOINTS.prompts.detail(prompt.id), {
@@ -195,18 +215,38 @@ export default function TestRunnerPage() {
       const fullPrompt = await res.json()
       setSelectedPrompt(fullPrompt)
 
-      const latestVersion = fullPrompt.latest_version || fullPrompt.versions?.[0]
-      if (latestVersion?.template_body) {
-        const varMatches = latestVersion.template_body.match(/\{\{(\w+)\}\}/g) || []
+      const allVersions = fullPrompt.versions || []
+      const latestVersion = fullPrompt.latest_version || allVersions[0]
+      if (latestVersion) {
+        setSelectedVersionId(latestVersion.id)
+      }
+
+      const activeVer = latestVersion || allVersions[0]
+      if (activeVer?.template_body) {
+        const varMatches = activeVer.template_body.match(/\{\{(\w+)\}\}/g) || []
         const extractedVars: Record<string, string> = {}
         varMatches.forEach((match: string) => { extractedVars[match.slice(2, -2)] = '' })
         setVariables(extractedVars)
       }
 
-      // Load persisted test history
+      if (fullPrompt.model && !model) {
+        setModel(fullPrompt.model)
+      }
+
       await fetchPersistedHistory(prompt.id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load prompt')
+    }
+  }
+
+  const handleVersionChange = (versionId: string) => {
+    setSelectedVersionId(versionId)
+    const ver = selectedPrompt?.versions?.find(v => v.id === versionId)
+    if (ver?.template_body) {
+      const varMatches = ver.template_body.match(/\{\{(\w+)\}\}/g) || []
+      const extractedVars: Record<string, string> = {}
+      varMatches.forEach((match: string) => { extractedVars[match.slice(2, -2)] = '' })
+      setVariables(extractedVars)
     }
   }
 
@@ -235,10 +275,12 @@ export default function TestRunnerPage() {
     if (!selectedPrompt) { setError('Please select a prompt to test'); return }
     setIsLoading(true); setOutput(''); setError('')
 
-    try {
-      const latestVersion = selectedPrompt.latest_version || selectedPrompt.versions?.[0]
-      if (!latestVersion) throw new Error('Prompt version not found')
+    const activeVersion = selectedPrompt.versions?.find(v => v.id === selectedVersionId)
+      || selectedPrompt.latest_version
+      || selectedPrompt.versions?.[0]
+    if (!activeVersion) { setError('No version selected'); setIsLoading(false); return }
 
+    try {
       const token = localStorage.getItem('auth-token')
       const requestStartTime = performance.now()
 
@@ -246,7 +288,7 @@ export default function TestRunnerPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          prompt_version_id: latestVersion.id,
+          prompt_version_id: activeVersion.id,
           variables,
           model,
           temperature: parseFloat(temperature),
@@ -273,8 +315,14 @@ export default function TestRunnerPage() {
         total_tokens: result.total_tokens,
         latency_ms: result.latency_ms,
         request_duration_ms: requestDuration,
+        version_number: activeVersion.version_number,
       }
       setResults([testResult, ...results])
+
+      // Refresh persisted history
+      if (selectedPrompt) {
+        fetchPersistedHistory(selectedPrompt.id)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Execution failed')
       setOutput('')
@@ -282,6 +330,86 @@ export default function TestRunnerPage() {
       setIsLoading(false)
     }
   }
+
+  const toggleCompare = (id: string) => {
+    setSelectedForCompare((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id)
+      if (prev.length >= 2) return [prev[1], id]
+      return [...prev, id]
+    })
+    setComparison(null)
+  }
+
+  const runComparison = async () => {
+    if (selectedForCompare.length !== 2) return
+    setComparing(true)
+    try {
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.testRuns.compare, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          test_run_a_id: selectedForCompare[0],
+          test_run_b_id: selectedForCompare[1],
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setComparison(data.comparison)
+      } else {
+        const errData = await res.json()
+        setError(errData.error || 'Comparison failed')
+      }
+    } catch {
+      setError('Failed to run comparison')
+    } finally {
+      setComparing(false)
+    }
+  }
+
+  // Merge persisted runs with session results, deduping by id
+  const allHistory = (() => {
+    const sessionMap = new Map(results.map(r => [r.id, r]))
+    const merged: (PersistedTestRun | TestResult)[] = []
+    const seen = new Set<string>()
+
+    // Session results first (most recent runs)
+    for (const r of results) {
+      if (!seen.has(r.id)) { merged.push(r); seen.add(r.id) }
+    }
+    // Then persisted runs not already in session
+    for (const r of persistedRuns) {
+      if (!seen.has(r.id)) { merged.push(r); seen.add(r.id) }
+    }
+    return merged
+  })()
+
+  const getRunModel = (run: PersistedTestRun | TestResult) => run.model || 'unknown'
+  const getRunTokens = (run: PersistedTestRun | TestResult) => {
+    return ('total_tokens' in run ? run.total_tokens : undefined) ?? ('total_tokens' in run ? (run as PersistedTestRun).total_tokens : undefined)
+  }
+  const getRunDuration = (run: PersistedTestRun | TestResult) => {
+    if ('duration_ms' in run && (run as PersistedTestRun).duration_ms) return (run as PersistedTestRun).duration_ms
+    if ('latency_ms' in run && (run as TestResult).latency_ms) return (run as TestResult).latency_ms
+    return null
+  }
+  const getRunVersion = (run: PersistedTestRun | TestResult) => {
+    if ('version_number' in run && (run as TestResult).version_number) return (run as TestResult).version_number
+    if ((run as PersistedTestRun).prompt_version) return (run as PersistedTestRun).prompt_version?.version_number
+    return null
+  }
+  const getRunOutput = (run: PersistedTestRun | TestResult) => ('output' in run ? run.output : null) ?? '(no output)'
+  const getRunInput = (run: PersistedTestRun | TestResult) => ('test_case_input' in run ? (run as PersistedTestRun).test_case_input : null) ?? ''
+  const getRunDate = (run: PersistedTestRun | TestResult) => {
+    if ('created_at' in run && run.created_at) return run.created_at
+    if ((run as PersistedTestRun).completed_at) return (run as PersistedTestRun).completed_at!
+    return ''
+  }
+
+  const runA = persistedRuns.find(r => r.id === selectedForCompare[0])
+    ?? (results.find(r => r.id === selectedForCompare[0]) ? { id: results.find(r => r.id === selectedForCompare[0])!.id, output: results.find(r => r.id === selectedForCompare[0])!.output, model: results.find(r => r.id === selectedForCompare[0])!.model, prompt_version: { version_number: results.find(r => r.id === selectedForCompare[0])!.version_number ?? 0 } } as PersistedTestRun : undefined)
+  const runB = persistedRuns.find(r => r.id === selectedForCompare[1])
+    ?? (results.find(r => r.id === selectedForCompare[1]) ? { id: results.find(r => r.id === selectedForCompare[1])!.id, output: results.find(r => r.id === selectedForCompare[1])!.output, model: results.find(r => r.id === selectedForCompare[1])!.model, prompt_version: { version_number: results.find(r => r.id === selectedForCompare[1])!.version_number ?? 0 } } as PersistedTestRun : undefined)
 
   const filteredModels = models.filter(m => familyFilter === 'all' || m.family === familyFilter)
   const families = Array.from(new Set(models.map(m => m.family).filter(Boolean)))
@@ -333,6 +461,22 @@ export default function TestRunnerPage() {
 
           {selectedPrompt && (
             <>
+              {(selectedPrompt.versions?.length ?? 0) > 1 && (
+                <div className="card" style={{ marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontWeight: '600', marginBottom: '0.75rem', fontSize: '0.95rem' }}>🔄 Version</h3>
+                  <select
+                    value={selectedVersionId}
+                    onChange={(e) => handleVersionChange(e.target.value)}
+                    className="input"
+                    style={{ width: '100%' }}
+                  >
+                    {selectedPrompt.versions?.map(v => (
+                      <option key={v.id} value={v.id}>v{v.version_number}{v === selectedPrompt.latest_version ? ' (latest)' : ''}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="card" style={{ marginBottom: '1.5rem' }}>
                 <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>📝 Variables</h3>
                 {Object.keys(variables).length > 0 ? (
@@ -456,23 +600,141 @@ export default function TestRunnerPage() {
             </div>
           </div>
 
-          {results.length > 0 && (
+          {allHistory.length > 0 && (
             <div className="card">
-              <h3 style={{ fontWeight: '600', marginBottom: '1rem', fontSize: '0.95rem' }}>📋 Test History ({results.length})</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '250px', overflowY: 'auto' }}>
-                {results.map((result) => (
-                  <button key={result.id} onClick={() => setSelectedResult(result)} style={{
-                    padding: '0.75rem',
-                    backgroundColor: selectedResult?.id === result.id ? 'var(--color-accent)' : 'var(--color-background)',
-                    border: '1px solid var(--color-border)', borderRadius: '0.5rem', cursor: 'pointer',
-                    fontSize: '0.75rem', textAlign: 'left', transition: 'all 0.2s ease',
-                    color: selectedResult?.id === result.id ? '#1d2021' : 'var(--color-foreground)',
-                  }}>
-                    <div style={{ fontWeight: '600' }}>{result.model}</div>
-                    <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>{new Date(result.created_at).toLocaleString()} • {result.total_tokens} tokens • {result.latency_ms}ms</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ fontWeight: '600', fontSize: '0.95rem', margin: 0 }}>📋 Test History ({allHistory.length})</h3>
+                {selectedForCompare.length === 2 && (
+                  <button
+                    onClick={runComparison}
+                    disabled={comparing}
+                    style={{
+                      padding: '0.35rem 0.75rem',
+                      backgroundColor: 'var(--color-accent)',
+                      color: '#1d2021',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      cursor: comparing ? 'not-allowed' : 'pointer',
+                      fontSize: '0.8rem',
+                      fontWeight: '600',
+                      opacity: comparing ? 0.5 : 1,
+                    }}
+                  >
+                    {comparing ? '🤖 Judging...' : '🏆 AI Judge'}
                   </button>
-                ))}
+                )}
+                {selectedForCompare.length > 0 && selectedForCompare.length < 2 && (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>
+                    Select {2 - selectedForCompare.length} more to compare
+                  </span>
+                )}
               </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '350px', overflowY: 'auto' }}>
+                {allHistory.map((run) => {
+                  const id = run.id
+                  const isSelected = selectedForCompare.includes(id)
+                  const compareLabel = isSelected ? String.fromCharCode(65 + selectedForCompare.indexOf(id)) : null
+                  return (
+                    <div
+                      key={id}
+                      onClick={() => { setSelectedResult(run as TestResult); toggleCompare(id) }}
+                      style={{
+                        padding: '0.75rem',
+                        borderRadius: '0.5rem',
+                        border: `2px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                        backgroundColor: isSelected ? 'rgba(254, 128, 25, 0.05)' : 'var(--color-backgroundAlt)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {isSelected && (
+                            <span style={{
+                              fontSize: '0.7rem', padding: '0.1rem 0.35rem', borderRadius: '0.2rem',
+                              backgroundColor: 'var(--color-accent)', color: '#1d2021', fontWeight: '700',
+                            }}>
+                              {compareLabel}
+                            </span>
+                          )}
+                          <span style={{ fontWeight: '600', fontSize: '0.85rem' }}>{getRunModel(run)}</span>
+                          {getRunVersion(run) != null && (
+                            <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', borderRadius: '0.2rem', backgroundColor: 'var(--color-surface)', color: 'var(--color-foregroundAlt)', border: '1px solid var(--color-border)' }}>
+                              v{getRunVersion(run)}
+                            </span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>
+                          {getRunTokens(run)?.toLocaleString() ?? '—'} tok · {formatDuration(getRunDuration(run))}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {getRunInput(run) || getRunOutput(run).substring(0, 60)}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* A/B Side-by-side Output */}
+              {(runA || runB) && (
+                <div style={{ marginTop: '1rem', border: '1px solid var(--color-border)', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: runA && runB ? '1fr 1fr' : '1fr', gap: '1px', backgroundColor: 'var(--color-border)' }}>
+                    {[
+                      { label: 'A', run: runA },
+                      { label: 'B', run: runB },
+                    ].filter(({ run }) => run).map(({ label, run }) => (
+                      <div key={label} style={{ backgroundColor: 'var(--color-backgroundAlt)', padding: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <span style={{ fontWeight: '700', fontSize: '0.85rem', color: label === 'A' ? '#22c55e' : '#3b82f6' }}>
+                            {label} · {run!.model || 'unknown'} · v{run!.prompt_version?.version_number ?? '?'}
+                          </span>
+                          {comparison?.winner === label && (
+                            <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem', borderRadius: '0.2rem', backgroundColor: 'var(--color-success)', color: '#1d2021', fontWeight: '700' }}>Winner</span>
+                          )}
+                        </div>
+                        <pre style={{
+                          margin: 0, fontSize: '0.8rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                          color: 'var(--color-foreground)', maxHeight: '300px', overflow: 'auto',
+                        }}>
+                          {run!.output || '(no output)'}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* AI Judge Result */}
+              {comparison && (
+                <div style={{
+                  padding: '1rem', backgroundColor: 'var(--color-backgroundAlt)', borderRadius: '0.5rem',
+                  border: '1px solid var(--color-border)', marginTop: '0.75rem',
+                }}>
+                  <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem' }}>🏆 AI Judge Result</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    {(['A', 'B'] as const).map((label) => {
+                      const scores = comparison.scores?.[label]
+                      if (!scores) return null
+                      const total = Object.values(scores).reduce((a, b) => a + b, 0)
+                      return (
+                        <div key={label}>
+                          <div style={{ fontWeight: '600', marginBottom: '0.25rem', color: label === 'A' ? '#22c55e' : '#3b82f6' }}>Version {label} — {total}/25</div>
+                          {Object.entries(scores).map(([dim, val]) => (
+                            <div key={dim} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                              <span style={{ textTransform: 'capitalize', color: 'var(--color-foregroundAlt)' }}>{dim}</span>
+                              <span>{val}/5</span>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-foreground)', lineHeight: 1.5 }}>
+                    {comparison.explanation}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
