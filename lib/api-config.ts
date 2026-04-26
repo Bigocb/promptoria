@@ -51,6 +51,7 @@ export const API_ENDPOINTS = {
     versions: {
       compare: (id: string, v1: number, v2: number) => `${API_BASE_URL}/prompts/${id}/versions/compare?v1=${v1}&v2=${v2}`,
     },
+    testRuns: (id: string) => `${API_BASE_URL}/prompts/${id}/test-runs`,
     compositions: {
       list: (id: string) => `${API_BASE_URL}/prompts/${id}/compositions`,
       add: (id: string) => `${API_BASE_URL}/prompts/${id}/compositions`,
@@ -86,6 +87,7 @@ export const API_ENDPOINTS = {
     get: (id: string) => `${API_BASE_URL}/test-runs/${id}`,
     delete: (id: string) => `${API_BASE_URL}/test-runs/${id}`,
     execute: (id: string) => `${API_BASE_URL}/test-runs/${id}/execute`,
+    compare: `${API_BASE_URL}/test-runs/compare`,
   },
   execute: {
     run: `${API_BASE_URL}/test-runs`,

@@ -115,6 +115,7 @@ model Workspace {
   interaction_types     AgentInteractionType[]
   prompt_categories     PromptCategory[]
   test_runs             TestRun[]
+  test_comparisons      TestComparison[]
   sync_logs             SyncLog[]
 
   @@map("workspaces")
@@ -241,9 +242,15 @@ model PromptComposition {
 model TestRun {
   id                String   @id @default(cuid()) @db.VarChar(36)
   workspace_id      String   @db.VarChar(36)
+  prompt_id         String?  @db.VarChar(36)  // denormalized for easy querying by prompt
   prompt_version_id String   @db.VarChar(36)
+  user_id           String?  @db.VarChar(36)  // who ran the test
   test_case_input   String   @db.Text
+  model             String?  @db.VarChar(100) // which LLM was used
+  temperature       Float?
+  max_tokens        Int?
   output            String?  @db.Text
+  total_tokens      Int?     // tokens consumed
   status            String   @default("pending") @db.VarChar(20) // pending, running, success, error
   error_message     String?  @db.Text
   started_at        DateTime?
@@ -257,7 +264,27 @@ model TestRun {
 
   @@index([workspace_id])
   @@index([prompt_version_id])
+  @@index([prompt_id])
   @@map("test_runs")
+}
+
+// TestComparison - A/B comparison result for two test runs
+model TestComparison {
+  id              String   @id @default(cuid()) @db.VarChar(36)
+  workspace_id    String   @db.VarChar(36)
+  test_run_a_id   String   @db.VarChar(36)
+  test_run_b_id   String   @db.VarChar(36)
+  winner_id       String?  @db.VarChar(36) // which test run won, null if tie
+  judge_result    Json?    @db.Json        // structured scoring per dimension
+  judge_notes     String?  @db.Text        // free-form AI explanation
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+
+  workspace Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+
+  @@index([workspace_id])
+  @@index([test_run_a_id])
+  @@index([test_run_b_id])
+  @@map("test_comparisons")
 }
 
 // SyncLog - change tracking for offline-first sync

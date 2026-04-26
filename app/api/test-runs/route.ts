@@ -104,8 +104,13 @@ export async function POST(request: NextRequest) {
     const testRun = await prisma.testRun.create({
       data: {
         workspace_id: workspace.id,
+        prompt_id: promptVersion.prompt.id,
         prompt_version_id,
+        user_id: userId,
         test_case_input: finalTestInput,
+        model: modelToUse,
+        temperature: tempToUse,
+        max_tokens: maxTokensToUse,
         status: 'pending',
       },
     })
@@ -156,6 +161,7 @@ export async function POST(request: NextRequest) {
       data: {
         status: 'success',
         output,
+        total_tokens: totalTokens,
         completed_at: new Date(),
         duration_ms: durationMs,
       },
