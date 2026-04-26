@@ -31,6 +31,9 @@ export default function AdminModelsPage() {
   const [error, setError] = useState('')
   const [loadingModels, setLoadingModels] = useState(true)
   const [saveFeedback, setSaveFeedback] = useState('')
+  const [availableModels, setAvailableModels] = useState<any[]>([])
+  const [showAvailable, setShowAvailable] = useState(false)
+  const [addingModel, setAddingModel] = useState<string | null>(null)
 
   useEffect(() => {
     if (!loading && !user) router.push('/auth/login')
@@ -85,6 +88,39 @@ export default function AdminModelsPage() {
     }
   }
 
+  const addModel = async (model: any) => {
+    setAddingModel(model.id)
+    try {
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.admin.models, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ollama_id: model.id,
+          display_name: model.name,
+          family: model.family,
+          parameter_size: model.parameter_size,
+          tier_required: 'free',
+          cost_estimate: 'medium',
+          sort_order: models.length + 1,
+        }),
+      })
+      if (!res.ok) throw new Error('Failed to add')
+      await fetchModels()
+      setAvailableModels((prev) => prev.filter((m) => m.id !== model.id))
+      setSaveFeedback('Added')
+      setTimeout(() => setSaveFeedback(''), 1500)
+    } catch {
+      setSaveFeedback('Error adding')
+      setTimeout(() => setSaveFeedback(''), 2000)
+    } finally {
+      setAddingModel(null)
+    }
+  }
+
   if (loading || !user) return null
 
   if (error) {
@@ -113,7 +149,36 @@ export default function AdminModelsPage() {
             <h1 style={{ fontSize: '1.75rem', fontWeight: '800', letterSpacing: '-0.02em' }}>Model Config</h1>
             <p style={{ color: 'var(--color-foregroundAlt)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Manage tier assignments, activation, and sort order</p>
           </div>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={async () => {
+                if (showAvailable) { setShowAvailable(false); return }
+                setShowAvailable(true)
+                try {
+                  const token = localStorage.getItem('auth-token')
+                  const res = await fetch(API_ENDPOINTS.admin.availableModels, { headers: { Authorization: `Bearer ${token}` } })
+                  if (res.ok) {
+                    const data = await res.json()
+                    setAvailableModels(data.unassigned || [])
+                  }
+                } catch {
+                  setAvailableModels([])
+                }
+              }}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: showAvailable ? 'var(--color-accent)' : 'var(--color-backgroundAlt)',
+                border: `1px solid ${showAvailable ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                borderRadius: '0.5rem',
+                color: showAvailable ? '#1d2021' : 'var(--color-foreground)',
+                textDecoration: 'none',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                fontWeight: '500',
+              }}
+            >
+              {showAvailable ? '↑ Hide' : '↓ Browse'} Unassigned Models ({availableModels.length})
+            </button>
             {saveFeedback && (
               <span style={{
                 fontSize: '0.8rem',
@@ -254,6 +319,80 @@ export default function AdminModelsPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Unassigned Models Section */}
+        {showAvailable && (
+          <div style={{
+            marginTop: '2rem',
+            backgroundColor: 'var(--color-backgroundAlt)',
+            borderRadius: '0.75rem',
+            border: '1px solid var(--color-border)',
+            overflow: 'hidden',
+          }}>
+            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: '700', margin: 0 }}>Unassigned Models on Ollama Cloud</h3>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    padding: '0.15rem 0.5rem',
+                    borderRadius: '0.2rem',
+                    backgroundColor: '#83a598',
+                    color: '#1d2021',
+                    fontWeight: '600',
+                  }}>{availableModels.length}</span>
+                </div>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-foregroundAlt)' }}>
+                  Click "Add" to add to curated list
+                </span>
+              </div>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <th style={{ padding: '0.75rem 1.25rem', textAlign: 'left', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Name</th>
+                    <th style={{ padding: '0.75rem 1.25rem', textAlign: 'left', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Family</th>
+                    <th style={{ padding: '0.75rem 1.25rem', textAlign: 'left', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Size</th>
+                    <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Add</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {availableModels.map((m) => (
+                    <tr key={m.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                      <td style={{ padding: '0.75rem 1.25rem', fontFamily: 'monospace', fontSize: '0.85rem' }}>{m.name}</td>
+                      <td style={{ padding: '0.75rem 1.25rem' }}>{m.family || 'unknown'}</td>
+                      <td style={{ padding: '0.75rem 1.25rem' }}>{m.parameter_size || 'unknown'}</td>
+                      <td style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
+                        <button
+                          onClick={() => addModel(m)}
+                          disabled={addingModel === m.id}
+                          style={{
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: '0.25rem',
+                            border: 'none',
+                            cursor: addingModel === m.id ? 'not-allowed' : 'pointer',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            backgroundColor: 'var(--color-accent)',
+                            color: '#1d2021',
+                            opacity: addingModel === m.id ? 0.5 : 1,
+                          }}
+                        >
+                          {addingModel === m.id ? 'Adding...' : '+ Add'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {availableModels.length === 0 && (
+                    <tr><td colSpan={4} style={{ padding: '1.25rem', textAlign: 'center', color: 'var(--color-foregroundAlt)' }}>No unassigned models found (all models are in curated list or Ollama Cloud is unreachable)</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

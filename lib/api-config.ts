@@ -135,5 +135,6 @@ export const API_ENDPOINTS = {
     stats: `${API_BASE_URL}/admin/stats`,
     models: `${API_BASE_URL}/admin/models`,
     model: (id: string) => `${API_BASE_URL}/admin/models/${id}`,
+    availableModels: `${API_BASE_URL}/admin/available-models`,
   },
 }
