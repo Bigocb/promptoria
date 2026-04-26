@@ -70,6 +70,7 @@ interface HistoryRunPersisted {
   output: string | null
   total_tokens: number | null
   duration_ms: number | null
+  temperature: number | null
   created_at: string
   test_case_input: string
 }
@@ -81,6 +82,7 @@ interface HistoryRunSession {
   output: string
   total_tokens: number
   latency_ms: number
+  temperature: number
   created_at: string
   version_number?: number
 }
@@ -93,6 +95,7 @@ function getRunDurationMs(r: HistoryRun) { return r._type === 'persisted' ? r.du
 function getRunVersion(r: HistoryRun) { return r.version_number ?? null }
 function getRunOutput(r: HistoryRun) { return r.output || '(no output)' }
 function getRunDate(r: HistoryRun) { return r.created_at }
+function getRunTemp(r: HistoryRun) { return r.temperature }
 
 function OutputActions({ output, promptName }: { output: string; promptName?: string }) {
   const [copied, setCopied] = useState(false)
@@ -333,7 +336,7 @@ export default function TestRunnerPage() {
         version_number: activeVersion.version_number,
       }
       setResults([testResult, ...results])
-      setViewedRun({ ...testResult, _type: 'session' })
+      setViewedRun({ ...testResult, _type: 'session', temperature: parseFloat(temperature) })
       if (selectedPrompt) fetchPersistedHistory(selectedPrompt.id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Execution failed')
@@ -388,6 +391,7 @@ export default function TestRunnerPage() {
           output: r.output,
           total_tokens: r.total_tokens,
           latency_ms: r.latency_ms,
+          temperature: parseFloat(temperature),
           created_at: r.created_at,
           version_number: r.version_number,
         })
@@ -404,6 +408,7 @@ export default function TestRunnerPage() {
           output: r.output,
           total_tokens: r.total_tokens,
           duration_ms: r.duration_ms,
+          temperature: r.temperature,
           created_at: r.created_at,
           test_case_input: r.test_case_input,
         })
@@ -573,10 +578,11 @@ export default function TestRunnerPage() {
                     const compareLabel = isSelected ? String.fromCharCode(65 + selectedForCompare.indexOf(run.id)) : null
                     return (
                       <div key={run.id} style={{ display: 'flex', gap: 0, borderRadius: '0.5rem', overflow: 'hidden', border: `1px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}` }}>
-                        <button onClick={() => setViewedRun(run)} style={{ flex: 1, padding: '0.6rem 0.75rem', background: 'var(--color-backgroundAlt)', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem', color: 'var(--color-foreground)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.15rem' }}>
+                        <button onClick={() => setViewedRun(run)} style={{ flex: 1, padding: '0.85rem 0.75rem', background: 'var(--color-backgroundAlt)', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem', color: 'var(--color-foreground)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
                             <span style={{ fontWeight: 600 }}>{getRunModel(run)}</span>
                             {getRunVersion(run) != null && <span style={{ fontSize: '0.65rem', padding: '0.05rem 0.3rem', borderRadius: '0.2rem', backgroundColor: 'var(--color-surface)', color: 'var(--color-foregroundAlt)', border: '1px solid var(--color-border)' }}>v{getRunVersion(run)}</span>}
+                            {getRunTemp(run) != null && <span style={{ fontSize: '0.65rem', padding: '0.05rem 0.3rem', borderRadius: '0.2rem', backgroundColor: 'var(--color-surface)', color: 'var(--color-foregroundAlt)', border: '1px solid var(--color-border)' }}>T:{getRunTemp(run)}</span>}
                           </div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>
                             {getRunTokens(run)?.toLocaleString() ?? '-'} tok · {formatDuration(getRunDurationMs(run))} · {getRunDate(run) ? new Date(getRunDate(run)).toLocaleString() : '-'}
@@ -597,7 +603,7 @@ export default function TestRunnerPage() {
                     {runA && (
                       <div key="A" style={{ backgroundColor: 'var(--color-backgroundAlt)', padding: '0.75rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#22c55e' }}>A · {runA.model || 'unknown'}{runA.version_number != null ? ` · v${runA.version_number}` : ''}</span>
+                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#22c55e' }}>A · {runA.model || 'unknown'}{runA.version_number != null ? ` · v${runA.version_number}` : ''}{runA.temperature != null ? ` · T:${runA.temperature}` : ''}</span>
                           {comparison?.winner === 'A' && <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem', borderRadius: '0.2rem', backgroundColor: '#22c55e', color: '#1d2021', fontWeight: 700 }}>Winner</span>}
                         </div>
                         <pre style={{ margin: 0, fontSize: '0.8rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--color-foreground)', maxHeight: '250px', overflow: 'auto' }}>{runA.output || '(no output)'}</pre>
@@ -606,7 +612,7 @@ export default function TestRunnerPage() {
                     {runB && (
                       <div key="B" style={{ backgroundColor: 'var(--color-backgroundAlt)', padding: '0.75rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#3b82f6' }}>B · {runB.model || 'unknown'}{runB.version_number != null ? ` · v${runB.version_number}` : ''}</span>
+                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#3b82f6' }}>B · {runB.model || 'unknown'}{runB.version_number != null ? ` · v${runB.version_number}` : ''}{runB.temperature != null ? ` · T:${runB.temperature}` : ''}</span>
                           {comparison?.winner === 'B' && <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.35rem', borderRadius: '0.2rem', backgroundColor: '#3b82f6', color: '#fff', fontWeight: 700 }}>Winner</span>}
                         </div>
                         <pre style={{ margin: 0, fontSize: '0.8rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--color-foreground)', maxHeight: '250px', overflow: 'auto' }}>{runB.output || '(no output)'}</pre>
