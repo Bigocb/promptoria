@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { GET as getModels } from '@/app/api/models/route'
 
 describe('GET /api/models', () => {
-  test('returns static models for unauthenticated user (free tier default)', async () => {
+  test('returns models for unauthenticated user (free tier default)', async () => {
     const req = new NextRequest('http://localhost:3000/api/models')
     const res = await getModels(req)
     expect(res.status).toBe(200)
@@ -10,7 +10,7 @@ describe('GET /api/models', () => {
     const data = await res.json()
     expect(data.models).toBeDefined()
     expect(Array.isArray(data.models)).toBe(true)
-    expect(data.models.length).toBeGreaterThanOrEqual(4) // free tier models
+    expect(data.models.length).toBeGreaterThanOrEqual(4)
     expect(data.user_tier).toBe('free')
   })
 
@@ -25,11 +25,11 @@ describe('GET /api/models', () => {
     const data = await res.json()
 
     expect(data.user_tier).toBe('pro')
-    expect(data.models.length).toBeGreaterThanOrEqual(7) // free + pro models
+    expect(data.models.length).toBeGreaterThanOrEqual(7)
   })
 
-  test('enterprise tier returns all models', async () => {
-    const payload = Buffer.from(JSON.stringify({ sub: 'user-1', email: 'test@test.com', tier: 'enterprise' })).toString('base64')
+  test('admin tier returns all models', async () => {
+    const payload = Buffer.from(JSON.stringify({ sub: 'user-1', email: 'test@test.com', tier: 'admin' })).toString('base64')
     const fakeToken = `header.${payload}.signature`
 
     const req = new NextRequest('http://localhost:3000/api/models', {
@@ -38,8 +38,8 @@ describe('GET /api/models', () => {
     const res = await getModels(req)
     const data = await res.json()
 
-    expect(data.user_tier).toBe('enterprise')
-    expect(data.models.length).toBeGreaterThanOrEqual(7)
+    expect(data.user_tier).toBe('admin')
+    expect(data.models.length).toBeGreaterThanOrEqual(9)
   })
 
   test('each model has required fields', async () => {

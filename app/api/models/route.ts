@@ -2,9 +2,15 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 
-const TIER_RANK: Record<string, number> = { free: 1, pro: 2, enterprise: 3, byok: 4, admin: 99 }
+const TIER_RANK: Record<string, number> = {
+  free: 1,
+  pro: 2,
+  enterprise: 3,
+  byok: 4,
+  admin: 99,
+}
 
-const STATIC_MODELS = [
+const ALL_MODELS = [
   { id: 'llama3.2', name: 'Llama 3.2', description: 'Fast general-purpose model', family: 'llama', parameter_size: null, contextWindow: '128K', maxTokens: 4096, tier_required: 'free', is_byok: false, cost_estimate: null },
   { id: 'gemma2:2b', name: 'Gemma 2 (2B)', description: 'Google lightweight model', family: 'gemma', parameter_size: null, contextWindow: '8K', maxTokens: 2048, tier_required: 'free', is_byok: false, cost_estimate: null },
   { id: 'qwen2.5:0.5b', name: 'Qwen 2.5 (0.5B)', description: 'Ultra-tiny multilingual', family: 'qwen', parameter_size: null, contextWindow: '32K', maxTokens: 1024, tier_required: 'free', is_byok: false, cost_estimate: null },
@@ -34,33 +40,31 @@ export async function GET(request: NextRequest) {
 
     const userRank = TIER_RANK[userTier] || 1
 
-    const models = STATIC_MODELS.filter((m) => {
+    const models = ALL_MODELS.filter((m) => {
       const modelRank = TIER_RANK[m.tier_required] || 1
       return modelRank <= userRank
     })
 
     return NextResponse.json(
-      { models, user_tier: userTier, deployed_at: Date.now() },
+      { models, user_tier: userTier },
       {
         status: 200,
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0',
-          'Surrogate-Control': 'no-store',
         },
       }
     )
   } catch (error: any) {
     return NextResponse.json(
-      { models: [], error: error?.message || String(error), deployed_at: Date.now() },
+      { models: [], error: error?.message || String(error) },
       {
         status: 200,
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0',
-          'Surrogate-Control': 'no-store',
         },
       }
     )
