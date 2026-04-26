@@ -268,7 +268,7 @@
     z-index: 900;
   }
 
-  main {
-    padding-bottom: 72px;
+  main.layout-main {
+    padding-bottom: 80px;
   }
 }
