@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         theme: 'gruvbox-dark',
         suggestions_enabled: true,
-        default_model: 'llama3.2:3b',
+        default_model: 'qwen3.5:2b',
         default_temperature: 0.7,
         default_max_tokens: 500,
       },

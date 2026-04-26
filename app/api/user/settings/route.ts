@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
 
-const DEFAULT_MODEL = 'llama3.2:3b'
+const DEFAULT_MODEL = 'qwen3.5:2b'
 
 function toCamelCase(settings: any) {
   return {

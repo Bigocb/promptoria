@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
+import { resolveAvailableModel } from '@/lib/model-fallback'
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || ''
@@ -75,7 +76,7 @@ Make tags concise (1-2 words), lowercase, and descriptive of the prompt's purpos
     const userSettings = await prisma.userSettings.findUnique({
       where: { user_id: userId },
     })
-    const model = prompt.model || userSettings?.default_model || 'llama3.2:3b'
+    const model = await resolveAvailableModel(prompt.model, userSettings?.default_model)
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     if (OLLAMA_API_KEY) {

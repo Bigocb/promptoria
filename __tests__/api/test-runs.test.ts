@@ -7,12 +7,24 @@ jest.mock('@/lib/prisma', () => {
     testRun: { create: jest.fn(), findMany: jest.fn(), update: jest.fn() },
     userSettings: { findUnique: jest.fn() },
     syncLog: { create: jest.fn() },
+    user: { findUnique: jest.fn(), update: jest.fn() },
   }
   return { __esModule: true, default: mockClient }
 })
 
 jest.mock('@/lib/jwt', () => ({
   verifyAccessToken: jest.fn(),
+}))
+
+jest.mock('@/lib/quota', () => ({
+  consumeTokens: jest.fn().mockResolvedValue({ allowed: true, remaining: 4500, limit: 5000 }),
+}))
+
+jest.mock('@/lib/model-fallback', () => ({
+  resolveAvailableModel: jest.fn().mockResolvedValue('llama3.2:3b'),
+  cachedModelAvailable: jest.fn().mockReturnValue(true),
+  setModelAvailability: jest.fn(),
+  warmModelCache: jest.fn().mockResolvedValue(undefined),
 }))
 
 const originalFetch = global.fetch
@@ -57,6 +69,7 @@ describe('POST /api/test-runs', () => {
 
   test('returns 400 if no input provided', async () => {
     const prisma = require('@/lib/prisma').default
+    prisma.workspace.findFirst.mockResolvedValueOnce(mockWorkspace)
     prisma.promptVersion.findUnique.mockResolvedValueOnce({
       id: 'v1', template_body: 'Hello', prompt: { model: 'llama3.2:3b', workspace_id: 'ws1' },
     })

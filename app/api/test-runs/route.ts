@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
 import { consumeTokens } from '@/lib/quota'
+import { resolveAvailableModel } from '@/lib/model-fallback'
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || ''
@@ -80,7 +81,8 @@ export async function POST(request: NextRequest) {
       where: { user_id: userId },
     })
 
-    const modelToUse = model || promptVersion.prompt.model || userSettings?.default_model || 'llama3.2:3b'
+    const requestedModel = model || promptVersion.prompt.model || userSettings?.default_model || 'qwen3.5:2b'
+    const modelToUse = await resolveAvailableModel(requestedModel, promptVersion.prompt.model, userSettings?.default_model)
     const tempToUse = temperature ?? userSettings?.default_temperature ?? 0.7
     const maxTokensToUse = max_tokens || userSettings?.default_max_tokens || 1024
 

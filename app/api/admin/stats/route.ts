@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     })
     const modelPrefCounts: Record<string, number> = {}
     for (const s of modelPreferences) {
-      const m = s.default_model || 'llama3.2:3b'
+      const m = s.default_model || 'qwen3.5:2b'
       modelPrefCounts[m] = (modelPrefCounts[m] || 0) + 1
     }
 

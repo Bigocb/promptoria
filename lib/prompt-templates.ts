@@ -13,7 +13,7 @@ const STARTER_PROMPTS: TemplatePrompt[] = [
     name: 'Product Description Generator',
     description: 'Generate compelling e-commerce product descriptions from bullet points.',
     tags: ['ecommerce', 'marketing', 'product'],
-    model: 'llama3.2:3b',
+    model: 'qwen3.5:2b',
     template_body: `You are an expert e-commerce copywriter.
 
 Write a compelling product description (2-3 paragraphs) for the following item:
@@ -35,7 +35,7 @@ Include:
     name: 'Code Review Assistant',
     description: 'Review code snippets for bugs, style, and performance issues.',
     tags: ['engineering', 'code-review', 'quality'],
-    model: 'llama3.2:3b',
+    model: 'qwen3.5:2b',
     template_body: `You are a senior software engineer doing a code review.
 
 Review the following {language} code:
@@ -56,7 +56,7 @@ Format your response with clear headings.`,
     name: 'Customer Support Response',
     description: 'Draft professional support replies based on ticket context.',
     tags: ['support', 'customer-service', 'communication'],
-    model: 'llama3.2:3b',
+    model: 'qwen3.5:2b',
     template_body: `You are a friendly customer support agent.
 
 Draft a response to the following customer inquiry:
@@ -76,7 +76,7 @@ Guidelines:
     name: 'Meeting Notes Summarizer',
     description: 'Summarize raw meeting transcripts into structured action items.',
     tags: ['productivity', 'meetings', 'summarization'],
-    model: 'llama3.2:3b',
+    model: 'qwen3.5:2b',
     template_body: `You are an executive assistant summarizing a meeting.
 
 Given the following transcript, produce a structured summary:
@@ -104,7 +104,7 @@ If the transcript is too short or unclear, state that explicitly.`,
     name: 'Social Media Post Writer',
     description: 'Create platform-optimized social posts from blog content.',
     tags: ['marketing', 'social', 'content'],
-    model: 'llama3.2:3b',
+    model: 'qwen3.5:2b',
     template_body: `You are a social media specialist.
 
 Turn the following content into a {platform} post:
@@ -128,7 +128,7 @@ Provide:
     name: 'Bug Report Analyzer',
     description: 'Parse unstructured bug reports into standardized fields.',
     tags: ['engineering', 'bugs', 'qa'],
-    model: 'llama3.2:3b',
+    model: 'qwen3.5:2b',
     template_body: `You are a QA engineer structuring bug reports.
 
 Take the following unstructured input and extract structured fields:
@@ -152,7 +152,7 @@ If critical info is missing, explicitly state "[MISSING: ...]".`,
     name: 'Interview Question Generator',
     description: 'Generate targeted interview questions for any role.',
     tags: ['hr', 'recruiting', 'interviews'],
-    model: 'llama3.2:3b',
+    model: 'qwen3.5:2b',
     template_body: `You are an experienced hiring manager.
 
 Generate {count} interview questions for a {role} position at a {company_type} company.
@@ -173,7 +173,7 @@ Avoid generic questions like "What are your strengths?" unless specifically requ
     name: 'Email Subject Line Optimizer',
     description: 'Generate multiple subject line variants from email body copy.',
     tags: ['marketing', 'email', 'copywriting'],
-    model: 'llama3.2:3b',
+    model: 'qwen3.5:2b',
     template_body: `You are an email marketing expert.
 
 Given the following email content, generate {variant_count} subject line options:
@@ -196,7 +196,7 @@ Keep each subject line under 60 characters.`,
     name: 'Feature Specification Draft',
     description: 'Turn informal feature ideas into structured PRD-style specs.',
     tags: ['product', 'specs', 'planning'],
-    model: 'llama3.2:3b',
+    model: 'qwen3.5:2b',
     template_body: `You are a product manager writing a feature spec.
 
 Draft a lightweight feature specification from the following input:
@@ -225,7 +225,7 @@ Keep it concise. Use bullet points over long paragraphs.`,
     name: 'Data Table Formatter',
     description: 'Convert messy data into clean markdown or JSON tables.',
     tags: ['data', 'formatting', 'utility'],
-    model: 'llama3.2:3b',
+    model: 'qwen3.5:2b',
     template_body: `You are a data formatting assistant.
 
 Reformat the following raw data into a clean {format} table:

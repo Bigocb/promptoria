@@ -13,6 +13,13 @@ jest.mock('@/lib/jwt', () => ({
   verifyAccessToken: jest.fn(),
 }))
 
+jest.mock('@/lib/model-fallback', () => ({
+  resolveAvailableModel: jest.fn().mockResolvedValue('llama3.2:3b'),
+  cachedModelAvailable: jest.fn().mockReturnValue(true),
+  setModelAvailability: jest.fn(),
+  warmModelCache: jest.fn().mockResolvedValue(undefined),
+}))
+
 const originalFetch = global.fetch
 
 import { POST as compareTestRuns } from '@/app/api/test-runs/compare/route'

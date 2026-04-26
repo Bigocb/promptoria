@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
+import { resolveAvailableModel } from '@/lib/model-fallback'
 
 export const dynamic = 'force-dynamic'
 
@@ -76,6 +77,8 @@ export async function POST(request: NextRequest) {
 
     const judgePrompt = `${JUDGE_SYSTEM_PROMPT}\n\n---\nPROMPT INPUT:\n${runA.test_case_input}\n\n---\nVERSION A (${runA.model || 'unknown'}):\n${runA.output || '(no output)'}\n\n---\nVERSION B (${runB.model || 'unknown'}):\n${runB.output || '(no output)'}\n\n---\nYOUR EVALUATION (JSON only):`
 
+    const judgeModel = await resolveAvailableModel()
+
     // Call Ollama Cloud for judge
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     if (OLLAMA_API_KEY) headers['Authorization'] = `Bearer ${OLLAMA_API_KEY}`
@@ -84,12 +87,14 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        model: 'llama3.2:3b',
+        model: judgeModel,
         prompt: judgePrompt,
-        temperature: 0.3,
-        num_predict: 1024,
         stream: false,
         format: 'json',
+        options: {
+          temperature: 0.3,
+          num_predict: 1024,
+        },
       }),
     })
 
