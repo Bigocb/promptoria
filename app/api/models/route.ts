@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    const models = presets
+    let models = presets
       .filter((p) => {
         const modelRank = TIER_RANK[p.tier_required] || 1
         return modelRank <= userRank
@@ -71,6 +71,16 @@ export async function GET(request: NextRequest) {
         is_byok: p.is_byok,
         cost_estimate: p.cost_estimate,
       }))
+
+    // If after filtering nothing is available, ALWAYS show fallback models
+    if (models.length === 0) {
+      models = [
+        { id: 'llama3.2', name: 'Llama 3.2', description: 'Fast general-purpose model', family: 'llama', parameter_size: null, contextWindow: '128K', maxTokens: 4096, tier_required: 'free', is_byok: false, cost_estimate: null },
+        { id: 'gemma2:2b', name: 'Gemma 2 (2B)', description: 'Google lightweight model', family: 'gemma', parameter_size: null, contextWindow: '8K', maxTokens: 2048, tier_required: 'free', is_byok: false, cost_estimate: null },
+        { id: 'qwen2.5:0.5b', name: 'Qwen 2.5 (0.5B)', description: 'Ultra-tiny multilingual', family: 'qwen', parameter_size: null, contextWindow: '32K', maxTokens: 1024, tier_required: 'free', is_byok: false, cost_estimate: null },
+        { id: 'phi4-mini', name: 'Phi-4 Mini', description: 'Microsoft small model', family: 'phi', parameter_size: null, contextWindow: '128K', maxTokens: 4096, tier_required: 'free', is_byok: false, cost_estimate: null },
+      ]
+    }
 
     return NextResponse.json({ models, user_tier: userTier }, { status: 200 })
   } catch (error: any) {
