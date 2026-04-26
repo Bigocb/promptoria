@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
 import { isAdmin } from '@/lib/is-admin'
+import { inferModelMetadata } from '@/lib/model-enrichment'
 
 // GET /api/admin/models — list all model presets
 export async function GET(request: NextRequest) {
@@ -65,17 +66,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ollama_id and display_name required' }, { status: 400 })
     }
 
+    // Auto-infer metadata if not provided
+    const inferred = inferModelMetadata(ollama_id)
+
     const created = await prisma.modelPreset.create({
       data: {
         ollama_id,
         display_name,
-        family: family || 'unknown',
-        parameter_size: parameter_size || null,
-        description: body.description || null,
-        context_window: body.context_window || null,
-        max_tokens: body.max_tokens || null,
+        family: family || inferred.family,
+        parameter_size: parameter_size || inferred.parameter_size,
+        description: body.description || inferred.description,
+        context_window: body.context_window || inferred.context_window,
+        max_tokens: body.max_tokens || inferred.max_tokens,
         tier_required: tier_required || 'free',
-        cost_estimate: body.cost_estimate || null,
+        cost_estimate: body.cost_estimate || inferred.cost_estimate,
         is_byok: body.is_byok || false,
         sort_order: body.sort_order || 0,
       },
