@@ -275,3 +275,24 @@ model SyncLog {
   @@index([changed_at])
   @@map("sync_logs")
 }
+
+// ModelPreset - curated list of available AI models with tier gating
+model ModelPreset {
+  id            String   @id @default(cuid()) @db.VarChar(36)
+  ollama_id     String   @unique @db.VarChar(100) // exact model identifier for Ollama
+  display_name  String   @db.VarChar(255)
+  family        String   @db.VarChar(50)
+  parameter_size String? @db.VarChar(20)         // e.g. "3B", "7B", "70B"
+  description   String?  @db.Text
+  context_window String? @db.VarChar(20)           // e.g. "8K"
+  max_tokens    Int?                                    // maximum output tokens
+  is_active     Boolean  @default(true)              // admin can deactivate models
+  tier_required String   @default("free") @db.VarChar(20)  // free, pro, enterprise, byok
+  cost_estimate String? @db.VarChar(20)             // human-readable: "cheap", "medium", "expensive", "bring-your-own"
+  is_byok       Boolean  @default(false)             // bring your own key models
+  sort_order    Int        @default(0)               // admin can reorder
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  @@map("model_presets")
+}
