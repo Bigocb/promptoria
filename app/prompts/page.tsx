@@ -115,8 +115,11 @@ export default function WorkbenchPage() {
   const [loadedPromptId, setLoadedPromptId] = useState<string | null>(null)
   const [currentPromptVersionId, setCurrentPromptVersionId] = useState<string | null>(null)
   const [loadedPromptDescription, setLoadedPromptDescription] = useState('')
-  const [loadedPromptModel, setLoadedPromptModel] = useState('gpt-4')
+  const [loadedPromptModel, setLoadedPromptModel] = useState('')
+  const [availableModels, setAvailableModels] = useState<any[]>([])
+  const [userTier, setUserTier] = useState('free')
   const [promptsLoading, setPromptsLoading] = useState(false)
+  const [modelsLoading, setModelsLoading] = useState(true)
 
   // Favorite state
   const [isFavorite, setIsFavorite] = useState(false)
@@ -129,6 +132,30 @@ export default function WorkbenchPage() {
   useEffect(() => {
     if (!user) return
     Promise.allSettled([fetchSnippets(), fetchInteractionTypes()])
+  }, [user])
+
+  // Fetch tiered models on mount
+  useEffect(() => {
+    if (!user) return
+    const fetchModels = async () => {
+      try {
+        const token = localStorage.getItem('auth-token')
+        const res = await fetch(API_ENDPOINTS.models, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+        const data = await res.json()
+        setAvailableModels(data.models || [])
+        setUserTier(data.user_tier || 'free')
+        if (!loadedPromptModel && data.models?.length > 0) {
+          setLoadedPromptModel(data.models[0].id)
+        }
+      } catch {
+        // silently fail — keep existing model input
+      } finally {
+        setModelsLoading(false)
+      }
+    }
+    fetchModels()
   }, [user])
 
   // Auto-load prompt from URL parameter
@@ -281,7 +308,8 @@ export default function WorkbenchPage() {
       setPromptName(data.name)
       setPromptContent(latestVersion?.template_body || data.template_body || '')
       setLoadedPromptDescription(data.description || '')
-      setLoadedPromptModel(data.model || 'gpt-4')
+      const modelInList = availableModels.some((m: any) => m.id === data.model)
+      setLoadedPromptModel(modelInList ? data.model : (availableModels[0]?.id || data.model || ''))
       setTags(data.tags || [])
       if (data.agent_interaction_type_id) {
         setSelectedInteractionTypeId(data.agent_interaction_type_id)
@@ -360,7 +388,7 @@ export default function WorkbenchPage() {
     setPromptName('')
     setPromptContent('')
     setLoadedPromptDescription('')
-    setLoadedPromptModel('gpt-4')
+    setLoadedPromptModel(availableModels[0]?.id || '')
     setTags([])
     setVariables('')
     setVersions([])
@@ -1434,15 +1462,37 @@ export default function WorkbenchPage() {
             <div style={{ marginTop: '0.75rem' }}>
               <label style={{ display: 'block', marginBottom: '0.375rem', fontWeight: '500', fontSize: '0.875rem' }}>
                 Model
+                {userTier !== 'free' && (
+                  <span style={{ fontSize: '0.7rem', marginLeft: '0.5rem', padding: '0.1rem 0.4rem', borderRadius: '0.2rem', backgroundColor: 'var(--color-accent)', color: '#1d2021' }}>
+                    {userTier}
+                  </span>
+                )}
               </label>
-              <input
-                type="text"
+              <select
                 value={loadedPromptModel}
                 onChange={(e) => setLoadedPromptModel(e.target.value)}
-                placeholder="e.g., gpt-4"
                 className="input"
                 style={{ width: '100%', fontSize: '0.875rem' }}
-              />
+                disabled={modelsLoading || availableModels.length === 0}
+              >
+                {modelsLoading ? (
+                  <option>Loading models...</option>
+                ) : availableModels.length === 0 ? (
+                  <option>No models available</option>
+                ) : (
+                  availableModels.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}{m.parameter_size ? ` (${m.parameter_size})` : ''}
+                      {m.cost_estimate ? ` — ${m.cost_estimate}` : ''}
+                    </option>
+                  ))
+                )}
+              </select>
+              {userTier === 'free' && availableModels.some((m) => m.tier_required !== 'free') === false && availableModels.length > 0 && (
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', marginTop: '0.25rem', marginBottom: 0 }}>
+                  💡 Upgrade to Pro to unlock more powerful models
+                </p>
+              )}
             </div>
           </div>
 
