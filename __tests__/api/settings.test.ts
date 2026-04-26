@@ -46,7 +46,7 @@ describe('GET /api/user/settings', () => {
     const res = await getSettings(req)
     expect(res.status).toBe(200)
     const data = await res.json()
-    expect(data.defaultModel).toBe('llama3.2')
+    expect(data.defaultModel).toBe('llama3.2:3b')
     expect(data.suggestionsEnabled).toBe(true)
     expect(data.theme).toBe('light')
   })

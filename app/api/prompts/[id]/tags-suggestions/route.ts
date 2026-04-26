@@ -75,7 +75,7 @@ Make tags concise (1-2 words), lowercase, and descriptive of the prompt's purpos
     const userSettings = await prisma.userSettings.findUnique({
       where: { user_id: userId },
     })
-    const model = userSettings?.default_model || 'llama3.2'
+    const model = prompt.model || userSettings?.default_model || 'llama3.2:3b'
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     if (OLLAMA_API_KEY) {

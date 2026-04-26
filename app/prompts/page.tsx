@@ -766,6 +766,31 @@ export default function WorkbenchPage() {
   }
 
   // Export version as file
+  const [showExportMenu, setShowExportMenu] = useState(false)
+
+  const handleExportPrompt = async (format: 'json' | 'markdown') => {
+    if (!loadedPromptId) return
+    try {
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(`${API_ENDPOINTS.prompts.detail(loadedPromptId)}/export?format=${format}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Export failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const disposition = res.headers.get('content-disposition')
+      const filenameMatch = disposition?.match(/filename="(.+)"/)
+      a.download = filenameMatch?.[1] || `export.${format}`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err: any) {
+      alert(`Export failed: ${err.message}`)
+    }
+    setShowExportMenu(false)
+  }
+
   const handleExportVersion = (version: PromptVersion) => {
     const data = {
       name: promptName,
@@ -1574,6 +1599,88 @@ export default function WorkbenchPage() {
             >
               {saveStatus === 'saving' ? 'Saving...' : 'Save'}
             </button>
+
+            {loadedPromptId && (
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    color: 'var(--color-foregroundAlt)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--color-accent)'
+                    e.currentTarget.style.color = 'var(--color-accent)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--color-border)'
+                    e.currentTarget.style.color = 'var(--color-foregroundAlt)'
+                  }}
+                >
+                  ↓ Export Prompt
+                </button>
+                {showExportMenu && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 4px)',
+                    left: 0,
+                    zIndex: 50,
+                    backgroundColor: 'var(--color-background)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    minWidth: '160px',
+                    overflow: 'hidden',
+                  }}>
+                    <button
+                      onClick={() => handleExportPrompt('json')}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        padding: '0.5rem 0.75rem',
+                        background: 'none',
+                        border: 'none',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        color: 'var(--color-foreground)',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-backgroundAlt)' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                    >
+                      🗂️ Export as JSON
+                    </button>
+                    <button
+                      onClick={() => handleExportPrompt('markdown')}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        padding: '0.5rem 0.75rem',
+                        background: 'none',
+                        border: 'none',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        color: 'var(--color-foreground)',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-backgroundAlt)' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                    >
+                      📝 Export as Markdown
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

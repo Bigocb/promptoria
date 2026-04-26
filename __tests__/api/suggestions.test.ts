@@ -25,6 +25,7 @@ const mockPrompt = {
   id: 'p1',
   name: 'Test Prompt',
   description: 'A test prompt',
+  model: 'llama3.2:3b',
   workspace_id: 'ws1',
   versions: [{ id: 'v1', version_number: 1, template_body: 'Write about {{topic}}', is_active: true }],
 }
@@ -106,7 +107,7 @@ describe('GET /api/prompts/[id]/suggestions', () => {
     expect(res.status).toBe(502)
   })
 
-  test('uses user default model', async () => {
+  test('uses prompt model over user default model', async () => {
     const prisma = require('@/lib/prisma').default
     prisma.workspace.findFirst.mockResolvedValueOnce(mockWorkspace)
     prisma.prompt.findUnique.mockResolvedValueOnce(mockPrompt)
@@ -125,7 +126,7 @@ describe('GET /api/prompts/[id]/suggestions', () => {
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/generate'),
       expect.objectContaining({
-        body: expect.stringContaining('"mistral"'),
+        body: expect.stringContaining('"llama3.2:3b"'),
       })
     )
   })

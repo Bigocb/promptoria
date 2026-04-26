@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { generateAccessToken, generateRefreshToken } from '@/lib/jwt'
 import { exchangeCodeForTokens, getGoogleUserInfo, type GoogleUserInfo } from '@/lib/google-oauth'
+import { seedWorkspaceTemplates } from '@/lib/prompt-templates'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://promptoria.me'
 
@@ -124,19 +125,26 @@ export async function GET(request: NextRequest) {
             user_id: user.id,
             theme: 'gruvbox-dark',
             suggestions_enabled: true,
-            default_model: 'llama3.2',
+            default_model: 'llama3.2:3b',
             default_temperature: 0.7,
             default_max_tokens: 500,
           },
         })
 
-        await prisma.workspace.create({
+        const workspace = await prisma.workspace.create({
           data: {
             name: 'Default Workspace',
             slug: `workspace-${user.id.substring(0, 8)}`,
             user_id: user.id,
           },
         })
+
+        // Seed starter templates (non-blocking, best-effort)
+        try {
+          await seedWorkspaceTemplates(workspace.id, prisma)
+        } catch (seedErr: any) {
+          console.error('Template seed error:', seedErr)
+        }
       }
     }
   } catch (error: any) {

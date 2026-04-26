@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import { hashPassword } from '@/lib/auth'
 import { generateAccessToken, generateRefreshToken } from '@/lib/jwt'
 import { rateLimit } from '@/lib/rate-limit'
+import { seedWorkspaceTemplates } from '@/lib/prompt-templates'
 
 // Simple email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         theme: 'gruvbox-dark',
         suggestions_enabled: true,
-        default_model: 'claude-3-haiku',
+        default_model: 'llama3.2:3b',
         default_temperature: 0.7,
         default_max_tokens: 500,
       },
@@ -88,6 +89,13 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
       },
     })
+
+    // Seed starter templates (non-blocking, best-effort)
+    try {
+      await seedWorkspaceTemplates(workspace.id, prisma)
+    } catch (seedErr: any) {
+      console.error('Template seed error:', seedErr)
+    }
 
     // Generate JWT tokens (access + refresh)
     const accessToken = generateAccessToken(user.id, user.email, user.subscription_tier)

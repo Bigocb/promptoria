@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       where: { user_id: userId },
     })
 
-    const modelToUse = model || promptVersion.prompt.model || userSettings?.default_model || 'llama3.2'
+    const modelToUse = model || promptVersion.prompt.model || userSettings?.default_model || 'llama3.2:3b'
     const tempToUse = temperature ?? userSettings?.default_temperature ?? 0.7
     const maxTokensToUse = max_tokens || userSettings?.default_max_tokens || 1024
 
