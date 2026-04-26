@@ -94,6 +94,21 @@
     width: 100%;
   }
 
+  .panel-layout-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 2rem;
+    width: 100%;
+    align-items: start;
+  }
+
+  @media (max-width: 1024px) {
+    .panel-layout-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+  }
+
   .sidebar-layout-grid aside {
     min-width: 0;
     display: flex;

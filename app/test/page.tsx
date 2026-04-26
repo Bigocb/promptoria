@@ -19,6 +19,20 @@ interface Prompt {
   versions?: PromptVersion[]
 }
 
+interface PersistedTestRun {
+  id: string
+  model: string
+  test_case_input: string
+  output: string
+  total_tokens: number
+  duration_ms: number
+  completed_at?: string
+  created_at: string
+  prompt_version?: {
+    version_number: number
+  }
+}
+
 interface TestResult {
   id: string
   created_at: string
@@ -27,6 +41,7 @@ interface TestResult {
   total_tokens: number
   latency_ms: number
   request_duration_ms?: number
+  version_number?: number
 }
 
 interface ModelInfo {
@@ -147,6 +162,28 @@ export default function TestRunnerPage() {
     fetchModels()
   }, [])
 
+  const [persistedRuns, setPersistedRuns] = useState<PersistedTestRun[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+
+  // Fetch persisted test runs when a prompt is selected
+  const fetchPersistedHistory = async (promptId: string) => {
+    try {
+      setLoadingHistory(true)
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.prompts.testRuns(promptId), {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setPersistedRuns(data.test_runs || [])
+      }
+    } catch {
+      // Silently fail — session results still show
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
   const handleSelectPrompt = async (prompt: Prompt) => {
     setOutput(''); setResults([]); setError(''); setVariables({})
     try {
@@ -170,6 +207,9 @@ export default function TestRunnerPage() {
         varMatches.forEach((match: string) => { extractedVars[match.slice(2, -2)] = '' })
         setVariables(extractedVars)
       }
+
+      // Load persisted test history
+      await fetchPersistedHistory(prompt.id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load prompt')
     }
