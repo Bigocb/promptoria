@@ -2,6 +2,7 @@
 
 import { useSettings, useAuth } from '@/app/providers'
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { themes } from '@/lib/themes'
 import { ThemeName } from '@/lib/themes'
@@ -23,7 +24,10 @@ interface OllamaModel {
 export default function SettingsPage() {
   const { settings, updateSetting } = useSettings()
   const { user } = useAuth()
+  const searchParams = useSearchParams()
   const [saving, setSaving] = useState(false)
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [checkoutSuccess, setCheckoutSuccess] = useState(searchParams.get('checkout') === 'success')
   const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([])
   const [ollamaAvailable, setOllamaAvailable] = useState<boolean | null>(null)
   const [ollamaError, setOllamaError] = useState<string | null>(null)
@@ -218,6 +222,80 @@ export default function SettingsPage() {
       <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>
         Manage your preferences and defaults
       </p>
+
+      {checkoutSuccess && (
+        <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: 'rgba(142,192,124,0.15)', border: '1px solid #8ec07c', borderRadius: '0.5rem', color: '#8ec07c', fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Subscription activated! Your tier has been updated.</span>
+          <button onClick={() => setCheckoutSuccess(false)} style={{ background: 'none', border: 'none', color: '#8ec07c', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1 }}>&times;</button>
+        </div>
+      )}
+
+      {(user?.tier === 'pro' || user?.tier === 'enterprise') && (
+        <section style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '1.5rem', marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--color-text)' }}>
+            Subscription
+          </h2>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+            You are on the <strong style={{ textTransform: 'capitalize' }}>{user.tier}</strong> plan.
+          </p>
+          <button
+            onClick={async () => {
+              setPortalLoading(true)
+              try {
+                const token = localStorage.getItem('auth-token')
+                const res = await fetch(API_ENDPOINTS.stripe.portal, {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${token}` },
+                })
+                if (res.ok) {
+                  const data = await res.json()
+                  window.location.href = data.url
+                }
+              } catch {
+                // silent
+              } finally {
+                setPortalLoading(false)
+              }
+            }}
+            disabled={portalLoading}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: 'var(--color-color-surface, var(--color-surface))',
+              border: '1px solid var(--color-border)',
+              borderRadius: '0.5rem',
+              cursor: portalLoading ? 'wait' : 'pointer',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              color: 'var(--color-text)',
+            }}
+          >
+            {portalLoading ? 'Opening...' : 'Manage Subscription'}
+          </button>
+        </section>
+      )}
+
+      {user?.tier === 'free' && (
+        <section style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '1.5rem', marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', color: 'var(--color-text)' }}>
+            Subscription
+          </h2>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+            You are on the <strong>Free</strong> plan. Upgrade for more powerful models and higher token limits.
+          </p>
+          <a href="/pricing" style={{
+            display: 'inline-block',
+            padding: '0.5rem 1rem',
+            backgroundColor: 'var(--color-accent)',
+            color: '#1d2021',
+            borderRadius: '0.5rem',
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            textDecoration: 'none',
+          }}>
+            View Plans
+          </a>
+        </section>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
         {/* Theme Settings */}
@@ -659,12 +737,18 @@ function TokenQuotaSection() {
 
       {isExceeded && (
         <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: '#cc241d' }}>
-          You've hit your daily token limit. Upgrade to Pro for more tokens.
+          You've hit your daily token limit.{' '}
+          <a href="/pricing" style={{ color: 'var(--color-accent)', fontWeight: 600, textDecoration: 'underline' }}>
+            Upgrade to Pro
+          </a> for more tokens.
         </p>
       )}
       {isNearLimit && !isExceeded && (
         <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: '#fe8019' }}>
-          You're approaching your daily token limit. Upgrade to Pro for more tokens.
+          You're approaching your daily token limit.{' '}
+          <a href="/pricing" style={{ color: 'var(--color-accent)', fontWeight: 600, textDecoration: 'underline' }}>
+            Upgrade to Pro
+          </a> for more tokens.
         </p>
       )}
     </section>

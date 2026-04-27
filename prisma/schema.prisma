@@ -18,6 +18,7 @@ model User {
   name      String?  @db.VarChar(255)
   image     String?  @db.VarChar(500)
   subscription_tier String   @default("free") @db.VarChar(20) // free, pro, enterprise
+  stripe_customer_id String? @db.VarChar(255)
   daily_tokens_used Int      @default(0)
   daily_tokens_limit Int     @default(5000)  // free tier default; pro gets higher
   last_token_reset_at DateTime? @db.Timestamp(6)
@@ -29,6 +30,7 @@ model User {
   devices       Device[]
   oauth_accounts OAuthAccount[]
   favorites     Favorite[]
+  subscriptions Subscription[]
 
   @@map("users")
 }
@@ -330,4 +332,25 @@ model ModelPreset {
   updated_at    DateTime @default(now()) @updatedAt @db.Timestamp(6)
 
   @@map("model_presets")
+}
+
+model Subscription {
+  id                    String   @id @default(cuid()) @db.VarChar(36)
+  user_id               String   @db.VarChar(36)
+  stripe_subscription_id String  @unique @db.VarChar(255)
+  stripe_price_id       String   @db.VarChar(255)
+  stripe_customer_id    String   @db.VarChar(255)
+  status                String   @db.VarChar(50) // active, canceled, past_due, trialing, etc.
+  tier                  String   @db.VarChar(20) // pro, enterprise
+  current_period_start  DateTime? @db.Timestamp(6)
+  current_period_end    DateTime? @db.Timestamp(6)
+  cancel_at_period_end  Boolean  @default(false)
+  created_at            DateTime @default(now()) @db.Timestamp(6)
+  updated_at            DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([stripe_customer_id])
+  @@map("subscriptions")
 }

@@ -1516,7 +1516,7 @@ export default function WorkbenchPage() {
               </select>
               {userTier === 'free' && availableModels.some((m) => m.tier_required !== 'free') === false && availableModels.length > 0 && (
                 <p style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', marginTop: '0.25rem', marginBottom: 0 }}>
-                  💡 Upgrade to Pro to unlock more powerful models
+                  💡 <a href="/pricing" style={{ color: 'var(--color-accent)', textDecoration: 'underline' }}>Upgrade to Pro</a> to unlock more powerful models
                 </p>
               )}
             </div>

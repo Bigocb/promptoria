@@ -36,6 +36,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
     { label: '📊 History', href: '/history' },
     { label: '▶️ Test', href: '/test' },
     { label: '⚙️ Settings', href: '/settings' },
+    { label: '💎 Pricing', href: '/pricing' },
     ...(isAdminUser(user) ? [{ label: '🛡️ Admin', href: '/admin' }, { label: '👥 Users', href: '/admin/users' }] : []),
   ]
 

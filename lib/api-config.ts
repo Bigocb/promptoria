@@ -141,4 +141,8 @@ export const API_ENDPOINTS = {
     users: `${API_BASE_URL}/admin/users`,
     updateUser: (id: string) => `${API_BASE_URL}/admin/users/${id}`,
   },
+  stripe: {
+    checkout: `${API_BASE_URL}/stripe/checkout`,
+    portal: `${API_BASE_URL}/stripe/portal`,
+  },
 }
