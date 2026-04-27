@@ -67,7 +67,7 @@ export function inferModelMetadata(ollamaId: string): InferredMetadata {
   // ── Defaults based on parameter size ─────────────
   let context_window: string | null = '128K'
   let max_tokens: number | null = 4096
-  let cost_estimate: 'cheap' | 'medium' | 'expensive' | null = 'medium'
+  let cost_estimate: 'cheap' | 'medium' | 'expensive' | null = 'expensive'
 
   if (paramNum !== null) {
     if (paramNum <= 3) {

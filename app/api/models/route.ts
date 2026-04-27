@@ -90,7 +90,7 @@ async function fetchOllamaTags(): Promise<string[]> {
 }
 
 function inferTier(paramSize: string | null): string {
-  if (!paramSize) return 'free'
+  if (!paramSize) return 'pro'
   const num = parseFloat(paramSize.replace(/[a-z]/gi, '')) * (paramSize.toLowerCase().endsWith('m') ? 0.001 : 1)
   if (num <= 8) return 'free'
   if (num <= 30) return 'pro'
