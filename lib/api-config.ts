@@ -24,6 +24,7 @@ export const API_ENDPOINTS = {
   user: {
     profile: `${API_BASE_URL}/user/profile`,
     settings: `${API_BASE_URL}/user/settings`,
+    refresh: `${API_BASE_URL}/user/refresh`,
   },
   settings: {
     apiKeys: {

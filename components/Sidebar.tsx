@@ -122,9 +122,35 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
               color: 'var(--color-text-secondary)',
               fontSize: '0.875rem',
               wordBreak: 'break-all',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
             }}
           >
             {user.email}
+            {user.tier && (
+              <span
+                style={{
+                  fontSize: '0.6rem',
+                  padding: '0.1rem 0.4rem',
+                  borderRadius: '9999px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  backgroundColor:
+                    user.tier === 'admin'
+                      ? '#ff5c5c'
+                      : user.tier === 'pro'
+                        ? '#fe8019'
+                        : user.tier === 'enterprise'
+                          ? '#d3869b'
+                          : '#b8bb26',
+                  color: '#1d2021',
+                }}
+              >
+                {user.tier === 'enterprise' ? 'Power' : user.tier}
+              </span>
+            )}
           </div>
           <button
             onClick={handleLogout}

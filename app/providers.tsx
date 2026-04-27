@@ -89,6 +89,7 @@ interface AuthContextType {
   signup: (email: string, password: string, confirmPassword: string) => Promise<void>
   logout: () => void
   loginWithGoogle: () => void
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -190,6 +191,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = '/api/auth/google'
   }
 
+  const refreshUser = async () => {
+    const token = localStorage.getItem('auth-token')
+    if (!token) return
+    try {
+      const res = await fetch(API_ENDPOINTS.user.refresh, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const updatedUser = data.user
+        if (updatedUser) {
+          localStorage.setItem('auth-user', JSON.stringify(updatedUser))
+          if (data.access_token) {
+            localStorage.setItem('auth-token', data.access_token)
+          }
+          setUser(updatedUser)
+        }
+      }
+    } catch {
+      // silent
+    }
+  }
+
   // Auto-refresh tokens before they expire
   useEffect(() => {
     if (!user) return
@@ -212,6 +236,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (data.refresh_token) {
             localStorage.setItem('auth-refresh-token', data.refresh_token)
           }
+          if (data.user) {
+            localStorage.setItem('auth-user', JSON.stringify(data.user))
+            setUser(data.user)
+          }
         } else {
           // Refresh failed, log out
           logout()
@@ -225,7 +253,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user])
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, loginWithGoogle }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, loginWithGoogle, refreshUser }}>
       {loading ? null : children}
     </AuthContext.Provider>
   )
@@ -243,6 +271,7 @@ export function useAuth() {
       signup: async () => {},
       logout: () => {},
       loginWithGoogle: () => {},
+      refreshUser: async () => {},
     }
   }
 

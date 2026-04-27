@@ -110,6 +110,7 @@ export async function POST(request: NextRequest) {
         user: {
           id: user.id,
           email: user.email,
+          tier: user.subscription_tier,
           created_at: user.created_at,
           updated_at: user.updated_at,
           settings: {

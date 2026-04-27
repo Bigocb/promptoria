@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
   const redirectUrl = new URL('/auth/google/callback', APP_URL)
   redirectUrl.searchParams.set('access_token', accessToken)
   redirectUrl.searchParams.set('refresh_token', refreshToken)
-  redirectUrl.searchParams.set('user', JSON.stringify({ id: user.id, email: user.email }))
+  redirectUrl.searchParams.set('user', JSON.stringify({ id: user.id, email: user.email, tier: user.subscription_tier }))
 
   const res = NextResponse.redirect(redirectUrl)
   res.cookies.set('oauth_state', '', { maxAge: 0, path: '/' })

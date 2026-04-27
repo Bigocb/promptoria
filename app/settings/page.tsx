@@ -23,11 +23,17 @@ interface OllamaModel {
 
 export default function SettingsPage() {
   const { settings, updateSetting } = useSettings()
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const searchParams = useSearchParams()
   const [saving, setSaving] = useState(false)
   const [portalLoading, setPortalLoading] = useState(false)
   const [checkoutSuccess, setCheckoutSuccess] = useState(searchParams.get('checkout') === 'success')
+
+  useEffect(() => {
+    if (checkoutSuccess) {
+      refreshUser()
+    }
+  }, [checkoutSuccess])
   const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([])
   const [ollamaAvailable, setOllamaAvailable] = useState<boolean | null>(null)
   const [ollamaError, setOllamaError] = useState<string | null>(null)
