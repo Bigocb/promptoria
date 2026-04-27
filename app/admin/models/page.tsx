@@ -89,6 +89,23 @@ export default function AdminModelsPage() {
     }
   }
 
+  const removeModel = async (id: string) => {
+    try {
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(API_ENDPOINTS.admin.model(id), {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Delete failed')
+      setModels((prev) => prev.filter((m) => m.id !== id))
+      setSaveFeedback('Removed')
+      setTimeout(() => setSaveFeedback(''), 1500)
+    } catch {
+      setSaveFeedback('Error')
+      setTimeout(() => setSaveFeedback(''), 2000)
+    }
+  }
+
   const addModel = async (model: any) => {
     setAddingModel(model.id)
     try {
@@ -231,6 +248,7 @@ export default function AdminModelsPage() {
                         <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Active</th>
                         <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Auto</th>
                         <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Sort</th>
+                        <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Remove</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -333,10 +351,30 @@ export default function AdminModelsPage() {
                               }}
                             />
                           </td>
+                          <td style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
+                            <button
+                              onClick={() => { if (confirm(`Remove "${m.display_name}" from curated list? It will appear back in Unassigned.`)) removeModel(m.id) }}
+                              style={{
+                                padding: '0.35rem 0.75rem',
+                                borderRadius: '0.25rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                backgroundColor: 'transparent',
+                                color: '#cc241d',
+                                opacity: 0.8,
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.backgroundColor = 'rgba(204,36,29,0.1)' }}
+                              onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; e.currentTarget.style.backgroundColor = 'transparent' }}
+                            >
+                              Remove
+                            </button>
+                          </td>
                         </tr>
                       ))}
                       {tierModels.length === 0 && (
-                        <tr><td colSpan={8} style={{ padding: '1.25rem', textAlign: 'center', color: 'var(--color-foregroundAlt)' }}>No models in this tier</td></tr>
+                        <tr><td colSpan={9} style={{ padding: '1.25rem', textAlign: 'center', color: 'var(--color-foregroundAlt)' }}>No models in this tier</td></tr>
                       )}
                     </tbody>
                   </table>
