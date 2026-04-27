@@ -93,12 +93,16 @@ export default function AdminModelsPage() {
     try {
       const token = localStorage.getItem('auth-token')
       const res = await fetch(API_ENDPOINTS.admin.model(id), {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ is_active: false, admin_overridden: true }),
       })
-      if (!res.ok) throw new Error('Delete failed')
+      if (!res.ok) throw new Error('Remove failed')
       setModels((prev) => prev.filter((m) => m.id !== id))
-      setSaveFeedback('Removed')
+      setSaveFeedback('Moved to Unassigned')
       setTimeout(() => setSaveFeedback(''), 1500)
     } catch {
       setSaveFeedback('Error')
@@ -152,11 +156,14 @@ export default function AdminModelsPage() {
     )
   }
 
+  const active = models.filter((m) => m.is_active)
+  const inactive = models.filter((m) => !m.is_active)
+
   const grouped = {
-    free: models.filter((m) => m.tier_required === 'free'),
-    pro: models.filter((m) => m.tier_required === 'pro'),
-    enterprise: models.filter((m) => m.tier_required === 'enterprise'),
-    byok: models.filter((m) => m.tier_required === 'byok'),
+    free: active.filter((m) => m.tier_required === 'free'),
+    pro: active.filter((m) => m.tier_required === 'pro'),
+    enterprise: active.filter((m) => m.tier_required === 'enterprise'),
+    byok: active.filter((m) => m.tier_required === 'byok'),
   }
 
   return (
@@ -381,6 +388,75 @@ export default function AdminModelsPage() {
                 </div>
               </div>
             ))}
+
+            {/* Inactive Models Section */}
+            {inactive.length > 0 && (
+              <div style={{ backgroundColor: 'var(--color-backgroundAlt)', borderRadius: '0.75rem', border: '1px solid var(--color-border)', overflow: 'hidden', opacity: 0.85 }}>
+                <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: '700', margin: 0 }}>Inactive / Unassigned</h3>
+                    <span style={{
+                      fontSize: '0.7rem',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '0.2rem',
+                      backgroundColor: '#cc241d',
+                      color: '#1d2021',
+                      fontWeight: '600',
+                    }}>{inactive.length}</span>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-foregroundAlt)' }}>
+                    Click "Reactivate" to move back to active list
+                  </span>
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                        <th style={{ padding: '0.75rem 1.25rem', textAlign: 'left', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Model</th>
+                        <th style={{ padding: '0.75rem 1.25rem', textAlign: 'left', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>ID</th>
+                        <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Tier</th>
+                        <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Auto</th>
+                        <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inactive.map((m) => (
+                        <tr key={m.id} style={{ borderBottom: '1px solid var(--color-border)', opacity: 0.7 }}>
+                          <td style={{ padding: '0.75rem 1.25rem' }}>
+                            <div>{m.display_name}</div>
+                            {m.description && <div style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>{m.description}</div>}
+                          </td>
+                          <td style={{ padding: '0.75rem 1.25rem', fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--color-foregroundAlt)' }}>{m.ollama_id}</td>
+                          <td style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: '600', padding: '0.15rem 0.5rem', borderRadius: '0.2rem', backgroundColor: m.tier_required === 'free' ? '#b8bb26' : m.tier_required === 'pro' ? '#fe8019' : m.tier_required === 'byok' ? '#83a598' : '#d3869b', color: '#1d2021', textTransform: 'uppercase' }}>{m.tier_required}</span>
+                          </td>
+                          <td style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}>{m.admin_overridden ? 'Manual' : 'Auto'}</span>
+                          </td>
+                          <td style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
+                            <button
+                              onClick={() => updateModel(m.id, { is_active: true, admin_overridden: true })}
+                              style={{
+                                padding: '0.35rem 0.75rem',
+                                borderRadius: '0.25rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                backgroundColor: 'var(--color-accent)',
+                                color: '#1d2021',
+                              }}
+                            >
+                              Reactivate
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -118,11 +118,6 @@ async function syncPresetsFromOllama(ollamaTags: string[]) {
         where: { id: preset.id },
         data: { is_active: false },
       })
-    } else if (ollamaSet.has(preset.ollama_id) && !preset.is_active) {
-      await prisma.modelPreset.update({
-        where: { id: preset.id },
-        data: { is_active: true },
-      })
     }
   }
 
@@ -142,7 +137,7 @@ async function syncPresetsFromOllama(ollamaTags: string[]) {
         description: meta.description,
         context_window: meta.context_window,
         max_tokens: meta.max_tokens,
-        is_active: true,
+        is_active: false,
         tier_required: tier,
         cost_estimate: meta.cost_estimate,
         is_byok: false,

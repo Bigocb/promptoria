@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
         description: body.description || inferred.description,
         context_window: body.context_window || inferred.context_window,
         max_tokens: body.max_tokens || inferred.max_tokens,
+        is_active: body.is_active !== undefined ? body.is_active : true,
         tier_required: tier_required || 'free',
         cost_estimate: body.cost_estimate || inferred.cost_estimate,
         is_byok: body.is_byok || false,
