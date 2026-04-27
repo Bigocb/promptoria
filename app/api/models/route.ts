@@ -210,7 +210,7 @@ export async function GET(request: NextRequest) {
     if (presets.length > 0) {
       models = presets
         .filter((p) => {
-          if (p.is_byok) return true
+          if (p.is_byok && !anthropicApiKey) return false
           if (ollamaTags.length > 0 && !ollamaSet.has(p.ollama_id)) return false
           const modelRank = TIER_RANK[p.tier_required] || 1
           return modelRank <= userRank
