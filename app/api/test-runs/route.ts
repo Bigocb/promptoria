@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     if (!finalTestInput && variables) {
       let substituted = promptVersion.template_body
       for (const [key, value] of Object.entries(variables)) {
-        substituted = substituted.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(value))
+        substituted = substituted.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value))
       }
       finalTestInput = substituted
     }

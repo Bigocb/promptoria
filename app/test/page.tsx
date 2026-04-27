@@ -87,6 +87,14 @@ interface HistoryRunSession {
   version_number?: number
 }
 
+interface VariableSet {
+  id: string
+  name: string
+  values: Record<string, string>
+  createdAt: string
+  updatedAt: string
+}
+
 type HistoryRun = HistoryRunPersisted | HistoryRunSession
 
 function getRunModel(r: HistoryRun) { return r.model || 'unknown' }
@@ -167,6 +175,11 @@ export default function TestRunnerPage() {
   const [comparing, setComparing] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(true)
   const [configOpen, setConfigOpen] = useState(false)
+  const [variableSets, setVariableSets] = useState<VariableSet[]>([])
+  const [activeSetId, setActiveSetId] = useState<string | null>(null)
+  const [showSaveSetInput, setShowSaveSetInput] = useState(false)
+  const [newSetName, setNewSetName] = useState('')
+  const [setUpdateFeedback, setSetUpdateFeedback] = useState(false)
 
   useEffect(() => {
     const fetchPrompts = async () => {
@@ -246,9 +259,9 @@ export default function TestRunnerPage() {
 
       const activeVer = latestVersion || allVersions[0]
       if (activeVer?.template_body) {
-        const varMatches = activeVer.template_body.match(/\{\{(\w+)\}\}/g) || []
+        const varMatches = activeVer.template_body.match(/\{([^}]+)\}/g) || []
         const extractedVars: Record<string, string> = {}
-        varMatches.forEach((match: string) => { extractedVars[match.slice(2, -2)] = '' })
+        varMatches.forEach((match: string) => { extractedVars[match.slice(1, -1)] = '' })
         setVariables(extractedVars)
       }
 
@@ -263,9 +276,9 @@ export default function TestRunnerPage() {
     setSelectedVersionId(versionId)
     const ver = selectedPrompt?.versions?.find((v: PromptVersion) => v.id === versionId)
     if (ver?.template_body) {
-      const varMatches = ver.template_body.match(/\{\{(\w+)\}\}/g) || []
-      const extractedVars: Record<string, string> = {}
-      varMatches.forEach((match: string) => { extractedVars[match.slice(2, -2)] = '' })
+      const varMatches = ver.template_body.match(/\{([^}]+)\}/g) || []
+        const extractedVars: Record<string, string> = {}
+        varMatches.forEach((match: string) => { extractedVars[match.slice(1, -1)] = '' })
       setVariables(extractedVars)
     }
   }
@@ -289,6 +302,70 @@ export default function TestRunnerPage() {
 
   const handleRemoveVariable = (key: string) => {
     setVariables((prev) => { const { [key]: _, ...rest } = prev; return rest })
+  }
+
+  const varSetsKey = () => `variable-sets-test-${selectedPrompt?.id || 'none'}`
+
+  const persistSets = (sets: VariableSet[]) => {
+    try {
+      localStorage.setItem(varSetsKey(), JSON.stringify(sets))
+    } catch (err) {
+      console.error('[Variable Sets] Failed to persist:', err)
+    }
+  }
+
+  useEffect(() => {
+    const key = varSetsKey()
+    try {
+      const raw = localStorage.getItem(key)
+      setVariableSets(raw ? JSON.parse(raw) : [])
+    } catch (err) {
+      console.error('[Variable Sets] Error loading:', err)
+      setVariableSets([])
+    }
+    setActiveSetId(null)
+  }, [selectedPrompt?.id])
+
+  const handleSaveSet = () => {
+    if (!newSetName.trim()) return
+    const newSet: VariableSet = {
+      id: Date.now().toString(),
+      name: newSetName.trim(),
+      values: { ...variables },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    const updated = [...variableSets, newSet]
+    setVariableSets(updated)
+    persistSets(updated)
+    setActiveSetId(newSet.id)
+    setNewSetName('')
+    setShowSaveSetInput(false)
+  }
+
+  const handleLoadSet = (set: VariableSet) => {
+    setVariables({ ...set.values })
+    setActiveSetId(set.id)
+  }
+
+  const handleUpdateSet = () => {
+    if (!activeSetId) return
+    const updated = variableSets.map(s =>
+      s.id === activeSetId
+        ? { ...s, values: { ...variables }, updatedAt: new Date().toISOString() }
+        : s
+    )
+    setVariableSets(updated)
+    persistSets(updated)
+    setSetUpdateFeedback(true)
+    setTimeout(() => setSetUpdateFeedback(false), 1500)
+  }
+
+  const handleDeleteSet = (setId: string) => {
+    const updated = variableSets.filter(s => s.id !== setId)
+    setVariableSets(updated)
+    persistSets(updated)
+    if (activeSetId === setId) setActiveSetId(null)
   }
 
   const handleExecute = async () => {
@@ -498,7 +575,7 @@ export default function TestRunnerPage() {
               )}
 
               <div className={styles.configDesktop}>
-                <ConfigCards variables={variables} model={model} setModel={setModel} models={models} filteredModels={filteredModels} familyFilter={familyFilter} setFamilyFilter={setFamilyFilter} families={families} modelsError={modelsError} temperature={temperature} setTemperature={setTemperature} maxTokens={maxTokens} setMaxTokens={setMaxTokens} selectedModelInfo={selectedModelInfo} handleVariableChange={handleVariableChange} handleAddVariable={handleAddVariable} handleRenameVariable={handleRenameVariable} handleRemoveVariable={handleRemoveVariable} />
+                <ConfigCards variables={variables} model={model} setModel={setModel} models={models} filteredModels={filteredModels} familyFilter={familyFilter} setFamilyFilter={setFamilyFilter} families={families} modelsError={modelsError} temperature={temperature} setTemperature={setTemperature} maxTokens={maxTokens} setMaxTokens={setMaxTokens} selectedModelInfo={selectedModelInfo} handleVariableChange={handleVariableChange} handleAddVariable={handleAddVariable} handleRenameVariable={handleRenameVariable} handleRemoveVariable={handleRemoveVariable} variableSets={variableSets} activeSetId={activeSetId} showSaveSetInput={showSaveSetInput} newSetName={newSetName} setNewSetName={setNewSetName} setShowSaveSetInput={setShowSaveSetInput} handleLoadSet={handleLoadSet} handleSaveSet={handleSaveSet} handleUpdateSet={handleUpdateSet} handleDeleteSet={handleDeleteSet} setUpdateFeedback={setUpdateFeedback} />
               </div>
               <div className={styles.configMobile}>
                 <button onClick={() => setConfigOpen(!configOpen)} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -507,7 +584,7 @@ export default function TestRunnerPage() {
                 </button>
                 {configOpen && (
                   <div style={{ marginTop: '0.5rem' }}>
-                    <ConfigCards variables={variables} model={model} setModel={setModel} models={models} filteredModels={filteredModels} familyFilter={familyFilter} setFamilyFilter={setFamilyFilter} families={families} modelsError={modelsError} temperature={temperature} setTemperature={setTemperature} maxTokens={maxTokens} setMaxTokens={setMaxTokens} selectedModelInfo={selectedModelInfo} handleVariableChange={handleVariableChange} handleAddVariable={handleAddVariable} handleRenameVariable={handleRenameVariable} handleRemoveVariable={handleRemoveVariable} />
+                    <ConfigCards variables={variables} model={model} setModel={setModel} models={models} filteredModels={filteredModels} familyFilter={familyFilter} setFamilyFilter={setFamilyFilter} families={families} modelsError={modelsError} temperature={temperature} setTemperature={setTemperature} maxTokens={maxTokens} setMaxTokens={setMaxTokens} selectedModelInfo={selectedModelInfo} handleVariableChange={handleVariableChange} handleAddVariable={handleAddVariable} handleRenameVariable={handleRenameVariable} handleRemoveVariable={handleRemoveVariable} variableSets={variableSets} activeSetId={activeSetId} showSaveSetInput={showSaveSetInput} newSetName={newSetName} setNewSetName={setNewSetName} setShowSaveSetInput={setShowSaveSetInput} handleLoadSet={handleLoadSet} handleSaveSet={handleSaveSet} handleUpdateSet={handleUpdateSet} handleDeleteSet={handleDeleteSet} setUpdateFeedback={setUpdateFeedback} />
                   </div>
                 )}
               </div>
@@ -654,7 +731,7 @@ export default function TestRunnerPage() {
   )
 }
 
-function ConfigCards({ variables, model, setModel, models, filteredModels, familyFilter, setFamilyFilter, families, modelsError, temperature, setTemperature, maxTokens, setMaxTokens, selectedModelInfo, handleVariableChange, handleAddVariable, handleRenameVariable, handleRemoveVariable }: {
+function ConfigCards({ variables, model, setModel, models, filteredModels, familyFilter, setFamilyFilter, families, modelsError, temperature, setTemperature, maxTokens, setMaxTokens, selectedModelInfo, handleVariableChange, handleAddVariable, handleRenameVariable, handleRemoveVariable, variableSets, activeSetId, showSaveSetInput, newSetName, setNewSetName, setShowSaveSetInput, handleLoadSet, handleSaveSet, handleUpdateSet, handleDeleteSet, setUpdateFeedback }: {
   variables: Record<string, string>
   model: string
   setModel: (m: string) => void
@@ -673,6 +750,17 @@ function ConfigCards({ variables, model, setModel, models, filteredModels, famil
   handleAddVariable: () => void
   handleRenameVariable: (oldKey: string, newKey: string) => void
   handleRemoveVariable: (key: string) => void
+  variableSets: VariableSet[]
+  activeSetId: string | null
+  showSaveSetInput: boolean
+  newSetName: string
+  setNewSetName: (v: string) => void
+  setShowSaveSetInput: (v: boolean) => void
+  handleLoadSet: (set: VariableSet) => void
+  handleSaveSet: () => void
+  handleUpdateSet: () => void
+  handleDeleteSet: (setId: string) => void
+  setUpdateFeedback: boolean
 }) {
   return (
     <>
@@ -689,14 +777,160 @@ function ConfigCards({ variables, model, setModel, models, filteredModels, famil
                     onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.6'; e.currentTarget.style.color = 'var(--color-foregroundAlt)' }}
                   >X</button>
                 </div>
-                <input type="text" value={value} onChange={(e) => handleVariableChange(key, e.target.value)} className="input" style={{ width: '100%' }} placeholder={`Value for {{${key}}}`} />
+                <input type="text" value={value} onChange={(e) => handleVariableChange(key, e.target.value)} className="input" style={{ width: '100%' }} placeholder={`Value for {${key}}`} />
               </div>
             ))}
             <button onClick={handleAddVariable} className="btn btn-secondary" style={{ fontSize: '0.75rem' }}>+ Add Variable</button>
           </div>
         ) : (
           <div style={{ fontSize: '0.8rem', color: 'var(--color-foregroundAlt)' }}>
-            No <code style={{ fontFamily: 'monospace' }}>{'{{variable}}'}</code> patterns detected.
+            No <code style={{ fontFamily: 'monospace' }}>{'{variable}'}</code> patterns detected.
+          </div>
+        )}
+
+        {Object.keys(variables).length > 0 && (
+          <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--color-foregroundAlt)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Saved Sets
+              </span>
+              <div style={{ display: 'flex', gap: '0.375rem' }}>
+                {activeSetId && (
+                  <button
+                    onClick={handleUpdateSet}
+                    style={{
+                      padding: '0.25rem 0.625rem',
+                      backgroundColor: setUpdateFeedback ? '#8ec07c' : 'transparent',
+                      border: `1px solid ${setUpdateFeedback ? '#8ec07c' : 'var(--color-accent)'}`,
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      fontSize: '0.72rem',
+                      fontWeight: '600',
+                      color: setUpdateFeedback ? '#1d2021' : 'var(--color-accent)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {setUpdateFeedback ? '✓ Saved' : '↑ Update'}
+                  </button>
+                )}
+                {!showSaveSetInput && (
+                  <button
+                    onClick={() => setShowSaveSetInput(true)}
+                    style={{
+                      padding: '0.25rem 0.625rem',
+                      backgroundColor: 'var(--color-accent)',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      fontSize: '0.72rem',
+                      fontWeight: '700',
+                      color: '#1d2021',
+                    }}
+                  >
+                    + Save Set
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {showSaveSetInput && (
+              <div style={{ display: 'flex', gap: '0.375rem', marginBottom: '0.5rem' }}>
+                <input
+                  type="text"
+                  placeholder="Set name..."
+                  value={newSetName}
+                  onChange={(e) => setNewSetName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveSet()
+                    if (e.key === 'Escape') { setShowSaveSetInput(false); setNewSetName('') }
+                  }}
+                  autoFocus
+                  className="input"
+                  style={{ flex: 1, fontSize: '0.8rem' }}
+                />
+                <button
+                  onClick={handleSaveSet}
+                  style={{ padding: '0.25rem 0.625rem', backgroundColor: 'var(--color-accent)', border: 'none', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '700', color: '#1d2021' }}
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => { setShowSaveSetInput(false); setNewSetName('') }}
+                  style={{ padding: '0.25rem 0.5rem', backgroundColor: 'transparent', border: '1px solid var(--color-border)', borderRadius: '0.375rem', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--color-foregroundAlt)' }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {variableSets.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                {setUpdateFeedback && (
+                  <div style={{
+                    padding: '0.5rem 0.75rem',
+                    fontSize: '0.7rem',
+                    backgroundColor: 'rgba(142, 192, 124, 0.2)',
+                    border: '1px solid #8ec07c',
+                    borderRadius: '0.25rem',
+                    color: '#8ec07c',
+                    textAlign: 'center',
+                  }}>
+                    ✓ Changes saved
+                  </div>
+                )}
+                {variableSets.map((set) => {
+                  const isActive = activeSetId === set.id
+                  return (
+                    <div
+                      key={set.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.375rem',
+                        padding: '0.375rem 0.625rem',
+                        backgroundColor: isActive ? 'rgba(254,128,25,0.08)' : 'var(--color-background)',
+                        border: `1px solid ${isActive ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                        borderRadius: '0.375rem',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <button
+                        onClick={() => handleLoadSet(set)}
+                        style={{
+                          flex: 1,
+                          textAlign: 'left',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          fontWeight: isActive ? '600' : '400',
+                          color: isActive ? 'var(--color-accent)' : 'var(--color-foreground)',
+                          padding: 0,
+                        }}
+                      >
+                        {isActive && '▸ '}{set.name}
+                      </button>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--color-foregroundAlt)' }}>
+                        {Object.keys(set.values).length}v
+                      </span>
+                      <button
+                        onClick={() => handleDeleteSet(set.id)}
+                        title="Delete set"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', color: 'var(--color-foregroundAlt)', padding: '0 0.125rem', lineHeight: 1, opacity: 0.7 }}
+                        onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = '#ff6b6b' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; e.currentTarget.style.color = 'var(--color-foregroundAlt)' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-foregroundAlt)', fontStyle: 'italic', margin: 0 }}>
+                No saved sets yet
+              </p>
+            )}
           </div>
         )}
       </div>
