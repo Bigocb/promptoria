@@ -215,7 +215,7 @@ export default function SettingsPage() {
               letterSpacing: '0.02em',
             }}
           >
-            {user.tier}
+            {user.tier === 'enterprise' ? 'power' : user.tier}
           </span>
         )}
       </h1>
@@ -236,7 +236,7 @@ export default function SettingsPage() {
             Subscription
           </h2>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-            You are on the <strong style={{ textTransform: 'capitalize' }}>{user.tier}</strong> plan.
+            You are on the <strong>{user.tier === 'enterprise' ? 'Power' : user.tier === 'pro' ? 'Pro' : user.tier === 'free' ? 'Free' : user.tier}</strong> plan.
           </p>
           <button
             onClick={async () => {

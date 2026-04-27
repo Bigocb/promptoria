@@ -24,6 +24,7 @@ interface ModelPreset {
 
 const TIER_OPTIONS = ['free', 'pro', 'enterprise', 'byok']
 const COST_OPTIONS = ['cheap', 'medium', 'expensive', 'bring-your-own']
+const TIER_LABELS: Record<string, string> = { free: 'Free', pro: 'Pro', enterprise: 'Power', byok: 'BYOK' }
 
 export default function AdminModelsPage() {
   const { user, loading } = useAuth()
@@ -234,7 +235,7 @@ export default function AdminModelsPage() {
               <div key={tier} style={{ backgroundColor: 'var(--color-backgroundAlt)', borderRadius: '0.75rem', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
                 <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: '700', margin: 0, textTransform: 'capitalize' }}>{tier} Models</h3>
+                    <h3 style={{ fontSize: '1rem', fontWeight: '700', margin: 0, textTransform: 'capitalize' }}>{TIER_LABELS[tier] || tier} Models</h3>
                     <span style={{
                       fontSize: '0.7rem',
                       padding: '0.15rem 0.5rem',

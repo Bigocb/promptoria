@@ -144,5 +144,6 @@ export const API_ENDPOINTS = {
   stripe: {
     checkout: `${API_BASE_URL}/stripe/checkout`,
     portal: `${API_BASE_URL}/stripe/portal`,
+    prices: `${API_BASE_URL}/stripe/prices`,
   },
 }

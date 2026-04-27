@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { stripe, PLANS } from '@/lib/stripe'
+import { getStripe, PLANS } from '@/lib/stripe'
 import type Stripe from 'stripe'
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
 
 function findPlanByPriceId(priceId: string): { tier: string; monthlyTokenLimit: number } | null {
   for (const [, plan] of Object.entries(PLANS)) {
-    if (plan.priceId === priceId) {
+    if (plan.priceId && plan.priceId === priceId) {
       return { tier: plan.tier, monthlyTokenLimit: plan.monthlyTokenLimit }
     }
   }
@@ -20,6 +20,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   if (!userId) return
 
   const subId = session.subscription as string
+  const stripe = getStripe()
   const subscription = await stripe.subscriptions.retrieve(subId)
   const planInfo = plan && PLANS[plan as keyof typeof PLANS]
     ? PLANS[plan as keyof typeof PLANS]
@@ -137,6 +138,7 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event
   try {
+    const stripe = getStripe()
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
   } catch (err) {
     console.error('[Stripe Webhook] Signature verification failed:', err)

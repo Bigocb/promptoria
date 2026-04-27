@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/app/providers'
 import { API_ENDPOINTS } from '@/lib/api-config'
@@ -10,25 +10,23 @@ interface PlanFeature {
   included: boolean
 }
 
-interface Plan {
+interface PlanDef {
   key: string
-  name: string
-  price: string
-  priceSubtext: string
   tier: string
+  defaultPrice: number
+  name: string
   description: string
   features: PlanFeature[]
   cta: string
   highlighted: boolean
 }
 
-const plans: Plan[] = [
+const planDefs: PlanDef[] = [
   {
     key: 'free',
-    name: 'Free',
-    price: '$0',
-    priceSubtext: '/month',
     tier: 'free',
+    defaultPrice: 0,
+    name: 'Free',
     description: 'For individuals exploring prompt engineering',
     features: [
       { text: '5,000 tokens/day', included: true },
@@ -45,10 +43,9 @@ const plans: Plan[] = [
   },
   {
     key: 'pro',
-    name: 'Pro',
-    price: '$12',
-    priceSubtext: '/month',
     tier: 'pro',
+    defaultPrice: 12,
+    name: 'Pro',
     description: 'For professionals who need more power',
     features: [
       { text: '50,000 tokens/day', included: true },
@@ -65,10 +62,9 @@ const plans: Plan[] = [
   },
   {
     key: 'enterprise',
-    name: 'Enterprise',
-    price: '$49',
-    priceSubtext: '/month',
     tier: 'enterprise',
+    defaultPrice: 49,
+    name: 'Power',
     description: 'For teams that need the best models',
     features: [
       { text: '200,000 tokens/day', included: true },
@@ -85,11 +81,36 @@ const plans: Plan[] = [
   },
 ]
 
+function formatPrice(cents: number, currency: string): string {
+  if (cents === 0) return '$0'
+  const dollars = cents / 100
+  return `$${dollars % 1 === 0 ? dollars.toFixed(0) : dollars.toFixed(2)}`
+}
+
 export default function PricingPage() {
   const { user } = useAuth()
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [checkoutCanceled, setCheckoutCanceled] = useState(false)
+  const [prices, setPrices] = useState<Record<string, { amount: number; currency: string; interval: string }> | null>(null)
+  const [pricesLoading, setPricesLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const res = await fetch(API_ENDPOINTS.stripe.prices)
+        if (res.ok) {
+          const data = await res.json()
+          setPrices(data.plans || {})
+        }
+      } catch {
+        // use defaults
+      } finally {
+        setPricesLoading(false)
+      }
+    }
+    fetchPrices()
+  }, [])
 
   const userTier = user?.tier || 'free'
   const tierRank: Record<string, number> = { free: 1, pro: 2, enterprise: 3, admin: 99 }
@@ -123,14 +144,23 @@ export default function PricingPage() {
     }
   }
 
-  const getCtaLabel = (plan: Plan) => {
+  const getPriceLabel = (plan: PlanDef) => {
+    if (plan.tier === 'free') return { price: '$0', subtext: '/month' }
+    if (prices && prices[plan.tier]) {
+      const p = prices[plan.tier]
+      return { price: formatPrice(p.amount, p.currency), subtext: `/${p.interval}` }
+    }
+    return { price: `$${plan.defaultPrice}`, subtext: '/month' }
+  }
+
+  const getCtaLabel = (plan: PlanDef) => {
     if (userTier === 'admin') return 'Admin (all access)'
     if (currentRank > tierRank[plan.tier]) return 'Downgrade'
     if (currentRank === tierRank[plan.tier]) return 'Current Plan'
     return plan.cta
   }
 
-  const getCtaDisabled = (plan: Plan) => {
+  const getCtaDisabled = (plan: PlanDef) => {
     if (userTier === 'admin') return true
     if (currentRank === tierRank[plan.tier]) return true
     return loadingPlan === plan.key
@@ -154,6 +184,7 @@ export default function PricingPage() {
         {error && (
           <div style={{ maxWidth: '500px', margin: '0 auto 1.5rem', padding: '0.75rem 1rem', backgroundColor: 'rgba(255,0,0,0.08)', borderLeft: '3px solid #ff6b6b', borderRadius: '0.5rem', color: '#ff6b6b', fontSize: '0.85rem' }}>
             {error}
+            <button onClick={() => setError('')} style={{ marginLeft: '0.5rem', background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', textDecoration: 'underline' }}>dismiss</button>
           </div>
         )}
 
@@ -165,9 +196,8 @@ export default function PricingPage() {
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
-          {plans.map(plan => {
-            const isCurrent = currentRank === tierRank[plan.tier]
-            const isDowngrade = currentRank > tierRank[plan.tier] && userTier !== 'admin'
+          {planDefs.map(plan => {
+            const priceInfo = getPriceLabel(plan)
             const disabled = getCtaDisabled(plan)
 
             return (
@@ -190,8 +220,14 @@ export default function PricingPage() {
                 <p style={{ fontSize: '0.8rem', color: 'var(--color-foregroundAlt)', marginBottom: '1rem' }}>{plan.description}</p>
 
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <span style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-0.03em' }}>{plan.price}</span>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--color-foregroundAlt)' }}>{plan.priceSubtext}</span>
+                  {pricesLoading && plan.tier !== 'free' ? (
+                    <span style={{ fontSize: '1.5rem', color: 'var(--color-foregroundAlt)' }}>Loading...</span>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-0.03em' }}>{priceInfo.price}</span>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--color-foregroundAlt)' }}>{priceInfo.subtext}</span>
+                    </>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginBottom: '1.5rem' }}>
@@ -205,7 +241,7 @@ export default function PricingPage() {
                   ))}
                 </div>
 
-                {isCurrent ? (
+                {tierRank[userTier] === tierRank[plan.tier] ? (
                   <div style={{ width: '100%', padding: '0.75rem', textAlign: 'center', borderRadius: '0.5rem', backgroundColor: 'var(--color-border)', color: 'var(--color-foregroundAlt)', fontSize: '0.85rem', fontWeight: '600', opacity: 0.7 }}>
                     Current Plan
                   </div>
@@ -215,13 +251,7 @@ export default function PricingPage() {
                   </div>
                 ) : (
                   <button
-                    onClick={() => {
-                      if (isDowngrade) {
-                        handleCheckout(plan.key)
-                      } else {
-                        handleCheckout(plan.key)
-                      }
-                    }}
+                    onClick={() => handleCheckout(plan.key)}
                     disabled={disabled}
                     style={{
                       width: '100%',
