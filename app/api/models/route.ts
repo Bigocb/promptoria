@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { inferModelMetadata } from '@/lib/model-enrichment'
 import { verifyAccessToken } from '@/lib/jwt'
+import Anthropic from '@anthropic-ai/sdk'
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || ''
@@ -16,11 +17,52 @@ const TIER_RANK: Record<string, number> = {
   admin: 99,
 }
 
-const CLAUDE_MODELS = [
+const CLAUDE_MODELS_FALLBACK = [
   { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', description: 'Fastest Claude model, great for quick tasks', family: 'claude', parameter_size: null, contextWindow: '200K', maxTokens: 8192, tier_required: 'byok', is_byok: true, cost_estimate: 'bring-your-own' },
   { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', description: 'Balanced performance and intelligence', family: 'claude', parameter_size: null, contextWindow: '200K', maxTokens: 8192, tier_required: 'byok', is_byok: true, cost_estimate: 'bring-your-own' },
   { id: 'claude-opus-4-20250514', name: 'Claude Opus 4', description: 'Most capable Claude model for complex tasks', family: 'claude', parameter_size: null, contextWindow: '200K', maxTokens: 8192, tier_required: 'byok', is_byok: true, cost_estimate: 'bring-your-own' },
 ]
+
+const CLAUDE_MODEL_META: Record<string, { name: string; description: string; contextWindow: string; maxTokens: number }> = {
+  'claude-3-5-haiku': { name: 'Claude 3.5 Haiku', description: 'Fastest Claude model, great for quick tasks', contextWindow: '200K', maxTokens: 8192 },
+  'claude-3-5-sonnet': { name: 'Claude 3.5 Sonnet', description: 'Balanced predecessor model', contextWindow: '200K', maxTokens: 8192 },
+  'claude-sonnet-4': { name: 'Claude Sonnet 4', description: 'Balanced performance and intelligence', contextWindow: '200K', maxTokens: 8192 },
+  'claude-opus-4': { name: 'Claude Opus 4', description: 'Most capable Claude model for complex tasks', contextWindow: '200K', maxTokens: 8192 },
+  'claude-3-opus': { name: 'Claude 3 Opus', description: 'Powerful legacy model', contextWindow: '200K', maxTokens: 4096 },
+  'claude-3-haiku': { name: 'Claude 3 Haiku', description: 'Legacy fast model', contextWindow: '200K', maxTokens: 4096 },
+}
+
+async function fetchAnthropicModels(apiKey: string): Promise<typeof CLAUDE_MODELS_FALLBACK> {
+  try {
+    const client = new Anthropic({ apiKey })
+    const page = await client.models.list()
+    const models: typeof CLAUDE_MODELS_FALLBACK = []
+    for (const model of page.data) {
+      const baseId = model.id.replace(/-\d{8}$/, '')
+      const meta = CLAUDE_MODEL_META[baseId] || {
+        name: model.display_name || model.id,
+        description: 'Anthropic model',
+        contextWindow: '200K',
+        maxTokens: 8192,
+      }
+      models.push({
+        id: model.id,
+        name: meta.name,
+        description: meta.description,
+        family: 'claude',
+        parameter_size: null,
+        contextWindow: meta.contextWindow,
+        maxTokens: meta.maxTokens,
+        tier_required: 'byok',
+        is_byok: true,
+        cost_estimate: 'bring-your-own',
+      })
+    }
+    return models.length > 0 ? models : CLAUDE_MODELS_FALLBACK
+  } catch {
+    return CLAUDE_MODELS_FALLBACK
+  }
+}
 
 const FALLBACK_MODELS = [
   { id: 'gemma3:4b', name: 'Gemma 3 (4B)', description: 'Google latest single-GPU model', family: 'gemma', parameter_size: '4B', contextWindow: '128K', maxTokens: 4096, tier_required: 'free', is_byok: false, cost_estimate: null },
@@ -128,7 +170,7 @@ export async function GET(request: NextRequest) {
     const userRank = TIER_RANK[userTier] || 1
 
     let userId: string | null = null
-    let hasAnthropicKey = false
+    let anthropicApiKey: string | null = null
     if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
         const token = authHeader.substring(7)
@@ -140,7 +182,7 @@ export async function GET(request: NextRequest) {
     if (userId) {
       try {
         const userSettings = await prisma.userSettings.findUnique({ where: { user_id: userId } })
-        hasAnthropicKey = !!userSettings?.anthropic_api_key
+        anthropicApiKey = userSettings?.anthropic_api_key || null
       } catch { /* silent */ }
     }
 
@@ -198,8 +240,9 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    if (hasAnthropicKey) {
-      models = [...CLAUDE_MODELS, ...models]
+    if (anthropicApiKey) {
+      const claudeModels = await fetchAnthropicModels(anthropicApiKey)
+      models = [...claudeModels, ...models]
     }
 
     return NextResponse.json(

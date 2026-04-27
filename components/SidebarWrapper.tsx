@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@/app/providers'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
@@ -8,6 +8,23 @@ import { BottomNav } from './BottomNav'
 export default function SidebarWrapper() {
   const { user, loading } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    const main = document.querySelector('main.layout-main') as HTMLElement | null
+    if (!main) return
+    if (user && !loading) {
+      main.style.marginLeft = '240px'
+      const mq = window.matchMedia('(max-width: 767px)')
+      const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+        main.style.marginLeft = e.matches ? '0' : '240px'
+      }
+      handler(mq)
+      mq.addEventListener('change', handler)
+      return () => mq.removeEventListener('change', handler)
+    } else {
+      main.style.marginLeft = '0'
+    }
+  }, [user, loading])
 
   // Don't render sidebar until auth is checked
   if (loading) {

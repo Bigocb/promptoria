@@ -1,13 +1,24 @@
 import prisma from './prisma'
 
-/**
- * Check if a user can consume tokens. If allowed, increments their counter.
- * Handles daily reset at UTC midnight automatically.
- */
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || ''
+
+async function isUserAdmin(userId: string): Promise<boolean> {
+  if (!ADMIN_EMAIL) return false
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, subscription_tier: true },
+  })
+  return user?.subscription_tier === 'admin' || user?.email === ADMIN_EMAIL
+}
+
 export async function consumeTokens(
   userId: string,
   tokensToConsume: number
 ): Promise<{ allowed: boolean; remaining: number; limit: number }> {
+  if (await isUserAdmin(userId)) {
+    return { allowed: true, remaining: Infinity, limit: Infinity }
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -60,6 +71,10 @@ export async function consumeTokens(
  * Get current quota status without consuming. Also handles auto-reset.
  */
 export async function getQuotaStatus(userId: string): Promise<{ used: number; limit: number; remaining: number }> {
+  if (await isUserAdmin(userId)) {
+    return { used: 0, limit: Infinity, remaining: Infinity }
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
