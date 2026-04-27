@@ -17,6 +17,7 @@ interface ModelPreset {
   tier_required: string
   cost_estimate: string | null
   is_active: boolean
+  admin_overridden: boolean
   is_byok: boolean
   sort_order: number
 }
@@ -228,6 +229,7 @@ export default function AdminModelsPage() {
                         <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Tier</th>
                         <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Cost</th>
                         <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Active</th>
+                        <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Auto</th>
                         <th style={{ padding: '0.75rem 1.25rem', textAlign: 'center', fontWeight: '600', color: 'var(--color-foregroundAlt)', fontSize: '0.75rem', textTransform: 'uppercase' }}>Sort</th>
                       </tr>
                     </thead>
@@ -281,7 +283,7 @@ export default function AdminModelsPage() {
                           </td>
                           <td style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
                             <button
-                              onClick={() => updateModel(m.id, { is_active: !m.is_active })}
+                              onClick={() => updateModel(m.id, { is_active: !m.is_active, admin_overridden: true })}
                               style={{
                                 padding: '0.35rem 0.75rem',
                                 borderRadius: '0.25rem',
@@ -294,6 +296,24 @@ export default function AdminModelsPage() {
                               }}
                             >
                               {m.is_active ? 'Active' : 'Inactive'}
+                            </button>
+                          </td>
+                          <td style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
+                            <button
+                              onClick={() => updateModel(m.id, { admin_overridden: !m.admin_overridden })}
+                              style={{
+                                padding: '0.35rem 0.75rem',
+                                borderRadius: '0.25rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                backgroundColor: m.admin_overridden ? '#fe8019' : 'var(--color-success)',
+                                color: '#1d2021',
+                              }}
+                              title={m.admin_overridden ? 'Auto-sync is locked — click to let Ollama Cloud control this model\'s active state' : 'Auto-sync is on — Ollama Cloud can toggle this model\'s active state'}
+                            >
+                              {m.admin_overridden ? 'Manual' : 'Auto'}
                             </button>
                           </td>
                           <td style={{ padding: '0.75rem 1.25rem', textAlign: 'center' }}>
@@ -316,7 +336,7 @@ export default function AdminModelsPage() {
                         </tr>
                       ))}
                       {tierModels.length === 0 && (
-                        <tr><td colSpan={7} style={{ padding: '1.25rem', textAlign: 'center', color: 'var(--color-foregroundAlt)' }}>No models in this tier</td></tr>
+                        <tr><td colSpan={8} style={{ padding: '1.25rem', textAlign: 'center', color: 'var(--color-foregroundAlt)' }}>No models in this tier</td></tr>
                       )}
                     </tbody>
                   </table>

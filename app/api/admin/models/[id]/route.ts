@@ -32,6 +32,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       'context_window',
       'max_tokens',
       'is_active',
+      'admin_overridden',
       'tier_required',
       'cost_estimate',
       'sort_order',

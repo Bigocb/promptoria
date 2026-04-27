@@ -256,6 +256,8 @@ model TestRun {
   started_at        DateTime?
   completed_at      DateTime?
   duration_ms       Int?     // milliseconds
+  cost_cents        Int?     // calculated cost in cents (USD * 100)
+  gpu_seconds       Float?   // GPU time consumed (for Ollama Cloud billing)
   created_at        DateTime @default(now()) @db.Timestamp(6)
   updated_at        DateTime @default(now()) @updatedAt @db.Timestamp(6)
 
@@ -317,8 +319,11 @@ model ModelPreset {
   context_window String? @db.VarChar(20)           // e.g. "8K"
   max_tokens    Int?                                    // maximum output tokens
   is_active     Boolean  @default(true)              // admin can deactivate models
+  admin_overridden Boolean @default(false)            // true = admin manually set is_active, don't auto-toggle
   tier_required String   @default("free") @db.VarChar(20)  // free, pro, enterprise, byok
   cost_estimate String? @db.VarChar(20)             // human-readable: "cheap", "medium", "expensive", "bring-your-own"
+  cost_per_1k_input  Float?  // USD per 1K input tokens (null = unknown/free)
+  cost_per_1k_output Float?  // USD per 1K output tokens (null = unknown/free)
   is_byok       Boolean  @default(false)             // bring your own key models
   sort_order    Int        @default(0)               // admin can reorder
   created_at    DateTime @default(now()) @db.Timestamp(6)

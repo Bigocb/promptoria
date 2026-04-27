@@ -1,32 +1,57 @@
-const attempts = new Map<string, { count: number; resetAt: number }>()
+const WINDOW_MS = 60_000
+const MAX_REQUESTS = 10
 
-const WINDOW_MS = 15 * 60 * 1000
-const MAX_ATTEMPTS = 10
+interface RateEntry {
+  timestamps: number[]
+}
+
+const store = new Map<string, RateEntry>()
+
+function cleanup() {
+  const cutoff = Date.now() - WINDOW_MS * 2
+  for (const [key, entry] of store) {
+    entry.timestamps = entry.timestamps.filter(t => t > cutoff)
+    if (entry.timestamps.length === 0) store.delete(key)
+  }
+}
+
+setInterval(cleanup, WINDOW_MS)
+
+const AUTH_WINDOW_MS = 60_000
+const AUTH_MAX_REQUESTS = 5
+const authStore = new Map<string, number[]>()
 
 export function rateLimit(key: string): { allowed: boolean; retryAfterMs: number } {
   const now = Date.now()
-  const entry = attempts.get(key)
-
-  if (!entry || now > entry.resetAt) {
-    attempts.set(key, { count: 1, resetAt: now + WINDOW_MS })
-    return { allowed: true, retryAfterMs: 0 }
+  let timestamps = authStore.get(key) || []
+  timestamps = timestamps.filter(t => t > now - AUTH_WINDOW_MS)
+  if (timestamps.length >= AUTH_MAX_REQUESTS) {
+    const retryAfterMs = timestamps[0] + AUTH_WINDOW_MS - now
+    authStore.set(key, timestamps)
+    return { allowed: false, retryAfterMs }
   }
-
-  if (entry.count >= MAX_ATTEMPTS) {
-    return { allowed: false, retryAfterMs: entry.resetAt - now }
-  }
-
-  entry.count++
+  timestamps.push(now)
+  authStore.set(key, timestamps)
   return { allowed: true, retryAfterMs: 0 }
 }
 
-if (process.env.NODE_ENV !== 'test') {
-  setInterval(() => {
-    const now = Date.now()
-    for (const [key, entry] of attempts) {
-      if (now > entry.resetAt) {
-        attempts.delete(key)
-      }
-    }
-  }, 60 * 1000)
+export function checkRateLimit(userId: string): { allowed: boolean; remaining: number; resetInMs: number } {
+  const now = Date.now()
+  let entry = store.get(userId)
+
+  if (!entry) {
+    entry = { timestamps: [] }
+    store.set(userId, entry)
+  }
+
+  entry.timestamps = entry.timestamps.filter(t => t > now - WINDOW_MS)
+
+  if (entry.timestamps.length >= MAX_REQUESTS) {
+    const oldestInWindow = entry.timestamps[0]
+    const resetInMs = oldestInWindow + WINDOW_MS - now
+    return { allowed: false, remaining: 0, resetInMs }
+  }
+
+  entry.timestamps.push(now)
+  return { allowed: true, remaining: MAX_REQUESTS - entry.timestamps.length, resetInMs: 0 }
 }

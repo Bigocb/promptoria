@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/jwt'
 import { consumeTokens } from '@/lib/quota'
 import { resolveAvailableModel } from '@/lib/model-fallback'
+import { canUserAccessModel, computeTestRunCost } from '@/lib/cost-tracker'
+import { checkRateLimit } from '@/lib/rate-limit'
 import Anthropic from '@anthropic-ai/sdk'
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
@@ -86,6 +88,22 @@ export async function POST(request: NextRequest) {
     const modelToUse = await resolveAvailableModel(requestedModel, promptVersion.prompt.model, userSettings?.default_model)
     const tempToUse = temperature ?? userSettings?.default_temperature ?? 0.7
     const maxTokensToUse = max_tokens || userSettings?.default_max_tokens || 1024
+
+    const accessCheck = await canUserAccessModel(userId, modelToUse)
+    if (!accessCheck.allowed) {
+      return NextResponse.json(
+        { error: accessCheck.reason || 'Model not available for your tier' },
+        { status: 403 }
+      )
+    }
+
+    const rateLimit = checkRateLimit(userId)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please wait before running another test.', retryAfterMs: rateLimit.resetInMs },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(rateLimit.resetInMs / 1000)) } }
+      )
+    }
 
     const estimatedTokens = Math.ceil(((finalTestInput?.length || 0) + maxTokensToUse) / 4)
 
@@ -182,6 +200,9 @@ export async function POST(request: NextRequest) {
     const endTime = Date.now()
     const durationMs = endTime - startTime
 
+    const isOllama = !modelToUse.startsWith('claude-')
+    const costResult = await computeTestRunCost(modelToUse, totalTokens, durationMs, isOllama)
+
     await prisma.testRun.update({
       where: { id: testRun.id },
       data: {
@@ -190,6 +211,8 @@ export async function POST(request: NextRequest) {
         total_tokens: totalTokens,
         completed_at: new Date(),
         duration_ms: durationMs,
+        cost_cents: costResult.cost_cents,
+        gpu_seconds: costResult.gpu_seconds,
       },
     })
 

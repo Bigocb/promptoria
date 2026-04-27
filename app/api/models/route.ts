@@ -112,12 +112,13 @@ async function syncPresetsFromOllama(ollamaTags: string[]) {
   const ollamaSet = new Set(ollamaTags)
 
   for (const preset of existingPresets) {
-    if (!preset.is_byok && !ollamaSet.has(preset.ollama_id) && preset.is_active) {
+    if (preset.is_byok || preset.admin_overridden) continue
+    if (!ollamaSet.has(preset.ollama_id) && preset.is_active) {
       await prisma.modelPreset.update({
         where: { id: preset.id },
         data: { is_active: false },
       })
-    } else if (!preset.is_byok && ollamaSet.has(preset.ollama_id) && !preset.is_active) {
+    } else if (ollamaSet.has(preset.ollama_id) && !preset.is_active) {
       await prisma.modelPreset.update({
         where: { id: preset.id },
         data: { is_active: true },
