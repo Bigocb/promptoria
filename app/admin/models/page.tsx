@@ -215,7 +215,10 @@ export default function AdminModelsPage() {
               }}>{saveFeedback}</span>
             )}
             <a href="/admin" style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--color-backgroundAlt)', border: '1px solid var(--color-border)', borderRadius: '0.5rem', color: 'var(--color-foreground)', textDecoration: 'none', fontSize: '0.85rem' }}>
-              Admin Dashboard
+              Dashboard
+            </a>
+            <a href="/admin/users" style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--color-backgroundAlt)', border: '1px solid var(--color-border)', borderRadius: '0.5rem', color: 'var(--color-foreground)', textDecoration: 'none', fontSize: '0.85rem' }}>
+              Users
             </a>
             <a href="/dashboard" style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--color-backgroundAlt)', border: '1px solid var(--color-border)', borderRadius: '0.5rem', color: 'var(--color-foreground)', textDecoration: 'none', fontSize: '0.85rem' }}>
               Back to App

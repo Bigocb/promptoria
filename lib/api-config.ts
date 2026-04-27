@@ -138,5 +138,7 @@ export const API_ENDPOINTS = {
     models: `${API_BASE_URL}/admin/models`,
     model: (id: string) => `${API_BASE_URL}/admin/models/${id}`,
     availableModels: `${API_BASE_URL}/admin/available-models`,
+    users: `${API_BASE_URL}/admin/users`,
+    updateUser: (id: string) => `${API_BASE_URL}/admin/users/${id}`,
   },
 }

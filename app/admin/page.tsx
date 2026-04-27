@@ -108,6 +108,9 @@ export default function AdminPage() {
             <p style={{ color: 'var(--color-foregroundAlt)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Promptoria metrics &amp; usage</p>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <a href="/admin/users" style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--color-backgroundAlt)', border: '1px solid var(--color-border)', borderRadius: '0.5rem', color: 'var(--color-foreground)', textDecoration: 'none', fontSize: '0.85rem' }}>
+              Users
+            </a>
             <a href="/admin/models" style={{ padding: '0.5rem 1rem', backgroundColor: 'var(--color-backgroundAlt)', border: '1px solid var(--color-border)', borderRadius: '0.5rem', color: 'var(--color-foreground)', textDecoration: 'none', fontSize: '0.85rem' }}>
               Model Config
             </a>
